@@ -1,0 +1,298 @@
+name: Build AudioPlugin
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main, develop]
+  release:
+    types: [created]
+  workflow_dispatch:
+    inputs:
+      create_release:
+        description: 'Create a release from this build'
+        required: false
+        default: false
+        type: boolean
+      release_tag:
+        description: 'Release tag (e.g., v1.0.0)'
+        required: false
+        default: ''
+        type: string
+
+jobs:
+  build-windows:
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Setup MSBuild
+        uses: microsoft/setup-msbuild@v1.3
+
+      - name: Cache JUCE build files
+        uses: actions/cache@v4
+        with:
+          path: |
+            Builds
+            JuceLibraryCode
+          key: ${{ runner.os }}-juce-${{ hashFiles('AudioPlugin.jucer') }}
+          restore-keys: |
+            ${{ runner.os }}-juce-
+
+      - name: Generate Windows project with Projucer
+        shell: cmd
+        run: |
+          third_party\JUCE\extras\Projucer\Builds\VisualStudio2022\x64\Release\App\Projucer.exe --resave AudioPlugin.jucer --fix-missing-dependencies || (
+            echo "Building Projucer first..."
+            msbuild "third_party\JUCE\extras\Projucer\Builds\VisualStudio2022\Projucer.sln" /p:Configuration=Release /p:Platform=x64 /m
+            third_party\JUCE\extras\Projucer\Builds\VisualStudio2022\x64\Release\App\Projucer.exe --resave AudioPlugin.jucer --fix-missing-dependencies
+          )
+
+      - name: Build with MSBuild
+        shell: cmd
+        run: |
+          msbuild "Builds/VisualStudio2022/AudioPlugin_SharedCode.vcxproj" /p:Configuration=Release /p:Platform=x64 /m /verbosity:minimal
+          msbuild "Builds/VisualStudio2022/AudioPlugin_VST3.vcxproj" /p:Configuration=Release /p:Platform=x64 /m /verbosity:minimal
+
+      - name: Create Windows artifacts
+        shell: cmd
+        run: |
+          mkdir "dist-windows"
+          if exist "Builds\VisualStudio2022\x64\Release\VST3\AudioPlugin.dll" (
+            copy "Builds\VisualStudio2022\x64\Release\VST3\AudioPlugin.dll" "dist-windows\AudioPlugin.vst3"
+          )
+
+      - name: Upload Windows VST3 artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: AudioPlugin-VST3-Windows-x64
+          path: dist-windows/
+          retention-days: 30
+
+  build-macos:
+    runs-on: macos-14
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Use latest Xcode
+        uses: maxim-lobanov/setup-xcode@v1
+        with:
+          xcode-version: latest-stable
+
+      - name: Cache JUCE build files
+        uses: actions/cache@v4
+        with:
+          path: |
+            Builds
+            JuceLibraryCode
+          key: ${{ runner.os }}-juce-${{ hashFiles('AudioPlugin.jucer') }}
+          restore-keys: |
+            ${{ runner.os }}-juce-
+
+      - name: Build Projucer
+        run: |
+          xcodebuild -project "third_party/JUCE/extras/Projucer/Builds/MacOSX/Projucer.xcodeproj" \
+            -scheme "Projucer - App" \
+            -configuration Release \
+            build
+
+      - name: Generate Xcode project
+        run: |
+          "third_party/JUCE/extras/Projucer/Builds/MacOSX/build/Release/Projucer.app/Contents/MacOS/Projucer" --resave "AudioPlugin.jucer" --fix-missing-dependencies
+
+      - name: Build VST3 with xcodebuild
+        run: |
+          xcodebuild \
+            -project "Builds/MacOSX/AudioPlugin.xcodeproj" \
+            -scheme "AudioPlugin - VST3" \
+            -configuration Release \
+            -destination "generic/platform=macOS" \
+            ARCHS="arm64 x86_64" \
+            ONLY_ACTIVE_ARCH=NO \
+            MACOSX_DEPLOYMENT_TARGET=10.15 \
+            build
+
+      - name: Build AU with xcodebuild
+        run: |
+          xcodebuild \
+            -project "Builds/MacOSX/AudioPlugin.xcodeproj" \
+            -scheme "AudioPlugin - AU" \
+            -configuration Release \
+            -destination "generic/platform=macOS" \
+            ARCHS="arm64 x86_64" \
+            ONLY_ACTIVE_ARCH=NO \
+            MACOSX_DEPLOYMENT_TARGET=10.15 \
+            build
+
+      - name: Upload macOS artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: AudioPlugin-macOS
+          path: |
+            Builds/MacOSX/build/Release/AudioPlugin.vst3
+            Builds/MacOSX/build/Release/AudioPlugin.component
+          retention-days: 30
+
+  build-linux:
+    runs-on: ubuntu-22.04
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Install system dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            build-essential \
+            libasound2-dev \
+            libcurl4-openssl-dev \
+            libfreetype6-dev \
+            libgl1-mesa-dev \
+            libjack-jackd2-dev \
+            libwebkit2gtk-4.0-dev \
+            libx11-dev \
+            libxext-dev \
+            libxinerama-dev \
+            libxrandr-dev \
+            libxss-dev \
+            pkg-config
+
+      - name: Cache JUCE build files
+        uses: actions/cache@v4
+        with:
+          path: |
+            Builds
+            JuceLibraryCode
+          key: ${{ runner.os }}-juce-${{ hashFiles('AudioPlugin.jucer') }}
+          restore-keys: |
+            ${{ runner.os }}-juce-
+
+      - name: Build Projucer
+        run: |
+          cd third_party/JUCE/extras/Projucer/Builds/LinuxMakefile
+          make CONFIG=Release -j$(nproc)
+
+      - name: Generate Linux project
+        run: |
+          third_party/JUCE/extras/Projucer/Builds/LinuxMakefile/build/Projucer --resave AudioPlugin.jucer --fix-missing-dependencies
+
+      - name: Build with Make
+        run: |
+          cd Builds/LinuxMakefile
+          make clean
+          make -j$(nproc) CONFIG=Release
+
+      - name: Upload Linux artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: AudioPlugin-VST3-Linux-x64
+          path: Builds/LinuxMakefile/build/AudioPlugin.vst3
+          retention-days: 30
+
+  test:
+    needs: [build-macos]
+    runs-on: macos-14
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Download macOS artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: AudioPlugin-macOS
+          path: ./plugin/
+
+      - name: Install plugin to expected location
+        run: |
+          mkdir -p ~/Library/Audio/Plug-Ins/VST3
+          cp -R ./plugin/AudioPlugin.vst3 ~/Library/Audio/Plug-Ins/VST3/
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install Python dependencies
+        run: pip install -r requirements.txt
+
+      - name: Download pluginval
+        run: |
+          curl -L -o pluginval.zip https://github.com/Tracktion/pluginval/releases/latest/download/pluginval_macOS.zip
+          unzip pluginval.zip -d /usr/local/bin
+          chmod +x /usr/local/bin/pluginval
+
+      - name: Build C++ unit tests
+        run: |
+          cd tests/unit
+          cmake -B build -DCMAKE_BUILD_TYPE=Release
+          cmake --build build --config Release
+
+      - name: Run all tests
+        run: pytest tests/ -v
+
+  release:
+    needs: [build-windows, build-macos, build-linux, test]
+    runs-on: ubuntu-latest
+    if: startsWith(github.ref, 'refs/tags/') || (github.event_name == 'workflow_dispatch' && inputs.create_release)
+
+    steps:
+      - name: Download Windows artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: AudioPlugin-VST3-Windows-x64
+          path: ./windows-vst3/
+
+      - name: Download macOS artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: AudioPlugin-macOS
+          path: ./macos-artifacts/
+
+      - name: Download Linux artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: AudioPlugin-VST3-Linux-x64
+          path: ./linux-artifacts/
+
+      - name: Create release archives
+        run: |
+          cd windows-vst3 && zip -r ../AudioPlugin-VST3-Windows-x64.zip . && cd ..
+          cd macos-artifacts && zip -r ../AudioPlugin-macOS.zip . && cd ..
+          cd linux-artifacts && zip -r ../AudioPlugin-VST3-Linux-x64.zip . && cd ..
+
+      - name: Generate release notes
+        run: |
+          echo "## AudioPlugin Release" >> release_notes.md
+          echo "" >> release_notes.md
+          echo "### Installation" >> release_notes.md
+          echo "- **Windows**: Extract and place AudioPlugin.vst3 in your VST3 directory" >> release_notes.md
+          echo "- **macOS**: Extract and install VST3/AU to ~/Library/Audio/Plug-Ins/" >> release_notes.md
+          echo "- **Linux**: Extract to ~/.vst3/ or your DAW's VST3 directory" >> release_notes.md
+
+      - name: Upload release assets
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: ${{ github.event_name == 'workflow_dispatch' && inputs.release_tag || github.ref_name }}
+          name: ${{ github.event_name == 'workflow_dispatch' && format('AudioPlugin {0}', inputs.release_tag) || format('AudioPlugin {0}', github.ref_name) }}
+          body_path: release_notes.md
+          draft: ${{ github.event_name == 'workflow_dispatch' }}
+          files: |
+            AudioPlugin-VST3-Windows-x64.zip
+            AudioPlugin-macOS.zip
+            AudioPlugin-VST3-Linux-x64.zip
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
