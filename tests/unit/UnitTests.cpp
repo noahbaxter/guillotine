@@ -4,13 +4,13 @@
 class PluginUnitTests : public juce::UnitTest
 {
 public:
-    PluginUnitTests() : juce::UnitTest("AudioPlugin Unit Tests") {}
+    PluginUnitTests() : juce::UnitTest("Guillotine Unit Tests") {}
 
     void runTest() override
     {
         beginTest("Parameter creation and ranges");
         {
-            AudioPluginProcessor processor;
+            GuillotineProcessor processor;
             auto& apvts = processor.getAPVTS();
 
             auto* gainParam = apvts.getParameter("gain");
@@ -36,7 +36,7 @@ public:
 
             // Create processor, set gain, save state
             {
-                AudioPluginProcessor processor;
+                GuillotineProcessor processor;
                 auto* gainParam = processor.getAPVTS().getParameter("gain");
                 gainParam->setValueNotifyingHost(gainParam->getNormalisableRange().convertTo0to1(testGainValue));
                 processor.getStateInformation(stateData);
@@ -44,7 +44,7 @@ public:
 
             // Create new processor, load state, verify
             {
-                AudioPluginProcessor processor;
+                GuillotineProcessor processor;
                 processor.setStateInformation(stateData.getData(), static_cast<int>(stateData.getSize()));
 
                 auto* gainParam = processor.getAPVTS().getParameter("gain");

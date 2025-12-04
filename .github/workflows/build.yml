@@ -1,4 +1,4 @@
-name: Build AudioPlugin
+name: Build Guillotine
 
 on:
   push:
@@ -39,37 +39,37 @@ jobs:
           path: |
             Builds
             JuceLibraryCode
-          key: ${{ runner.os }}-juce-${{ hashFiles('AudioPlugin.jucer') }}
+          key: ${{ runner.os }}-juce-${{ hashFiles('Guillotine.jucer') }}
           restore-keys: |
             ${{ runner.os }}-juce-
 
       - name: Generate Windows project with Projucer
         shell: cmd
         run: |
-          third_party\JUCE\extras\Projucer\Builds\VisualStudio2022\x64\Release\App\Projucer.exe --resave AudioPlugin.jucer --fix-missing-dependencies || (
+          third_party\JUCE\extras\Projucer\Builds\VisualStudio2022\x64\Release\App\Projucer.exe --resave Guillotine.jucer --fix-missing-dependencies || (
             echo "Building Projucer first..."
             msbuild "third_party\JUCE\extras\Projucer\Builds\VisualStudio2022\Projucer.sln" /p:Configuration=Release /p:Platform=x64 /m
-            third_party\JUCE\extras\Projucer\Builds\VisualStudio2022\x64\Release\App\Projucer.exe --resave AudioPlugin.jucer --fix-missing-dependencies
+            third_party\JUCE\extras\Projucer\Builds\VisualStudio2022\x64\Release\App\Projucer.exe --resave Guillotine.jucer --fix-missing-dependencies
           )
 
       - name: Build with MSBuild
         shell: cmd
         run: |
-          msbuild "Builds/VisualStudio2022/AudioPlugin_SharedCode.vcxproj" /p:Configuration=Release /p:Platform=x64 /m /verbosity:minimal
-          msbuild "Builds/VisualStudio2022/AudioPlugin_VST3.vcxproj" /p:Configuration=Release /p:Platform=x64 /m /verbosity:minimal
+          msbuild "Builds/VisualStudio2022/Guillotine_SharedCode.vcxproj" /p:Configuration=Release /p:Platform=x64 /m /verbosity:minimal
+          msbuild "Builds/VisualStudio2022/Guillotine_VST3.vcxproj" /p:Configuration=Release /p:Platform=x64 /m /verbosity:minimal
 
       - name: Create Windows artifacts
         shell: cmd
         run: |
           mkdir "dist-windows"
-          if exist "Builds\VisualStudio2022\x64\Release\VST3\AudioPlugin.dll" (
-            copy "Builds\VisualStudio2022\x64\Release\VST3\AudioPlugin.dll" "dist-windows\AudioPlugin.vst3"
+          if exist "Builds\VisualStudio2022\x64\Release\VST3\Guillotine.dll" (
+            copy "Builds\VisualStudio2022\x64\Release\VST3\Guillotine.dll" "dist-windows\Guillotine.vst3"
           )
 
       - name: Upload Windows VST3 artifact
         uses: actions/upload-artifact@v4
         with:
-          name: AudioPlugin-VST3-Windows-x64
+          name: Guillotine-VST3-Windows-x64
           path: dist-windows/
           retention-days: 30
 
@@ -93,7 +93,7 @@ jobs:
           path: |
             Builds
             JuceLibraryCode
-          key: ${{ runner.os }}-juce-${{ hashFiles('AudioPlugin.jucer') }}
+          key: ${{ runner.os }}-juce-${{ hashFiles('Guillotine.jucer') }}
           restore-keys: |
             ${{ runner.os }}-juce-
 
@@ -106,13 +106,13 @@ jobs:
 
       - name: Generate Xcode project
         run: |
-          "third_party/JUCE/extras/Projucer/Builds/MacOSX/build/Release/Projucer.app/Contents/MacOS/Projucer" --resave "AudioPlugin.jucer" --fix-missing-dependencies
+          "third_party/JUCE/extras/Projucer/Builds/MacOSX/build/Release/Projucer.app/Contents/MacOS/Projucer" --resave "Guillotine.jucer" --fix-missing-dependencies
 
       - name: Build VST3 with xcodebuild
         run: |
           xcodebuild \
-            -project "Builds/MacOSX/AudioPlugin.xcodeproj" \
-            -scheme "AudioPlugin - VST3" \
+            -project "Builds/MacOSX/Guillotine.xcodeproj" \
+            -scheme "Guillotine - VST3" \
             -configuration Release \
             -destination "generic/platform=macOS" \
             ARCHS="arm64 x86_64" \
@@ -123,8 +123,8 @@ jobs:
       - name: Build AU with xcodebuild
         run: |
           xcodebuild \
-            -project "Builds/MacOSX/AudioPlugin.xcodeproj" \
-            -scheme "AudioPlugin - AU" \
+            -project "Builds/MacOSX/Guillotine.xcodeproj" \
+            -scheme "Guillotine - AU" \
             -configuration Release \
             -destination "generic/platform=macOS" \
             ARCHS="arm64 x86_64" \
@@ -135,10 +135,10 @@ jobs:
       - name: Upload macOS artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: AudioPlugin-macOS
+          name: Guillotine-macOS
           path: |
-            Builds/MacOSX/build/Release/AudioPlugin.vst3
-            Builds/MacOSX/build/Release/AudioPlugin.component
+            Builds/MacOSX/build/Release/Guillotine.vst3
+            Builds/MacOSX/build/Release/Guillotine.component
           retention-days: 30
 
   build-linux:
@@ -174,7 +174,7 @@ jobs:
           path: |
             Builds
             JuceLibraryCode
-          key: ${{ runner.os }}-juce-${{ hashFiles('AudioPlugin.jucer') }}
+          key: ${{ runner.os }}-juce-${{ hashFiles('Guillotine.jucer') }}
           restore-keys: |
             ${{ runner.os }}-juce-
 
@@ -185,7 +185,7 @@ jobs:
 
       - name: Generate Linux project
         run: |
-          third_party/JUCE/extras/Projucer/Builds/LinuxMakefile/build/Projucer --resave AudioPlugin.jucer --fix-missing-dependencies
+          third_party/JUCE/extras/Projucer/Builds/LinuxMakefile/build/Projucer --resave Guillotine.jucer --fix-missing-dependencies
 
       - name: Build with Make
         run: |
@@ -196,8 +196,8 @@ jobs:
       - name: Upload Linux artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: AudioPlugin-VST3-Linux-x64
-          path: Builds/LinuxMakefile/build/AudioPlugin.vst3
+          name: Guillotine-VST3-Linux-x64
+          path: Builds/LinuxMakefile/build/Guillotine.vst3
           retention-days: 30
 
   test:
@@ -213,13 +213,13 @@ jobs:
       - name: Download macOS artifacts
         uses: actions/download-artifact@v4
         with:
-          name: AudioPlugin-macOS
+          name: Guillotine-macOS
           path: ./plugin/
 
       - name: Install plugin to expected location
         run: |
           mkdir -p ~/Library/Audio/Plug-Ins/VST3
-          cp -R ./plugin/AudioPlugin.vst3 ~/Library/Audio/Plug-Ins/VST3/
+          cp -R ./plugin/Guillotine.vst3 ~/Library/Audio/Plug-Ins/VST3/
 
       - name: Setup Python
         uses: actions/setup-python@v5
@@ -253,33 +253,33 @@ jobs:
       - name: Download Windows artifacts
         uses: actions/download-artifact@v4
         with:
-          name: AudioPlugin-VST3-Windows-x64
+          name: Guillotine-VST3-Windows-x64
           path: ./windows-vst3/
 
       - name: Download macOS artifacts
         uses: actions/download-artifact@v4
         with:
-          name: AudioPlugin-macOS
+          name: Guillotine-macOS
           path: ./macos-artifacts/
 
       - name: Download Linux artifacts
         uses: actions/download-artifact@v4
         with:
-          name: AudioPlugin-VST3-Linux-x64
+          name: Guillotine-VST3-Linux-x64
           path: ./linux-artifacts/
 
       - name: Create release archives
         run: |
-          cd windows-vst3 && zip -r ../AudioPlugin-VST3-Windows-x64.zip . && cd ..
-          cd macos-artifacts && zip -r ../AudioPlugin-macOS.zip . && cd ..
-          cd linux-artifacts && zip -r ../AudioPlugin-VST3-Linux-x64.zip . && cd ..
+          cd windows-vst3 && zip -r ../Guillotine-VST3-Windows-x64.zip . && cd ..
+          cd macos-artifacts && zip -r ../Guillotine-macOS.zip . && cd ..
+          cd linux-artifacts && zip -r ../Guillotine-VST3-Linux-x64.zip . && cd ..
 
       - name: Generate release notes
         run: |
-          echo "## AudioPlugin Release" >> release_notes.md
+          echo "## Guillotine Release" >> release_notes.md
           echo "" >> release_notes.md
           echo "### Installation" >> release_notes.md
-          echo "- **Windows**: Extract and place AudioPlugin.vst3 in your VST3 directory" >> release_notes.md
+          echo "- **Windows**: Extract and place Guillotine.vst3 in your VST3 directory" >> release_notes.md
           echo "- **macOS**: Extract and install VST3/AU to ~/Library/Audio/Plug-Ins/" >> release_notes.md
           echo "- **Linux**: Extract to ~/.vst3/ or your DAW's VST3 directory" >> release_notes.md
 
@@ -287,12 +287,12 @@ jobs:
         uses: softprops/action-gh-release@v1
         with:
           tag_name: ${{ github.event_name == 'workflow_dispatch' && inputs.release_tag || github.ref_name }}
-          name: ${{ github.event_name == 'workflow_dispatch' && format('AudioPlugin {0}', inputs.release_tag) || format('AudioPlugin {0}', github.ref_name) }}
+          name: ${{ github.event_name == 'workflow_dispatch' && format('Guillotine {0}', inputs.release_tag) || format('Guillotine {0}', github.ref_name) }}
           body_path: release_notes.md
           draft: ${{ github.event_name == 'workflow_dispatch' }}
           files: |
-            AudioPlugin-VST3-Windows-x64.zip
-            AudioPlugin-macOS.zip
-            AudioPlugin-VST3-Linux-x64.zip
+            Guillotine-VST3-Windows-x64.zip
+            Guillotine-macOS.zip
+            Guillotine-VST3-Linux-x64.zip
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

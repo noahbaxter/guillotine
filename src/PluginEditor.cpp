@@ -1,43 +1,55 @@
 #include "PluginProcessor.h"
 #include "PluginEditor.h"
 
-AudioPluginEditor::AudioPluginEditor(AudioPluginProcessor& p)
+GuillotineEditor::GuillotineEditor(GuillotineProcessor& p)
     : AudioProcessorEditor(&p), audioProcessor(p)
 {
-    // Gain slider
-    gainSlider.setSliderStyle(juce::Slider::RotaryVerticalDrag);
-    gainSlider.setTextBoxStyle(juce::Slider::TextBoxBelow, false, 80, 20);
-    addAndMakeVisible(gainSlider);
+    // Guillotine visualization
+    addAndMakeVisible(guillotine);
 
-    gainLabel.setText("Gain", juce::dontSendNotification);
-    gainLabel.setJustificationType(juce::Justification::centred);
-    addAndMakeVisible(gainLabel);
+    // Clip control slider (knob)
+    clipSlider.setSliderStyle(juce::Slider::RotaryVerticalDrag);
+    clipSlider.setTextBoxStyle(juce::Slider::TextBoxBelow, false, 80, 20);
+    clipSlider.setRange(0.0, 1.0, 0.01);
+    clipSlider.setValue(0.0);
+    clipSlider.addListener(this);
+    addAndMakeVisible(clipSlider);
 
-    gainAttachment = std::make_unique<juce::AudioProcessorValueTreeState::SliderAttachment>(
-        audioProcessor.getAPVTS(), "gain", gainSlider);
+    clipLabel.setText("Clip", juce::dontSendNotification);
+    clipLabel.setJustificationType(juce::Justification::centred);
+    addAndMakeVisible(clipLabel);
 
-    setSize(300, 200);
+    // Window size: maintain 5:6 aspect for guillotine plus space for knob
+    setSize(400, 580);
 }
 
-AudioPluginEditor::~AudioPluginEditor()
+GuillotineEditor::~GuillotineEditor()
 {
+    clipSlider.removeListener(this);
 }
 
-void AudioPluginEditor::paint(juce::Graphics& g)
+void GuillotineEditor::paint(juce::Graphics& g)
 {
     g.fillAll(juce::Colour(0xff1e1e1e));
-
-    g.setColour(juce::Colours::white);
-    g.setFont(18.0f);
-    g.drawFittedText("Audio Plugin", getLocalBounds().removeFromTop(40), juce::Justification::centred, 1);
 }
 
-void AudioPluginEditor::resized()
+void GuillotineEditor::resized()
 {
     auto bounds = getLocalBounds();
-    bounds.removeFromTop(40);
 
-    auto sliderArea = bounds.reduced(40);
-    gainLabel.setBounds(sliderArea.removeFromTop(20));
-    gainSlider.setBounds(sliderArea);
+    // Bottom area for knob
+    auto knobArea = bounds.removeFromBottom(100);
+    clipLabel.setBounds(knobArea.removeFromTop(20));
+    clipSlider.setBounds(knobArea.reduced(20, 0));
+
+    // Rest for guillotine visualization
+    guillotine.setBounds(bounds.reduced(10));
+}
+
+void GuillotineEditor::sliderValueChanged(juce::Slider* slider)
+{
+    if (slider == &clipSlider)
+    {
+        guillotine.setBladePosition(static_cast<float>(slider->getValue()));
+    }
 }

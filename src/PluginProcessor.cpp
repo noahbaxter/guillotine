@@ -1,7 +1,7 @@
 #include "PluginProcessor.h"
 #include "PluginEditor.h"
 
-AudioPluginProcessor::AudioPluginProcessor()
+GuillotineProcessor::GuillotineProcessor()
 #ifndef JucePlugin_PreferredChannelConfigurations
     : AudioProcessor(BusesProperties()
 #if ! JucePlugin_IsMidiEffect
@@ -16,11 +16,11 @@ AudioPluginProcessor::AudioPluginProcessor()
 {
 }
 
-AudioPluginProcessor::~AudioPluginProcessor()
+GuillotineProcessor::~GuillotineProcessor()
 {
 }
 
-juce::AudioProcessorValueTreeState::ParameterLayout AudioPluginProcessor::createParameterLayout()
+juce::AudioProcessorValueTreeState::ParameterLayout GuillotineProcessor::createParameterLayout()
 {
     std::vector<std::unique_ptr<juce::RangedAudioParameter>> params;
 
@@ -34,12 +34,12 @@ juce::AudioProcessorValueTreeState::ParameterLayout AudioPluginProcessor::create
     return {params.begin(), params.end()};
 }
 
-const juce::String AudioPluginProcessor::getName() const
+const juce::String GuillotineProcessor::getName() const
 {
     return JucePlugin_Name;
 }
 
-bool AudioPluginProcessor::acceptsMidi() const
+bool GuillotineProcessor::acceptsMidi() const
 {
 #if JucePlugin_WantsMidiInput
     return true;
@@ -48,7 +48,7 @@ bool AudioPluginProcessor::acceptsMidi() const
 #endif
 }
 
-bool AudioPluginProcessor::producesMidi() const
+bool GuillotineProcessor::producesMidi() const
 {
 #if JucePlugin_ProducesMidiOutput
     return true;
@@ -57,7 +57,7 @@ bool AudioPluginProcessor::producesMidi() const
 #endif
 }
 
-bool AudioPluginProcessor::isMidiEffect() const
+bool GuillotineProcessor::isMidiEffect() const
 {
 #if JucePlugin_IsMidiEffect
     return true;
@@ -66,48 +66,48 @@ bool AudioPluginProcessor::isMidiEffect() const
 #endif
 }
 
-double AudioPluginProcessor::getTailLengthSeconds() const
+double GuillotineProcessor::getTailLengthSeconds() const
 {
     return 0.0;
 }
 
-int AudioPluginProcessor::getNumPrograms()
+int GuillotineProcessor::getNumPrograms()
 {
     return 1;
 }
 
-int AudioPluginProcessor::getCurrentProgram()
+int GuillotineProcessor::getCurrentProgram()
 {
     return 0;
 }
 
-void AudioPluginProcessor::setCurrentProgram(int index)
+void GuillotineProcessor::setCurrentProgram(int index)
 {
     juce::ignoreUnused(index);
 }
 
-const juce::String AudioPluginProcessor::getProgramName(int index)
+const juce::String GuillotineProcessor::getProgramName(int index)
 {
     juce::ignoreUnused(index);
     return {};
 }
 
-void AudioPluginProcessor::changeProgramName(int index, const juce::String& newName)
+void GuillotineProcessor::changeProgramName(int index, const juce::String& newName)
 {
     juce::ignoreUnused(index, newName);
 }
 
-void AudioPluginProcessor::prepareToPlay(double sampleRate, int samplesPerBlock)
+void GuillotineProcessor::prepareToPlay(double sampleRate, int samplesPerBlock)
 {
     juce::ignoreUnused(sampleRate, samplesPerBlock);
 }
 
-void AudioPluginProcessor::releaseResources()
+void GuillotineProcessor::releaseResources()
 {
 }
 
 #ifndef JucePlugin_PreferredChannelConfigurations
-bool AudioPluginProcessor::isBusesLayoutSupported(const BusesLayout& layouts) const
+bool GuillotineProcessor::isBusesLayoutSupported(const BusesLayout& layouts) const
 {
 #if JucePlugin_IsMidiEffect
     juce::ignoreUnused(layouts);
@@ -127,7 +127,7 @@ bool AudioPluginProcessor::isBusesLayoutSupported(const BusesLayout& layouts) co
 }
 #endif
 
-void AudioPluginProcessor::processBlock(juce::AudioBuffer<float>& buffer, juce::MidiBuffer& midiMessages)
+void GuillotineProcessor::processBlock(juce::AudioBuffer<float>& buffer, juce::MidiBuffer& midiMessages)
 {
     juce::ignoreUnused(midiMessages);
     juce::ScopedNoDenormals noDenormals;
@@ -155,24 +155,24 @@ void AudioPluginProcessor::processBlock(juce::AudioBuffer<float>& buffer, juce::
     }
 }
 
-bool AudioPluginProcessor::hasEditor() const
+bool GuillotineProcessor::hasEditor() const
 {
     return true;
 }
 
-juce::AudioProcessorEditor* AudioPluginProcessor::createEditor()
+juce::AudioProcessorEditor* GuillotineProcessor::createEditor()
 {
-    return new AudioPluginEditor(*this);
+    return new GuillotineEditor(*this);
 }
 
-void AudioPluginProcessor::getStateInformation(juce::MemoryBlock& destData)
+void GuillotineProcessor::getStateInformation(juce::MemoryBlock& destData)
 {
     auto state = apvts.copyState();
     std::unique_ptr<juce::XmlElement> xml(state.createXml());
     copyXmlToBinary(*xml, destData);
 }
 
-void AudioPluginProcessor::setStateInformation(const void* data, int sizeInBytes)
+void GuillotineProcessor::setStateInformation(const void* data, int sizeInBytes)
 {
     std::unique_ptr<juce::XmlElement> xml(getXmlFromBinary(data, sizeInBytes));
     if (xml != nullptr && xml->hasTagName(apvts.state.getType()))
@@ -183,5 +183,5 @@ void AudioPluginProcessor::setStateInformation(const void* data, int sizeInBytes
 
 juce::AudioProcessor* JUCE_CALLTYPE createPluginFilter()
 {
-    return new AudioPluginProcessor();
+    return new GuillotineProcessor();
 }

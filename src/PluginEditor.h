@@ -2,22 +2,26 @@
 
 #include <JuceHeader.h>
 #include "PluginProcessor.h"
+#include "gui/GuillotineComponent.h"
 
-class AudioPluginEditor : public juce::AudioProcessorEditor
+class GuillotineEditor : public juce::AudioProcessorEditor,
+                          private juce::Slider::Listener
 {
 public:
-    explicit AudioPluginEditor(AudioPluginProcessor&);
-    ~AudioPluginEditor() override;
+    explicit GuillotineEditor(GuillotineProcessor&);
+    ~GuillotineEditor() override;
 
     void paint(juce::Graphics&) override;
     void resized() override;
 
 private:
-    AudioPluginProcessor& audioProcessor;
+    void sliderValueChanged(juce::Slider* slider) override;
 
-    juce::Slider gainSlider;
-    juce::Label gainLabel;
-    std::unique_ptr<juce::AudioProcessorValueTreeState::SliderAttachment> gainAttachment;
+    GuillotineProcessor& audioProcessor;
 
-    JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(AudioPluginEditor)
+    GuillotineComponent guillotine;
+    juce::Slider clipSlider;
+    juce::Label clipLabel;
+
+    JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(GuillotineEditor)
 };

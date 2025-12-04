@@ -1,0 +1,113 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<JUCERPROJECT id="Gltn01" name="Guillotine" projectType="audioplug" useAppConfig="0"
+              addUsingNamespaceToJuceHeader="0" displaySplashScreen="1" jucerFormatVersion="1"
+              companyName="Dichotic Studios" pluginVST3Category="Fx" cppLanguageStandard="17"
+              pluginFormats="buildVST3,buildAU,buildStandalone" pluginName="Guillotine"
+              pluginDesc="A clipping plugin with guillotine visualization">
+  <MAINGROUP id="vNZlKl" name="Guillotine">
+    <GROUP id="{A55E7D30-1234-5678-9ABC-DEF012345678}" name="assets">
+      <FILE id="BasePng" name="base.png" compile="0" resource="1" file="assets/base.png"/>
+      <FILE id="BladePng" name="blade.png" compile="0" resource="1" file="assets/blade.png"/>
+      <FILE id="SidePng" name="side.png" compile="0" resource="1" file="assets/side.png"/>
+    </GROUP>
+    <GROUP id="{577BFFED-2E98-5329-03C4-711F74395056}" name="src">
+      <FILE id="PZm7UN" name="PluginProcessor.cpp" compile="1" resource="0"
+            file="src/PluginProcessor.cpp"/>
+      <FILE id="GADCKX" name="PluginProcessor.h" compile="0" resource="0"
+            file="src/PluginProcessor.h"/>
+      <FILE id="Fw3asZ" name="PluginEditor.cpp" compile="1" resource="0"
+            file="src/PluginEditor.cpp"/>
+      <FILE id="Mxww5q" name="PluginEditor.h" compile="0" resource="0" file="src/PluginEditor.h"/>
+    </GROUP>
+    <GROUP id="{GUI00001-2345-6789-ABCD-EF0123456789}" name="gui">
+      <FILE id="Gui11tN" name="GuillotineComponent.cpp" compile="1" resource="0"
+            file="src/gui/GuillotineComponent.cpp"/>
+      <FILE id="Gui11tH" name="GuillotineComponent.h" compile="0" resource="0"
+            file="src/gui/GuillotineComponent.h"/>
+    </GROUP>
+  </MAINGROUP>
+  <MODULES>
+    <MODULE id="juce_audio_basics" showAllCode="1" useLocalCopy="1" useGlobalPath="0"/>
+    <MODULE id="juce_audio_devices" showAllCode="1" useLocalCopy="1" useGlobalPath="0"/>
+    <MODULE id="juce_audio_formats" showAllCode="1" useLocalCopy="1" useGlobalPath="0"/>
+    <MODULE id="juce_audio_plugin_client" showAllCode="1" useLocalCopy="1"
+            useGlobalPath="0"/>
+    <MODULE id="juce_audio_processors" showAllCode="1" useLocalCopy="1" useGlobalPath="0"/>
+    <MODULE id="juce_audio_processors_headless" showAllCode="1" useLocalCopy="1"
+            useGlobalPath="0"/>
+    <MODULE id="juce_audio_utils" showAllCode="1" useLocalCopy="1" useGlobalPath="0"/>
+    <MODULE id="juce_core" showAllCode="1" useLocalCopy="1" useGlobalPath="0"/>
+    <MODULE id="juce_data_structures" showAllCode="1" useLocalCopy="1" useGlobalPath="0"/>
+    <MODULE id="juce_events" showAllCode="1" useLocalCopy="1" useGlobalPath="0"/>
+    <MODULE id="juce_graphics" showAllCode="1" useLocalCopy="1" useGlobalPath="0"/>
+    <MODULE id="juce_gui_basics" showAllCode="1" useLocalCopy="1" useGlobalPath="0"/>
+    <MODULE id="juce_gui_extra" showAllCode="1" useLocalCopy="1" useGlobalPath="0"/>
+  </MODULES>
+  <JUCEOPTIONS JUCE_STRICT_REFCOUNTEDPOINTER="1" JUCE_VST3_CAN_REPLACE_VST2="0"/>
+  <EXPORTFORMATS>
+    <XCODE_MAC targetFolder="Builds/MacOSX">
+      <CONFIGURATIONS>
+        <CONFIGURATION isDebug="1" name="Debug" targetName="Guillotine"/>
+        <CONFIGURATION isDebug="0" name="Release" targetName="Guillotine"/>
+      </CONFIGURATIONS>
+      <MODULEPATHS>
+        <MODULEPATH id="juce_audio_basics" path="third_party/JUCE/modules"/>
+        <MODULEPATH id="juce_audio_devices" path="third_party/JUCE/modules"/>
+        <MODULEPATH id="juce_audio_formats" path="third_party/JUCE/modules"/>
+        <MODULEPATH id="juce_audio_plugin_client" path="third_party/JUCE/modules"/>
+        <MODULEPATH id="juce_audio_processors" path="third_party/JUCE/modules"/>
+        <MODULEPATH id="juce_audio_utils" path="third_party/JUCE/modules"/>
+        <MODULEPATH id="juce_core" path="third_party/JUCE/modules"/>
+        <MODULEPATH id="juce_data_structures" path="third_party/JUCE/modules"/>
+        <MODULEPATH id="juce_events" path="third_party/JUCE/modules"/>
+        <MODULEPATH id="juce_graphics" path="third_party/JUCE/modules"/>
+        <MODULEPATH id="juce_gui_basics" path="third_party/JUCE/modules"/>
+        <MODULEPATH id="juce_gui_extra" path="third_party/JUCE/modules"/>
+        <MODULEPATH id="juce_audio_processors_headless" path="third_party/JUCE/modules"/>
+      </MODULEPATHS>
+    </XCODE_MAC>
+    <VS2022 targetFolder="Builds/VisualStudio2022">
+      <CONFIGURATIONS>
+        <CONFIGURATION isDebug="1" name="Debug"/>
+        <CONFIGURATION isDebug="0" name="Release"/>
+      </CONFIGURATIONS>
+      <MODULEPATHS>
+        <MODULEPATH id="juce_audio_basics" path="third_party/JUCE/modules"/>
+        <MODULEPATH id="juce_audio_devices" path="third_party/JUCE/modules"/>
+        <MODULEPATH id="juce_audio_formats" path="third_party/JUCE/modules"/>
+        <MODULEPATH id="juce_audio_plugin_client" path="third_party/JUCE/modules"/>
+        <MODULEPATH id="juce_audio_processors" path="third_party/JUCE/modules"/>
+        <MODULEPATH id="juce_audio_utils" path="third_party/JUCE/modules"/>
+        <MODULEPATH id="juce_core" path="third_party/JUCE/modules"/>
+        <MODULEPATH id="juce_data_structures" path="third_party/JUCE/modules"/>
+        <MODULEPATH id="juce_events" path="third_party/JUCE/modules"/>
+        <MODULEPATH id="juce_graphics" path="third_party/JUCE/modules"/>
+        <MODULEPATH id="juce_gui_basics" path="third_party/JUCE/modules"/>
+        <MODULEPATH id="juce_gui_extra" path="third_party/JUCE/modules"/>
+        <MODULEPATH id="juce_audio_processors_headless" path="third_party/JUCE/modules"/>
+      </MODULEPATHS>
+    </VS2022>
+    <LINUX_MAKE targetFolder="Builds/LinuxMakefile">
+      <CONFIGURATIONS>
+        <CONFIGURATION isDebug="1" name="Debug"/>
+        <CONFIGURATION isDebug="0" name="Release"/>
+      </CONFIGURATIONS>
+      <MODULEPATHS>
+        <MODULEPATH id="juce_audio_basics" path="third_party/JUCE/modules"/>
+        <MODULEPATH id="juce_audio_devices" path="third_party/JUCE/modules"/>
+        <MODULEPATH id="juce_audio_formats" path="third_party/JUCE/modules"/>
+        <MODULEPATH id="juce_audio_plugin_client" path="third_party/JUCE/modules"/>
+        <MODULEPATH id="juce_audio_processors" path="third_party/JUCE/modules"/>
+        <MODULEPATH id="juce_audio_utils" path="third_party/JUCE/modules"/>
+        <MODULEPATH id="juce_core" path="third_party/JUCE/modules"/>
+        <MODULEPATH id="juce_data_structures" path="third_party/JUCE/modules"/>
+        <MODULEPATH id="juce_events" path="third_party/JUCE/modules"/>
+        <MODULEPATH id="juce_graphics" path="third_party/JUCE/modules"/>
+        <MODULEPATH id="juce_gui_basics" path="third_party/JUCE/modules"/>
+        <MODULEPATH id="juce_gui_extra" path="third_party/JUCE/modules"/>
+        <MODULEPATH id="juce_audio_processors_headless" path="third_party/JUCE/modules"/>
+      </MODULEPATHS>
+    </LINUX_MAKE>
+  </EXPORTFORMATS>
+</JUCERPROJECT>

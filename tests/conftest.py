@@ -11,7 +11,7 @@ FIXTURES_DIR = TESTS_DIR / "fixtures"
 @pytest.fixture
 def plugin_path():
     """Path to the installed VST3 plugin."""
-    path = Path.home() / "Library/Audio/Plug-Ins/VST3/AudioPlugin.vst3"
+    path = Path.home() / "Library/Audio/Plug-Ins/VST3/Guillotine.vst3"
     if not path.exists():
         pytest.skip(f"Plugin not found at {path}. Run ./scripts/build.sh first.")
     return str(path)

@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.15)
-project(AudioPluginUnitTests VERSION 1.0.0)
+project(GuillotineUnitTests VERSION 1.0.0)
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -8,7 +8,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/../../third_party/JUCE ${CMAKE_BINARY_DIR}/JUCE)
 
 # Unit test executable
-juce_add_console_app(unit_tests PRODUCT_NAME "AudioPlugin Unit Tests")
+juce_add_console_app(unit_tests PRODUCT_NAME "Guillotine Unit Tests")
 
 target_sources(unit_tests PRIVATE
     Main.cpp

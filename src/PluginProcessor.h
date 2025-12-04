@@ -2,11 +2,11 @@
 
 #include <JuceHeader.h>
 
-class AudioPluginProcessor : public juce::AudioProcessor
+class GuillotineProcessor : public juce::AudioProcessor
 {
 public:
-    AudioPluginProcessor();
-    ~AudioPluginProcessor() override;
+    GuillotineProcessor();
+    ~GuillotineProcessor() override;
 
     void prepareToPlay(double sampleRate, int samplesPerBlock) override;
     void releaseResources() override;
@@ -42,5 +42,5 @@ private:
 
     static juce::AudioProcessorValueTreeState::ParameterLayout createParameterLayout();
 
-    JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(AudioPluginProcessor)
+    JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(GuillotineProcessor)
 };

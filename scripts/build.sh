@@ -1,5 +1,5 @@
 #!/bin/bash
-# Build script for AudioPlugin
+# Build script for Guillotine
 #
 # Usage:
 #   ./scripts/build.sh                 # Build Release (default)
@@ -18,8 +18,8 @@ SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 PROJECT_ROOT="$( cd "$SCRIPT_DIR/.." && pwd )"
 BUILD_DIR="$PROJECT_ROOT/Builds/MacOSX"
 RELEASE_DIR="$PROJECT_ROOT/releases"
-JUCER_FILE="$PROJECT_ROOT/AudioPlugin.jucer"
-PLUGIN_NAME="AudioPlugin"
+JUCER_FILE="$PROJECT_ROOT/Guillotine.jucer"
+PLUGIN_NAME="Guillotine"
 
 # Colors
 YELLOW='\033[0;33m'
@@ -271,7 +271,7 @@ case "$MODE" in
         cat > "$TEMP_DIR/Install.command" << 'INSTALL_SCRIPT'
 #!/bin/bash
 DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
-PLUGIN_NAME="AudioPlugin"
+PLUGIN_NAME="Guillotine"
 echo "Installing $PLUGIN_NAME..."
 mkdir -p "$HOME/Library/Audio/Plug-Ins/VST3"
 mkdir -p "$HOME/Library/Audio/Plug-Ins/Components"

@@ -19,7 +19,7 @@ from utils import generate_sine
 FIXTURES_DIR = Path(__file__).parent / "fixtures"
 INPUT_DIR = FIXTURES_DIR / "input"
 REFERENCES_DIR = FIXTURES_DIR / "references"
-PLUGIN_PATH = Path.home() / "Library/Audio/Plug-Ins/VST3/AudioPlugin.vst3"
+PLUGIN_PATH = Path.home() / "Library/Audio/Plug-Ins/VST3/Guillotine.vst3"
 
 # Test configurations: (param_value, suffix)
 # Add more settings here as plugin grows
