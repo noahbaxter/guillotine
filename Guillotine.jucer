@@ -9,6 +9,7 @@
     <GROUP id="{A55E7D30-1234-5678-9ABC-DEF012345678}" name="assets">
       <FILE id="BasePng" name="base.png" compile="0" resource="1" file="assets/base.png"/>
       <FILE id="BladePng" name="blade.png" compile="0" resource="1" file="assets/blade.png"/>
+      <FILE id="RopePng" name="rope.png" compile="0" resource="1" file="assets/rope.png"/>
       <FILE id="SidePng" name="side.png" compile="0" resource="1" file="assets/side.png"/>
     </GROUP>
     <GROUP id="{577BFFED-2E98-5329-03C4-711F74395056}" name="src">
