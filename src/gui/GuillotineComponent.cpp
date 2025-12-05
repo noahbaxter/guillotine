@@ -1,5 +1,6 @@
 #include "GuillotineComponent.h"
 #include "BinaryData.h"
+#include "../PluginProcessor.h"
 
 GuillotineComponent::GuillotineComponent()
 {
@@ -8,6 +9,18 @@ GuillotineComponent::GuillotineComponent()
     bladeImage = juce::ImageCache::getFromMemory(BinaryData::blade_png, BinaryData::blade_pngSize);
     ropeImage = juce::ImageCache::getFromMemory(BinaryData::rope_png, BinaryData::rope_pngSize);
     sideImage = juce::ImageCache::getFromMemory(BinaryData::side_png, BinaryData::side_pngSize);
+
+    // Start refresh timer for waveform animation
+    startTimerHz(60);
+}
+
+void GuillotineComponent::setProcessor(GuillotineProcessor* proc)
+{
+    processor = proc;
+    if (processor != nullptr)
+    {
+        envelope.setEnvelopeSource(&processor->getEnvelopeBuffer(), &processor->getEnvelopeClipThresholds(), &processor->getEnvelopeWritePosition());
+    }
 }
 
 void GuillotineComponent::paint(juce::Graphics& g)
@@ -24,7 +37,7 @@ void GuillotineComponent::paint(juce::Graphics& g)
     // Calculate the blade offset based on position
     float bladeOffsetY = bladePosition * maxBladeTravel * bounds.getHeight();
 
-    // Layer order (back to front): rope -> blade -> base -> side
+    // Layer order (back to front): rope -> waveform -> blade -> base -> side
 
     // 1. Draw rope (clipped to only show above the blade)
     {
@@ -35,14 +48,25 @@ void GuillotineComponent::paint(juce::Graphics& g)
         g.drawImage(ropeImage, bounds, juce::RectanglePlacement::centred);
     }
 
-    // 2. Draw blade layer (moves down based on bladePosition, behind base)
+    // 2. Draw envelope (between the posts, behind the guillotine frame)
+    {
+        auto envelopeBounds = juce::Rectangle<float>(
+            bounds.getX() + bounds.getWidth() * waveformLeft,
+            bounds.getY() + bounds.getHeight() * waveformTop,
+            bounds.getWidth() * (waveformRight - waveformLeft),
+            bounds.getHeight() * (waveformBottom - waveformTop)
+        );
+        envelope.draw(g, envelopeBounds);
+    }
+
+    // 3. Draw blade layer (moves down based on bladePosition, behind base)
     auto bladeBounds = bounds.translated(0.0f, bladeOffsetY);
     g.drawImage(bladeImage, bladeBounds, juce::RectanglePlacement::centred);
 
-    // 3. Draw base layer (main guillotine with hole - blade goes through it)
+    // 4. Draw base layer (main guillotine with hole - blade goes through it)
     g.drawImage(baseImage, bounds, juce::RectanglePlacement::centred);
 
-    // 4. Draw side/frame layer (static, on top of everything)
+    // 5. Draw side/frame layer (static, on top of everything)
     g.drawImage(sideImage, bounds, juce::RectanglePlacement::centred);
 }
 
@@ -54,5 +78,12 @@ void GuillotineComponent::resized()
 void GuillotineComponent::setBladePosition(float position)
 {
     bladePosition = juce::jlimit(0.0f, 1.0f, position);
+    // Sync envelope clip amount (blade down = more clipping = lower threshold)
+    envelope.setClipAmount(bladePosition);
+
+    // Also update processor's clip threshold for non-retroactive clipping
+    if (processor != nullptr)
+        processor->setClipThreshold(bladePosition);
+
     repaint();
 }

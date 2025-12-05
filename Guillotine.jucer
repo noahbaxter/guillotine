@@ -26,6 +26,10 @@
             file="src/gui/GuillotineComponent.cpp"/>
       <FILE id="Gui11tH" name="GuillotineComponent.h" compile="0" resource="0"
             file="src/gui/GuillotineComponent.h"/>
+      <FILE id="WaveformC" name="WaveformComponent.cpp" compile="1" resource="0"
+            file="src/gui/WaveformComponent.cpp"/>
+      <FILE id="WaveformH" name="WaveformComponent.h" compile="0" resource="0"
+            file="src/gui/WaveformComponent.h"/>
     </GROUP>
   </MAINGROUP>
   <MODULES>

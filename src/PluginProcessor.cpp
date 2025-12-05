@@ -153,6 +153,35 @@ void GuillotineProcessor::processBlock(juce::AudioBuffer<float>& buffer, juce::M
             channelData[sample] *= gainLinear;
         }
     }
+
+    // Compute envelope (peak detection) for visualization
+    for (int sample = 0; sample < buffer.getNumSamples(); ++sample)
+    {
+        // Get mono mix and take absolute value
+        float monoSample = 0.0f;
+        for (int channel = 0; channel < totalNumInputChannels; ++channel)
+            monoSample += buffer.getSample(channel, sample);
+        monoSample = std::abs(monoSample / static_cast<float>(totalNumInputChannels));
+
+        // Track peak within current window
+        if (monoSample > currentPeak)
+            currentPeak = monoSample;
+
+        samplesSincePeak++;
+
+        // Store peak and reset when window is complete
+        if (samplesSincePeak >= samplesPerEnvelopePoint)
+        {
+            int writePos = envelopeWritePos.load();
+            envelopeBuffer[writePos] = currentPeak;
+            envelopeClipThresholds[writePos] = currentClipThreshold;  // Store the threshold used for this point
+            writePos = (writePos + 1) % envelopeBufferSize;
+            envelopeWritePos.store(writePos);
+
+            currentPeak = 0.0f;
+            samplesSincePeak = 0;
+        }
+    }
 }
 
 bool GuillotineProcessor::hasEditor() const

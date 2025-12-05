@@ -5,6 +5,7 @@ GuillotineEditor::GuillotineEditor(GuillotineProcessor& p)
     : AudioProcessorEditor(&p), audioProcessor(p)
 {
     // Guillotine visualization
+    guillotine.setProcessor(&audioProcessor);
     addAndMakeVisible(guillotine);
 
     // Clip control slider (knob)
