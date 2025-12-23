@@ -28,6 +28,10 @@ public:
     void setClipAmount(float amount);
     float getClipAmount() const { return clipAmount; }
 
+    // Set smoothing factor (0.0 = no smoothing, 1.0 = maximum smoothing)
+    void setSmoothingFactor(float factor) { smoothingFactor = juce::jlimit(0.0f, 1.0f, factor); }
+    float getSmoothingFactor() const { return smoothingFactor; }
+
 private:
     const float* envelopeBuffer = nullptr;
     const float* envelopeClipThresholds = nullptr;
@@ -42,6 +46,10 @@ private:
 
     // Visual settings
     static constexpr float envelopeStroke = 2.0f;
+
+    // Smoothing factor (0.0 = no smoothing, 1.0 = maximum smoothing)
+    // Higher values show more general envelope shapes
+    float smoothingFactor = 0.3f;
 
     juce::Colour normalColour{0xffffffff};    // Normal signal (white)
     juce::Colour clippedColour{0xffff4a4a};   // Clipped portion (red)

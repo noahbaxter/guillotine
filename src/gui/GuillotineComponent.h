@@ -47,10 +47,11 @@ private:
 
     // Waveform positioning (normalized coordinates within component bounds)
     // These define where the waveform sits between the guillotine posts
+    // Adjust these values to reposition the waveform display
     static constexpr float waveformLeft = 0.12f;
     static constexpr float waveformRight = 0.88f;
     static constexpr float waveformTop = 0.35f;
-    static constexpr float waveformBottom = 0.75f;
+    static constexpr float waveformBottom = 0.65f;  // Moved up from 0.75f to match head hole
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(GuillotineComponent)
 };

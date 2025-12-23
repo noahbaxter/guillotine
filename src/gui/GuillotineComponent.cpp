@@ -37,7 +37,7 @@ void GuillotineComponent::paint(juce::Graphics& g)
     // Calculate the blade offset based on position
     float bladeOffsetY = bladePosition * maxBladeTravel * bounds.getHeight();
 
-    // Layer order (back to front): rope -> waveform -> blade -> base -> side
+    // Layer order (back to front): rope -> blade -> waveform -> base -> side
 
     // 1. Draw rope (clipped to only show above the blade)
     {
@@ -48,7 +48,11 @@ void GuillotineComponent::paint(juce::Graphics& g)
         g.drawImage(ropeImage, bounds, juce::RectanglePlacement::centred);
     }
 
-    // 2. Draw envelope (between the posts, behind the guillotine frame)
+    // 2. Draw blade layer (moves down based on bladePosition, behind waveform)
+    auto bladeBounds = bounds.translated(0.0f, bladeOffsetY);
+    g.drawImage(bladeImage, bladeBounds, juce::RectanglePlacement::centred);
+
+    // 3. Draw envelope (between the posts, in front of blade but behind base)
     {
         auto envelopeBounds = juce::Rectangle<float>(
             bounds.getX() + bounds.getWidth() * waveformLeft,
@@ -58,10 +62,6 @@ void GuillotineComponent::paint(juce::Graphics& g)
         );
         envelope.draw(g, envelopeBounds);
     }
-
-    // 3. Draw blade layer (moves down based on bladePosition, behind base)
-    auto bladeBounds = bounds.translated(0.0f, bladeOffsetY);
-    g.drawImage(bladeImage, bladeBounds, juce::RectanglePlacement::centred);
 
     // 4. Draw base layer (main guillotine with hole - blade goes through it)
     g.drawImage(baseImage, bounds, juce::RectanglePlacement::centred);
