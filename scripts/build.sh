@@ -16,16 +16,9 @@ set -e
 
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 PROJECT_ROOT="$( cd "$SCRIPT_DIR/.." && pwd )"
-BUILD_DIR="$PROJECT_ROOT/Builds/MacOSX"
-RELEASE_DIR="$PROJECT_ROOT/releases"
-JUCER_FILE="$PROJECT_ROOT/Guillotine.jucer"
-PLUGIN_NAME="Guillotine"
+source "$SCRIPT_DIR/_common.sh"
 
-# Colors
-YELLOW='\033[0;33m'
-GREEN='\033[0;32m'
-RED='\033[0;31m'
-NC='\033[0m'
+RELEASE_DIR="$PROJECT_ROOT/releases"
 
 # Parse arguments
 MODE="Release"
@@ -68,68 +61,20 @@ for arg in "$@"; do
     esac
 done
 
-echo -e "${YELLOW}=== AudioPlugin Build Script ===${NC}"
+echo -e "${YELLOW}=== $PLUGIN_NAME Build Script ===${NC}"
 echo "Project root: $PROJECT_ROOT"
 echo "Mode: $MODE"
 
-# Function to find Projucer (always prefer submodule for version consistency)
-find_projucer() {
-    local submodule_projucer="$PROJECT_ROOT/third_party/JUCE/extras/Projucer/Builds/MacOSX/build/Release/Projucer.app/Contents/MacOS/Projucer"
-
-    # Always use submodule Projucer for version consistency
-    if [ -f "$submodule_projucer" ]; then
-        echo "$submodule_projucer"
-        return 0
-    fi
-
-    # Build from submodule if not found
-    return 1
-}
-
-# Function to build Projucer from submodule
-build_projucer() {
-    local projucer_project="$PROJECT_ROOT/third_party/JUCE/extras/Projucer/Builds/MacOSX/Projucer.xcodeproj"
-
-    if [ ! -f "$projucer_project/project.pbxproj" ]; then
-        echo -e "${RED}Error: JUCE submodule not initialized${NC}"
-        echo "Run: git submodule update --init --recursive"
-        return 1
-    fi
-
-    echo -e "${YELLOW}Building Projucer from submodule...${NC}"
-    xcodebuild -project "$projucer_project" \
-        -scheme "Projucer - App" \
-        -configuration Release \
-        -quiet || {
-            echo -e "${RED}Error: Failed to build Projucer${NC}"
-            return 1
-        }
-    echo -e "${GREEN}✓ Projucer built${NC}"
-}
-
-# Function to regenerate Xcode project
+# Regenerate Xcode project (verbose version for main build)
 regen_project() {
     echo -e "\n${YELLOW}Regenerating Xcode project...${NC}"
-
-    PROJUCER=$(find_projucer)
-
-    if [ -z "$PROJUCER" ]; then
-        echo "Projucer not found, building from submodule..."
-        build_projucer || return 1
-        PROJUCER=$(find_projucer)
-    fi
-
-    if [ -n "$PROJUCER" ]; then
-        echo "Using Projucer: $PROJUCER"
-        "$PROJUCER" --resave "$JUCER_FILE" || {
-            echo -e "${RED}Error: Projucer failed to regenerate project${NC}"
-            return 1
-        }
-        echo -e "${GREEN}✓ Xcode project regenerated${NC}"
-    else
-        echo -e "${RED}Error: Could not find or build Projucer${NC}"
+    ensure_projucer || return 1
+    echo "Using Projucer: $PROJUCER"
+    "$PROJUCER" --resave "$JUCER_FILE" || {
+        echo -e "${RED}Error: Projucer failed to regenerate project${NC}"
         return 1
-    fi
+    }
+    echo -e "${GREEN}✓ Xcode project regenerated${NC}"
 }
 
 # Function to install plugins
@@ -241,7 +186,6 @@ case "$MODE" in
         # Check Universal Binary
         echo "Checking architectures..."
         VST3_ARCHS=$(lipo -archs "$VST3_PATH/Contents/MacOS/$PLUGIN_NAME")
-        AU_ARCHS=$(lipo -archs "$AU_PATH/Contents/MacOS/$PLUGIN_NAME")
 
         if [[ "$VST3_ARCHS" == *"arm64"* ]] && [[ "$VST3_ARCHS" == *"x86_64"* ]]; then
             echo -e "${GREEN}✓ VST3 is Universal Binary: $VST3_ARCHS${NC}"
