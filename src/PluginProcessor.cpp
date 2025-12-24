@@ -97,9 +97,11 @@ void GuillotineProcessor::changeProgramName(int index, const juce::String& newNa
     juce::ignoreUnused(index, newName);
 }
 
-void GuillotineProcessor::prepareToPlay(double sampleRate, int samplesPerBlock)
+void GuillotineProcessor::prepareToPlay(double newSampleRate, int samplesPerBlock)
 {
-    juce::ignoreUnused(sampleRate, samplesPerBlock);
+    juce::ignoreUnused(samplesPerBlock);
+    sampleRate = newSampleRate;
+    testOscPhase = 0.0;
 }
 
 void GuillotineProcessor::releaseResources()
@@ -154,14 +156,49 @@ void GuillotineProcessor::processBlock(juce::AudioBuffer<float>& buffer, juce::M
         }
     }
 
+    // Convert threshold (0-1) to linear amplitude
+    // threshold=0 → 0dB (1.0 linear, no clipping)
+    // threshold=1 → -60dB (0.001 linear, max clipping)
+    const float thresholdDb = -currentClipThreshold * 60.0f;
+    const float thresholdLinear = juce::Decibels::decibelsToGain(thresholdDb);
+
+    // Apply clipping to audio
+    for (int channel = 0; channel < totalNumInputChannels; ++channel)
+    {
+        auto* channelData = buffer.getWritePointer(channel);
+        for (int sample = 0; sample < buffer.getNumSamples(); ++sample)
+        {
+            channelData[sample] = juce::jlimit(-thresholdLinear, thresholdLinear, channelData[sample]);
+        }
+    }
+
     // Compute envelope (peak detection) for visualization
+    const double testOscFreq = 1.0;  // 1 Hz ramp
+    const double phaseIncrement = testOscFreq / sampleRate;
+
     for (int sample = 0; sample < buffer.getNumSamples(); ++sample)
     {
-        // Get mono mix and take absolute value
         float monoSample = 0.0f;
-        for (int channel = 0; channel < totalNumInputChannels; ++channel)
-            monoSample += buffer.getSample(channel, sample);
-        monoSample = std::abs(monoSample / static_cast<float>(totalNumInputChannels));
+
+        if (testOscEnabled)
+        {
+            // Generate 1Hz logarithmic ramp: looks linear on dB scale
+            // Phase 0→1 maps to -60dB→0dB (exponential in amplitude)
+            const float minTestDb = -60.0f;
+            const float dbValue = minTestDb + static_cast<float>(testOscPhase) * (-minTestDb);
+            monoSample = juce::Decibels::decibelsToGain(dbValue);
+
+            testOscPhase += phaseIncrement;
+            if (testOscPhase >= 1.0)
+                testOscPhase -= 1.0;
+        }
+        else
+        {
+            // Get mono mix from actual input (post-clipping)
+            for (int channel = 0; channel < totalNumInputChannels; ++channel)
+                monoSample += std::abs(buffer.getSample(channel, sample));
+            monoSample /= static_cast<float>(std::max(1, totalNumInputChannels));
+        }
 
         // Track peak within current window
         if (monoSample > currentPeak)
@@ -174,7 +211,7 @@ void GuillotineProcessor::processBlock(juce::AudioBuffer<float>& buffer, juce::M
         {
             int writePos = envelopeWritePos.load();
             envelopeBuffer[writePos] = currentPeak;
-            envelopeClipThresholds[writePos] = currentClipThreshold;  // Store the threshold used for this point
+            envelopeClipThresholds[writePos] = currentClipThreshold;
             writePos = (writePos + 1) % envelopeBufferSize;
             envelopeWritePos.store(writePos);
 
