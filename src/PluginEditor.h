@@ -15,7 +15,6 @@ public:
 private:
     void timerCallback() override;
     std::optional<juce::WebBrowserComponent::Resource> getResource(const juce::String& url);
-    static const char* getMimeForExtension(const juce::String& extension);
 
     GuillotineProcessor& audioProcessor;
 

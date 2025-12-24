@@ -9,7 +9,7 @@ GuillotineEditor::GuillotineEditor(GuillotineProcessor& p)
 
     webView.goToURL(juce::WebBrowserComponent::getResourceProviderRoot());
 
-    setSize(400, 580);
+    setSize(600, 500);
 
     // Start timer to push envelope data at 60Hz
     startTimerHz(60);
@@ -82,72 +82,36 @@ std::optional<juce::WebBrowserComponent::Resource> GuillotineEditor::getResource
     auto urlToRetrieve = url == "/" ? juce::String("index.html")
                                     : url.fromFirstOccurrenceOf("/", false, false);
 
-    // Serve files from BinaryData
-    const void* data = nullptr;
-    int size = 0;
-    juce::String mimeType;
+    // Resource lookup table - add new web files here
+    struct ResourceEntry { const char* path; const void* data; int size; const char* mime; };
+    static const ResourceEntry resources[] = {
+        // HTML
+        { "index.html",              BinaryData::index_html,      BinaryData::index_htmlSize,      "text/html" },
+        // JavaScript
+        { "main.js",                 BinaryData::main_js,         BinaryData::main_jsSize,         "text/javascript" },
+        { "lib/juce-bridge.js",      BinaryData::jucebridge_js,   BinaryData::jucebridge_jsSize,   "text/javascript" },
+        { "components/guillotine.js",BinaryData::guillotine_js,   BinaryData::guillotine_jsSize,   "text/javascript" },
+        { "components/visualizer.js",BinaryData::visualizer_js,   BinaryData::visualizer_jsSize,   "text/javascript" },
+        { "components/knob.js",      BinaryData::knob_js,         BinaryData::knob_jsSize,         "text/javascript" },
+        // CSS (with alias)
+        { "main.css",                BinaryData::main_css,        BinaryData::main_cssSize,        "text/css" },
+        { "styles/main.css",         BinaryData::main_css,        BinaryData::main_cssSize,        "text/css" },
+        // Assets
+        { "assets/base.png",         BinaryData::base_png,        BinaryData::base_pngSize,        "image/png" },
+        { "assets/blade.png",        BinaryData::blade_png,       BinaryData::blade_pngSize,       "image/png" },
+        { "assets/rope.png",         BinaryData::rope_png,        BinaryData::rope_pngSize,        "image/png" },
+        { "assets/side.png",         BinaryData::side_png,        BinaryData::side_pngSize,        "image/png" },
+    };
 
-    if (urlToRetrieve == "index.html")
+    for (const auto& res : resources)
     {
-        data = BinaryData::index_html;
-        size = BinaryData::index_htmlSize;
-        mimeType = "text/html";
-    }
-    else if (urlToRetrieve == "main.js")
-    {
-        data = BinaryData::main_js;
-        size = BinaryData::main_jsSize;
-        mimeType = "text/javascript";
-    }
-    else if (urlToRetrieve == "main.css")
-    {
-        data = BinaryData::main_css;
-        size = BinaryData::main_cssSize;
-        mimeType = "text/css";
-    }
-    else if (urlToRetrieve == "assets/base.png")
-    {
-        data = BinaryData::base_png;
-        size = BinaryData::base_pngSize;
-        mimeType = "image/png";
-    }
-    else if (urlToRetrieve == "assets/blade.png")
-    {
-        data = BinaryData::blade_png;
-        size = BinaryData::blade_pngSize;
-        mimeType = "image/png";
-    }
-    else if (urlToRetrieve == "assets/rope.png")
-    {
-        data = BinaryData::rope_png;
-        size = BinaryData::rope_pngSize;
-        mimeType = "image/png";
-    }
-    else if (urlToRetrieve == "assets/side.png")
-    {
-        data = BinaryData::side_png;
-        size = BinaryData::side_pngSize;
-        mimeType = "image/png";
-    }
-
-    if (data != nullptr && size > 0)
-    {
-        std::vector<std::byte> bytes(size);
-        std::memcpy(bytes.data(), data, size);
-        return juce::WebBrowserComponent::Resource { std::move(bytes), mimeType };
+        if (urlToRetrieve == res.path)
+        {
+            std::vector<std::byte> bytes(res.size);
+            std::memcpy(bytes.data(), res.data, res.size);
+            return juce::WebBrowserComponent::Resource { std::move(bytes), juce::String(res.mime) };
+        }
     }
 
     return std::nullopt;
-}
-
-const char* GuillotineEditor::getMimeForExtension(const juce::String& extension)
-{
-    if (extension == "html" || extension == "htm") return "text/html";
-    if (extension == "js") return "text/javascript";
-    if (extension == "css") return "text/css";
-    if (extension == "png") return "image/png";
-    if (extension == "jpg" || extension == "jpeg") return "image/jpeg";
-    if (extension == "svg") return "image/svg+xml";
-    if (extension == "json") return "application/json";
-    return "application/octet-stream";
 }

@@ -4,22 +4,23 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Guillotine</title>
-  <link rel="stylesheet" href="main.css">
+  <link rel="stylesheet" href="styles/main.css">
 </head>
 <body>
   <div id="app">
-    <div id="guillotine-container">
-      <img id="rope" src="assets/rope.png" alt="">
-      <img id="blade" src="assets/blade.png" alt="">
-      <canvas id="waveform"></canvas>
-      <img id="base" src="assets/base.png" alt="">
-      <img id="side" src="assets/side.png" alt="">
+    <!-- Left Panel: Guillotine + Bucket -->
+    <div id="left-panel">
+      <div id="guillotine-container"></div>
+      <div id="bucket-container"></div>
     </div>
-    <div id="controls">
-      <label for="clip-slider">Clip</label>
-      <input type="range" id="clip-slider" min="0" max="1" step="0.01" value="0">
+
+    <!-- Right Panel: Microscope + Knobs -->
+    <div id="right-panel">
+      <div id="microscope-container"></div>
+      <div id="main-knobs"></div>
+      <div id="gain-knobs"></div>
     </div>
   </div>
-  <script src="main.js"></script>
+  <script type="module" src="main.js"></script>
 </body>
 </html>

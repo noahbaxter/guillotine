@@ -5,19 +5,28 @@
 }
 
 body {
-  background: #1e1e1e;
+  background: #1a1a1a;
   color: #fff;
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
   overflow: hidden;
-  width: 400px;
-  height: 580px;
+  width: 600px;
+  height: 500px;
 }
 
 #app {
   display: flex;
-  flex-direction: column;
+  flex-direction: row;
   height: 100%;
-  padding: 10px;
+  padding: 8px;
+  gap: 8px;
+}
+
+/* Left column: Guillotine + Bucket */
+#left-panel {
+  display: flex;
+  flex-direction: column;
+  width: 50%;
+  gap: 8px;
 }
 
 #guillotine-container {
@@ -26,74 +35,41 @@ body {
   display: flex;
   align-items: center;
   justify-content: center;
-}
-
-#guillotine-container img {
-  position: absolute;
-  max-width: 100%;
-  max-height: 100%;
-  object-fit: contain;
-  pointer-events: none;
-}
-
-#rope {
-  z-index: 1;
-  clip-path: inset(0 0 65% 0);
-}
-
-#blade {
-  z-index: 2;
-}
-
-#waveform {
-  position: absolute;
-  z-index: 3;
-  pointer-events: none;
-}
-
-#base {
-  z-index: 4;
-}
-
-#side {
-  z-index: 5;
-}
-
-#controls {
-  height: 100px;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-}
-
-#controls label {
-  font-size: 14px;
-  text-transform: uppercase;
-  letter-spacing: 1px;
-}
-
-#clip-slider {
-  width: 200px;
-  height: 24px;
-  -webkit-appearance: none;
-  appearance: none;
-  background: #333;
-  border-radius: 12px;
-  outline: none;
-}
-
-#clip-slider::-webkit-slider-thumb {
-  -webkit-appearance: none;
-  appearance: none;
-  width: 24px;
-  height: 24px;
-  background: #666;
-  border-radius: 50%;
   cursor: pointer;
 }
 
-#clip-slider::-webkit-slider-thumb:hover {
-  background: #888;
+#bucket-container {
+  height: 60px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+/* Right column: Microscope + Knobs */
+#right-panel {
+  display: flex;
+  flex-direction: column;
+  width: 50%;
+  gap: 8px;
+}
+
+#microscope-container {
+  flex: 1;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 4px;
+  position: relative;
+}
+
+#main-knobs {
+  display: flex;
+  justify-content: space-around;
+  padding: 8px 0;
+}
+
+#gain-knobs {
+  display: flex;
+  justify-content: space-around;
+  padding: 8px 0;
 }

@@ -16,6 +16,10 @@
       <FILE id="WebIndex" name="index.html" compile="0" resource="1" file="web/index.html"/>
       <FILE id="WebMain" name="main.js" compile="0" resource="1" file="web/main.js"/>
       <FILE id="WebCSS" name="main.css" compile="0" resource="1" file="web/styles/main.css"/>
+      <FILE id="WebJuceBridge" name="juce-bridge.js" compile="0" resource="1" file="web/lib/juce-bridge.js"/>
+      <FILE id="WebGuillotine" name="guillotine.js" compile="0" resource="1" file="web/components/guillotine.js"/>
+      <FILE id="WebVisualizer" name="visualizer.js" compile="0" resource="1" file="web/components/visualizer.js"/>
+      <FILE id="WebKnob" name="knob.js" compile="0" resource="1" file="web/components/knob.js"/>
     </GROUP>
     <GROUP id="{577BFFED-2E98-5329-03C4-711F74395056}" name="src">
       <FILE id="PZm7UN" name="PluginProcessor.cpp" compile="1" resource="0"
