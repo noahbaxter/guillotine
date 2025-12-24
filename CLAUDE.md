@@ -18,6 +18,8 @@ Guillotine is a JUCE-based audio plugin (VST3/AU) implementing a clipping effect
 ./scripts/watch.sh             # Auto-reload: watches src/ and assets/, rebuilds on change
 ```
 
+**Note:** When `watch.sh` is running, it handles all builds automatically. Don't manually trigger builds - just save files and watch will rebuild.
+
 Build outputs: `Builds/MacOSX/build/Release/Guillotine.vst3` and `.component`
 
 ## Testing
@@ -51,6 +53,30 @@ Test types:
 
 **Assets:**
 - `assets/*.png` - Embedded via JUCE BinaryData (base, blade, rope, side)
+
+**WebView UI:**
+- `web/` - HTML/JS/CSS for the plugin UI, served via WebView
+- `web/components/` - Modular JS components (knob.js, visualizer.js, etc.)
+
+## Adding New Web Assets
+
+When adding new files to the web UI (JS, CSS, images), you must:
+
+1. **Add to `.jucer`** - Add a `<FILE>` entry with `resource="1"` to embed as BinaryData
+2. **Register in `PluginEditor.cpp`** - Add entry to the `resources[]` table in `getResource()`
+3. **Rebuild** - Run `./scripts/build.sh regen` to regenerate BinaryData
+
+Example for adding `web/components/foo.js`:
+```xml
+<!-- In Guillotine.jucer, under the web GROUP -->
+<FILE id="WebFoo" name="foo.js" compile="0" resource="1" file="web/components/foo.js"/>
+```
+```cpp
+// In PluginEditor.cpp getResource()
+{ "components/foo.js", BinaryData::foo_js, BinaryData::foo_jsSize, "text/javascript" },
+```
+
+JUCE BinaryData naming: `my-file.js` → `myfile_js`, `num-0.png` → `num0_png`
 
 ## Key Details
 
