@@ -1,50 +1,50 @@
 // Guillotine Visual Component
 // Handles layered PNG rendering with animated blade
 
+import { loadStyles } from '../../lib/component-loader.js';
+
 const DEFAULTS = {
   maxBladeTravel: 0.35,
   ropeClipOffset: 0.10,
   images: {
     rope: 'assets/rope.png',
     blade: 'assets/blade.png',
-    base: 'assets/base.png',
-    side: 'assets/side.png'
+    base: 'assets/base.png'
   }
 };
 
 export class Guillotine {
+  static stylesLoaded = false;
+
   constructor(container, options = {}) {
     this.options = { ...DEFAULTS, ...options };
     this.container = container;
     this.position = 0;
     this.elements = {};
 
-    this.createElements();
+    this.ready = this.init();
   }
 
-  createElements() {
-    const { images } = this.options;
+  async init() {
+    if (!Guillotine.stylesLoaded) {
+      await loadStyles('components/guillotine/guillotine.css');
+      Guillotine.stylesLoaded = true;
+    }
 
-    // Create image layers in order (back to front)
-    const layers = ['rope', 'blade', 'base', 'side'];
-    layers.forEach((name, index) => {
+    this.element = document.createElement('div');
+    this.element.className = 'guillotine';
+
+    const { images } = this.options;
+    ['rope', 'blade', 'base'].forEach((name) => {
       const img = document.createElement('img');
-      img.id = name;
+      img.className = `guillotine__layer guillotine__layer--${name}`;
       img.src = images[name];
       img.alt = '';
-      img.style.cssText = `
-        position: absolute;
-        max-width: 100%;
-        max-height: 100%;
-        object-fit: contain;
-        pointer-events: none;
-        z-index: ${index + 1};
-      `;
-      this.container.appendChild(img);
+      this.element.appendChild(img);
       this.elements[name] = img;
     });
 
-    // Initial rope clip
+    this.container.appendChild(this.element);
     this.updateVisuals();
   }
 
@@ -62,12 +62,10 @@ export class Guillotine {
     const containerHeight = this.container.clientHeight;
     const offset = this.position * maxBladeTravel * containerHeight;
 
-    // Move blade
     if (this.elements.blade) {
       this.elements.blade.style.transform = `translateY(${offset}px)`;
     }
 
-    // Clip rope
     if (this.elements.rope) {
       const clipBottom = 100 - ((this.position * maxBladeTravel + ropeClipOffset) * 100);
       this.elements.rope.style.clipPath = `inset(0 0 ${Math.max(0, clipBottom)}% 0)`;
@@ -79,7 +77,7 @@ export class Guillotine {
   }
 
   destroy() {
-    Object.values(this.elements).forEach(el => el.remove());
+    if (this.element) this.element.remove();
     this.elements = {};
   }
 }

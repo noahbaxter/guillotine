@@ -1,0 +1,74 @@
+.microscope__waveform {
+  position: absolute;
+  inset: 0;
+  overflow: visible;
+}
+
+.microscope__scale-btn {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  padding: 2px 6px;
+  font-size: 9px;
+  font-family: monospace;
+  background: rgba(255,255,255,0.1);
+  border: 1px solid rgba(255,255,255,0.2);
+  border-radius: 3px;
+  color: rgba(255,255,255,0.7);
+  cursor: pointer;
+  z-index: 20;
+}
+
+.microscope__scale-btn:hover {
+  background: rgba(255,255,255,0.15);
+}
+
+.microscope__threshold-line {
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: rgba(180, 30, 30, 0.8);
+  cursor: ns-resize;
+  z-index: 10;
+  pointer-events: auto;
+  overflow: visible;
+  transition: box-shadow 0.15s ease;
+}
+
+.microscope__threshold-line:hover {
+  box-shadow: 0 0 8px rgba(180, 30, 30, 0.6);
+}
+
+.microscope__threshold-label {
+  position: absolute;
+  left: 36px;
+  transform: translateY(-50%);
+  pointer-events: none;
+  white-space: nowrap;
+  background: rgba(30, 30, 30, 0.9);
+  padding: 4px 8px;
+  border-radius: 3px;
+  border: 1px solid rgba(180, 30, 30, 0.8);
+  overflow: visible;
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+
+.microscope__db-suffix {
+  font-family: 'Zeyada', cursive;
+  font-size: 24px;
+  color: rgba(180, 30, 30, 0.9);
+  margin-left: 2px;
+}
+
+.microscope__drag-handle {
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 16px;
+  transform: translateY(-7px);
+  cursor: ns-resize;
+  z-index: 11;
+}

@@ -1,0 +1,57 @@
+.sprite-number {
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  gap: 0;
+}
+
+.sprite-number__cell {
+  display: flex;
+  justify-content: center;
+  align-items: flex-end;
+}
+
+.sprite-number__digit {
+  display: block;
+  width: auto;
+}
+
+.sprite-number__dot {
+  display: block;
+  width: auto;
+  margin-bottom: 2px;
+}
+
+.sprite-number__dash {
+  background: currentColor;
+}
+
+/* Color variants via CSS filters */
+.sprite-number--red .sprite-number__digit,
+.sprite-number--red .sprite-number__dot {
+  filter: brightness(0) saturate(100%) invert(12%) sepia(100%) saturate(5000%) hue-rotate(360deg) brightness(0.95);
+}
+
+.sprite-number--red .sprite-number__dash {
+  background: rgba(180, 30, 30, 1);
+}
+
+.sprite-number--white .sprite-number__digit,
+.sprite-number--white .sprite-number__dot {
+  filter: brightness(1.2);
+}
+
+.sprite-number--glow .sprite-number__digit,
+.sprite-number--glow .sprite-number__dot {
+  filter: drop-shadow(0 0 2px rgba(255,255,255,0.8));
+}
+
+.sprite-number--red.sprite-number--glow .sprite-number__digit,
+.sprite-number--red.sprite-number--glow .sprite-number__dot {
+  filter: brightness(0) saturate(100%) invert(12%) sepia(100%) saturate(5000%) hue-rotate(360deg) brightness(0.95) drop-shadow(0 0 2px rgba(255,255,255,0.8));
+}
+
+.sprite-number--white.sprite-number--glow .sprite-number__digit,
+.sprite-number--white.sprite-number--glow .sprite-number__dot {
+  filter: brightness(1.2) drop-shadow(0 0 2px rgba(255,255,255,0.8));
+}

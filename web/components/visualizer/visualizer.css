@@ -1,0 +1,4 @@
+.visualizer {
+  position: absolute;
+  pointer-events: none;
+}

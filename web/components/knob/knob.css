@@ -1,0 +1,45 @@
+.knob-wrapper {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  user-select: none;
+}
+
+.knob__label {
+  font-size: 22px;
+  font-family: 'Zeyada', cursive;
+  color: #fff;
+}
+
+.knob__dial {
+  border-radius: 50%;
+  background: linear-gradient(145deg, #3a3a3a, #2a2a2a);
+  box-shadow: 0 4px 8px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.1);
+  cursor: grab;
+  position: relative;
+}
+
+.knob__dial--grabbing {
+  cursor: grabbing;
+}
+
+.knob__indicator {
+  position: absolute;
+  width: 4px;
+  background: #888;
+  border-radius: 2px;
+  top: 8px;
+  left: 50%;
+  transform-origin: bottom center;
+}
+
+.knob__value {
+  font-size: 11px;
+  color: #888;
+  font-family: monospace;
+  min-height: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}

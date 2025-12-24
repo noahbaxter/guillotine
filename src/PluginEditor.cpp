@@ -87,13 +87,26 @@ std::optional<juce::WebBrowserComponent::Resource> GuillotineEditor::getResource
     static const ResourceEntry resources[] = {
         // HTML
         { "index.html",              BinaryData::index_html,      BinaryData::index_htmlSize,      "text/html" },
-        // JavaScript
+        // JavaScript - core
         { "main.js",                 BinaryData::main_js,         BinaryData::main_jsSize,         "text/javascript" },
         { "lib/juce-bridge.js",      BinaryData::jucebridge_js,   BinaryData::jucebridge_jsSize,   "text/javascript" },
-        { "components/guillotine.js",BinaryData::guillotine_js,   BinaryData::guillotine_jsSize,   "text/javascript" },
-        { "components/visualizer.js",BinaryData::visualizer_js,   BinaryData::visualizer_jsSize,   "text/javascript" },
-        { "components/knob.js",      BinaryData::knob_js,         BinaryData::knob_jsSize,         "text/javascript" },
-        // CSS (with alias)
+        { "lib/component-loader.js", BinaryData::componentloader_js, BinaryData::componentloader_jsSize, "text/javascript" },
+        // Components - guillotine
+        { "components/guillotine/guillotine.js",   BinaryData::guillotine_js,   BinaryData::guillotine_jsSize,   "text/javascript" },
+        { "components/guillotine/guillotine.css",  BinaryData::guillotine_css,  BinaryData::guillotine_cssSize,  "text/css" },
+        // Components - visualizer
+        { "components/visualizer/visualizer.js",   BinaryData::visualizer_js,   BinaryData::visualizer_jsSize,   "text/javascript" },
+        { "components/visualizer/visualizer.css",  BinaryData::visualizer_css,  BinaryData::visualizer_cssSize,  "text/css" },
+        // Components - knob
+        { "components/knob/knob.js",   BinaryData::knob_js,   BinaryData::knob_jsSize,   "text/javascript" },
+        { "components/knob/knob.css",  BinaryData::knob_css,  BinaryData::knob_cssSize,  "text/css" },
+        // Components - microscope
+        { "components/microscope/microscope.js",   BinaryData::microscope_js,   BinaryData::microscope_jsSize,   "text/javascript" },
+        { "components/microscope/microscope.css",  BinaryData::microscope_css,  BinaryData::microscope_cssSize,  "text/css" },
+        // Components - sprite-number
+        { "components/sprite-number/sprite-number.js",   BinaryData::spritenumber_js,   BinaryData::spritenumber_jsSize,   "text/javascript" },
+        { "components/sprite-number/sprite-number.css",  BinaryData::spritenumber_css,  BinaryData::spritenumber_cssSize,  "text/css" },
+        // CSS - global (with alias)
         { "main.css",                BinaryData::main_css,        BinaryData::main_cssSize,        "text/css" },
         { "styles/main.css",         BinaryData::main_css,        BinaryData::main_cssSize,        "text/css" },
         // Assets
@@ -101,6 +114,25 @@ std::optional<juce::WebBrowserComponent::Resource> GuillotineEditor::getResource
         { "assets/blade.png",        BinaryData::blade_png,       BinaryData::blade_pngSize,       "image/png" },
         { "assets/rope.png",         BinaryData::rope_png,        BinaryData::rope_pngSize,        "image/png" },
         { "assets/side.png",         BinaryData::side_png,        BinaryData::side_pngSize,        "image/png" },
+        // Numeric sprites
+        { "assets/numeric/num-0.png",   BinaryData::num0_png,       BinaryData::num0_pngSize,       "image/png" },
+        { "assets/numeric/num-1.png",   BinaryData::num1_png,       BinaryData::num1_pngSize,       "image/png" },
+        { "assets/numeric/num-2.png",   BinaryData::num2_png,       BinaryData::num2_pngSize,       "image/png" },
+        { "assets/numeric/num-3.png",   BinaryData::num3_png,       BinaryData::num3_pngSize,       "image/png" },
+        { "assets/numeric/num-4.png",   BinaryData::num4_png,       BinaryData::num4_pngSize,       "image/png" },
+        { "assets/numeric/num-5.png",   BinaryData::num5_png,       BinaryData::num5_pngSize,       "image/png" },
+        { "assets/numeric/num-6.png",   BinaryData::num6_png,       BinaryData::num6_pngSize,       "image/png" },
+        { "assets/numeric/num-7.png",   BinaryData::num7_png,       BinaryData::num7_pngSize,       "image/png" },
+        { "assets/numeric/num-8.png",   BinaryData::num8_png,       BinaryData::num8_pngSize,       "image/png" },
+        { "assets/numeric/num-9.png",   BinaryData::num9_png,       BinaryData::num9_pngSize,       "image/png" },
+        { "assets/numeric/num-dot.png", BinaryData::numdot_png,     BinaryData::numdot_pngSize,     "image/png" },
+        // Text artwork for comparison
+        { "assets/text/text-1.png",     BinaryData::text1_png,      BinaryData::text1_pngSize,      "image/png" },
+        { "assets/text/text-2.png",     BinaryData::text2_png,      BinaryData::text2_pngSize,      "image/png" },
+        // Fonts
+        { "assets/fonts/zeyada.ttf",    BinaryData::zeyada_ttf,     BinaryData::zeyada_ttfSize,     "application/x-font-ttf" },
+        { "assets/fonts/cedarville.ttf", BinaryData::cedarville_ttf, BinaryData::cedarville_ttfSize, "application/x-font-ttf" },
+        { "assets/fonts/dawning.ttf",   BinaryData::dawning_ttf,    BinaryData::dawning_ttfSize,    "application/x-font-ttf" },
     };
 
     for (const auto& res : resources)

@@ -54,12 +54,32 @@ body {
   gap: 8px;
 }
 
+#microscope-wrapper {
+  flex: 1;
+  display: flex;
+  flex-direction: row;
+  padding: 12px;
+  padding-top: 20px;
+  gap: 6px;
+}
+
+#microscope-labels {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  font-size: 18px;
+  font-family: 'Zeyada', cursive;
+  color: rgba(255,255,255,0.5);
+  padding: 2px 0;
+}
+
 #microscope-container {
   flex: 1;
   background: rgba(255, 255, 255, 0.03);
   border: 1px solid rgba(255, 255, 255, 0.1);
   border-radius: 4px;
   position: relative;
+  overflow: visible;
 }
 
 #main-knobs {
