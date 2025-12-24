@@ -104,9 +104,8 @@ std::optional<juce::WebBrowserComponent::Resource> GuillotineEditor::getResource
         { "components/display/waveform.css",  BinaryData::waveform_css,  BinaryData::waveform_cssSize,  "text/css" },
         { "components/display/digits.js",   BinaryData::digits_js,   BinaryData::digits_jsSize,   "text/javascript" },
         { "components/display/digits.css",  BinaryData::digits_css,  BinaryData::digits_cssSize,  "text/css" },
-        // CSS - global (with alias)
+        // CSS - global
         { "main.css",                BinaryData::main_css,        BinaryData::main_cssSize,        "text/css" },
-        { "styles/main.css",         BinaryData::main_css,        BinaryData::main_cssSize,        "text/css" },
         // Assets
         { "assets/base.png",         BinaryData::base_png,        BinaryData::base_pngSize,        "image/png" },
         { "assets/blade.png",        BinaryData::blade_png,       BinaryData::blade_pngSize,       "image/png" },

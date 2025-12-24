@@ -31,7 +31,7 @@
     <GROUP id="{WEBUI001-0000-0000-0000-000000000000}" name="web">
       <FILE id="WebIndex" name="index.html" compile="0" resource="1" file="web/index.html"/>
       <FILE id="WebMain" name="main.js" compile="0" resource="1" file="web/main.js"/>
-      <FILE id="WebCSS" name="main.css" compile="0" resource="1" file="web/styles/main.css"/>
+      <FILE id="WebCSS" name="main.css" compile="0" resource="1" file="web/main.css"/>
       <FILE id="WebJuceBridge" name="juce-bridge.js" compile="0" resource="1" file="web/lib/juce-bridge.js"/>
       <FILE id="WebCompLoader" name="component-loader.js" compile="0" resource="1" file="web/lib/component-loader.js"/>
       <FILE id="WebGuillotineJs" name="guillotine.js" compile="0" resource="1" file="web/components/views/guillotine.js"/>
