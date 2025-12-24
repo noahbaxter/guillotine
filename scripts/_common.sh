@@ -51,3 +51,10 @@ regen_if_needed() {
         "$PROJUCER" --resave "$JUCER_FILE"
     fi
 }
+
+# Force regenerate Xcode project (needed when web files change)
+force_regen() {
+    echo -e "${YELLOW}Regenerating Xcode project (web files may have changed)...${NC}"
+    ensure_projucer || return 1
+    "$PROJUCER" --resave "$JUCER_FILE"
+}

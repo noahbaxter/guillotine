@@ -32,7 +32,12 @@ for arg in "$@"; do
     esac
 done
 
-regen_if_needed
+# Kill any running instance first (prevents WebView caching issues)
+pkill -f "Guillotine.app" 2>/dev/null || true
+sleep 0.5
+
+# Always regenerate to pick up web file changes (BinaryData)
+force_regen
 
 # Build standalone (Debug, current arch only for speed)
 echo -e "${YELLOW}Building standalone app...${NC}"
