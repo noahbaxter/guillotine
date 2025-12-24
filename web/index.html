@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Guillotine</title>
+  <link rel="stylesheet" href="main.css">
+</head>
+<body>
+  <div id="app">
+    <div id="guillotine-container">
+      <img id="rope" src="assets/rope.png" alt="">
+      <img id="blade" src="assets/blade.png" alt="">
+      <canvas id="waveform"></canvas>
+      <img id="base" src="assets/base.png" alt="">
+      <img id="side" src="assets/side.png" alt="">
+    </div>
+    <div id="controls">
+      <label for="clip-slider">Clip</label>
+      <input type="range" id="clip-slider" min="0" max="1" step="0.01" value="0">
+    </div>
+  </div>
+  <script src="main.js"></script>
+</body>
+</html>

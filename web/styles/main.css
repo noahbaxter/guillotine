@@ -1,0 +1,99 @@
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  background: #1e1e1e;
+  color: #fff;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  overflow: hidden;
+  width: 400px;
+  height: 580px;
+}
+
+#app {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  padding: 10px;
+}
+
+#guillotine-container {
+  position: relative;
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+#guillotine-container img {
+  position: absolute;
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+  pointer-events: none;
+}
+
+#rope {
+  z-index: 1;
+  clip-path: inset(0 0 65% 0);
+}
+
+#blade {
+  z-index: 2;
+}
+
+#waveform {
+  position: absolute;
+  z-index: 3;
+  pointer-events: none;
+}
+
+#base {
+  z-index: 4;
+}
+
+#side {
+  z-index: 5;
+}
+
+#controls {
+  height: 100px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+#controls label {
+  font-size: 14px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+#clip-slider {
+  width: 200px;
+  height: 24px;
+  -webkit-appearance: none;
+  appearance: none;
+  background: #333;
+  border-radius: 12px;
+  outline: none;
+}
+
+#clip-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 24px;
+  height: 24px;
+  background: #666;
+  border-radius: 50%;
+  cursor: pointer;
+}
+
+#clip-slider::-webkit-slider-thumb:hover {
+  background: #888;
+}
