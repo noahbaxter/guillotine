@@ -1,8 +1,8 @@
 // Microscope Component - Zoomed waveform view with draggable threshold line
 
 import { loadStyles } from '../../lib/component-loader.js';
-import { Visualizer } from '../visualizer/visualizer.js';
-import { SpriteNumber } from '../sprite-number/sprite-number.js';
+import { Waveform } from '../display/waveform.js';
+import { Digits } from '../display/digits.js';
 
 const SCALE_PRESETS = [
   { label: '-24', minDb: -24 },
@@ -33,7 +33,7 @@ export class Microscope {
 
   async init() {
     if (!Microscope.stylesLoaded) {
-      await loadStyles('components/microscope/microscope.css');
+      await loadStyles('components/views/microscope.css');
       Microscope.stylesLoaded = true;
     }
 
@@ -61,11 +61,11 @@ export class Microscope {
 
     this.container.appendChild(this.thresholdLine);
 
-    // Create visualizer
-    this.visualizer = new Visualizer(this.waveformArea, this.options);
+    // Create waveform
+    this.waveform = new Waveform(this.waveformArea, this.options);
 
-    // Create sprite number for threshold label
-    this.thresholdLabel = new SpriteNumber(this.thresholdLabelContainer, {
+    // Create digits for threshold label
+    this.thresholdLabel = new Digits(this.thresholdLabelContainer, {
       scale: 0.45,
       color: 'red',
       glow: false
@@ -130,7 +130,7 @@ export class Microscope {
     const db = this.yFracToDb(this.lineYFrac);
     this.thresholdLabel.setValue(db.toFixed(1));
 
-    this.visualizer.setThreshold(this.lineYFrac);
+    this.waveform.setThreshold(this.lineYFrac);
   }
 
   setScale(minDb) {
@@ -138,7 +138,7 @@ export class Microscope {
     if (this.labelBottom) {
       this.labelBottom.textContent = minDb + 'dB';
     }
-    this.visualizer.options.displayMinDb = minDb;
+    this.waveform.options.displayMinDb = minDb;
 
     const idx = SCALE_PRESETS.findIndex(p => p.minDb === minDb);
     if (idx !== -1) this.currentPresetIndex = idx;
@@ -205,7 +205,7 @@ export class Microscope {
 
   handleResize() {
     const rect = this.container.getBoundingClientRect();
-    this.visualizer.setBounds(0, 0, rect.width, rect.height);
+    this.waveform.setBounds(0, 0, rect.width, rect.height);
     this.updateVisuals();
   }
 
@@ -223,22 +223,22 @@ export class Microscope {
   }
 
   updateData(data) {
-    this.visualizer.updateData(data);
+    this.waveform.updateData(data);
   }
 
   start() {
     this.handleResize();
-    this.visualizer.start();
+    this.waveform.start();
   }
 
   stop() {
-    this.visualizer.stop();
+    this.waveform.stop();
   }
 
   destroy() {
     this.stop();
     if (this.cleanup) this.cleanup();
-    this.visualizer.destroy();
+    this.waveform.destroy();
     this.thresholdLabel.destroy();
     this.thresholdLine.remove();
     this.waveformArea.remove();

@@ -2,7 +2,7 @@
 // Drag-based rotary control for audio parameters
 
 import { loadStyles } from '../../lib/component-loader.js';
-import { SpriteNumber } from '../sprite-number/sprite-number.js';
+import { Digits } from '../display/digits.js';
 
 const DEFAULTS = {
   min: 0,
@@ -36,7 +36,7 @@ export class Knob {
 
   async init() {
     if (!Knob.stylesLoaded) {
-      await loadStyles('components/knob/knob.css');
+      await loadStyles('components/controls/knob.css');
       Knob.stylesLoaded = true;
     }
 
@@ -69,7 +69,7 @@ export class Knob {
     this.element.appendChild(this.valueDisplayEl);
 
     if (this.options.useSprites) {
-      this.spriteNumber = new SpriteNumber(this.valueDisplayEl, { scale: this.options.spriteScale });
+      this.digits = new Digits(this.valueDisplayEl, { scale: this.options.spriteScale });
     }
 
     this.container.appendChild(this.element);
@@ -135,9 +135,9 @@ export class Knob {
       displayText = this.value.toFixed(2) + (unit ? ' ' + unit : '');
     }
 
-    if (this.spriteNumber) {
+    if (this.digits) {
       const numericOnly = displayText.replace(/[^0-9.\-]/g, '');
-      this.spriteNumber.setValue(numericOnly);
+      this.digits.setValue(numericOnly);
     } else if (this.valueDisplayEl) {
       this.valueDisplayEl.textContent = displayText;
     }
@@ -162,7 +162,7 @@ export class Knob {
 
   destroy() {
     if (this.cleanup) this.cleanup();
-    if (this.spriteNumber) this.spriteNumber.destroy();
+    if (this.digits) this.digits.destroy();
     if (this.element) this.element.remove();
   }
 }

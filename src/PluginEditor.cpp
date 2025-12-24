@@ -91,21 +91,19 @@ std::optional<juce::WebBrowserComponent::Resource> GuillotineEditor::getResource
         { "main.js",                 BinaryData::main_js,         BinaryData::main_jsSize,         "text/javascript" },
         { "lib/juce-bridge.js",      BinaryData::jucebridge_js,   BinaryData::jucebridge_jsSize,   "text/javascript" },
         { "lib/component-loader.js", BinaryData::componentloader_js, BinaryData::componentloader_jsSize, "text/javascript" },
-        // Components - guillotine
-        { "components/guillotine/guillotine.js",   BinaryData::guillotine_js,   BinaryData::guillotine_jsSize,   "text/javascript" },
-        { "components/guillotine/guillotine.css",  BinaryData::guillotine_css,  BinaryData::guillotine_cssSize,  "text/css" },
-        // Components - visualizer
-        { "components/visualizer/visualizer.js",   BinaryData::visualizer_js,   BinaryData::visualizer_jsSize,   "text/javascript" },
-        { "components/visualizer/visualizer.css",  BinaryData::visualizer_css,  BinaryData::visualizer_cssSize,  "text/css" },
-        // Components - knob
-        { "components/knob/knob.js",   BinaryData::knob_js,   BinaryData::knob_jsSize,   "text/javascript" },
-        { "components/knob/knob.css",  BinaryData::knob_css,  BinaryData::knob_cssSize,  "text/css" },
-        // Components - microscope
-        { "components/microscope/microscope.js",   BinaryData::microscope_js,   BinaryData::microscope_jsSize,   "text/javascript" },
-        { "components/microscope/microscope.css",  BinaryData::microscope_css,  BinaryData::microscope_cssSize,  "text/css" },
-        // Components - sprite-number
-        { "components/sprite-number/sprite-number.js",   BinaryData::spritenumber_js,   BinaryData::spritenumber_jsSize,   "text/javascript" },
-        { "components/sprite-number/sprite-number.css",  BinaryData::spritenumber_css,  BinaryData::spritenumber_cssSize,  "text/css" },
+        // Components - views
+        { "components/views/guillotine.js",   BinaryData::guillotine_js,   BinaryData::guillotine_jsSize,   "text/javascript" },
+        { "components/views/guillotine.css",  BinaryData::guillotine_css,  BinaryData::guillotine_cssSize,  "text/css" },
+        { "components/views/microscope.js",   BinaryData::microscope_js,   BinaryData::microscope_jsSize,   "text/javascript" },
+        { "components/views/microscope.css",  BinaryData::microscope_css,  BinaryData::microscope_cssSize,  "text/css" },
+        // Components - controls
+        { "components/controls/knob.js",   BinaryData::knob_js,   BinaryData::knob_jsSize,   "text/javascript" },
+        { "components/controls/knob.css",  BinaryData::knob_css,  BinaryData::knob_cssSize,  "text/css" },
+        // Components - display
+        { "components/display/waveform.js",   BinaryData::waveform_js,   BinaryData::waveform_jsSize,   "text/javascript" },
+        { "components/display/waveform.css",  BinaryData::waveform_css,  BinaryData::waveform_cssSize,  "text/css" },
+        { "components/display/digits.js",   BinaryData::digits_js,   BinaryData::digits_jsSize,   "text/javascript" },
+        { "components/display/digits.css",  BinaryData::digits_css,  BinaryData::digits_cssSize,  "text/css" },
         // CSS - global (with alias)
         { "main.css",                BinaryData::main_css,        BinaryData::main_cssSize,        "text/css" },
         { "styles/main.css",         BinaryData::main_css,        BinaryData::main_cssSize,        "text/css" },

@@ -1,9 +1,9 @@
 // Guillotine Plugin - Main Entry Point
 // Phase 2: Microscope view with waveform and draggable threshold
 
-import { Guillotine } from './components/guillotine/guillotine.js';
-import { Microscope } from './components/microscope/microscope.js';
-import { Knob } from './components/knob/knob.js';
+import { Guillotine } from './components/views/guillotine.js';
+import { Microscope } from './components/views/microscope.js';
+import { Knob } from './components/controls/knob.js';
 import { sendParameter, registerCallback } from './lib/juce-bridge.js';
 
 // Load locally embedded fonts

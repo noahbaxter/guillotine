@@ -5,7 +5,7 @@ import { loadStyles } from '../../lib/component-loader.js';
 
 const ASSET_PATH = 'assets/numeric/';
 
-export class SpriteNumber {
+export class Digits {
   static stylesLoaded = false;
 
   constructor(container, options = {}) {
@@ -19,16 +19,16 @@ export class SpriteNumber {
   }
 
   async init() {
-    if (!SpriteNumber.stylesLoaded) {
-      await loadStyles('components/sprite-number/sprite-number.css');
-      SpriteNumber.stylesLoaded = true;
+    if (!Digits.stylesLoaded) {
+      await loadStyles('components/display/digits.css');
+      Digits.stylesLoaded = true;
     }
 
     this.element = document.createElement('div');
-    this.element.className = 'sprite-number';
+    this.element.className = 'digits';
 
-    if (this.color) this.element.classList.add(`sprite-number--${this.color}`);
-    if (this.glow) this.element.classList.add('sprite-number--glow');
+    if (this.color) this.element.classList.add(`digits--${this.color}`);
+    if (this.glow) this.element.classList.add('digits--glow');
 
     this.container.appendChild(this.element);
   }
@@ -49,11 +49,11 @@ export class SpriteNumber {
     for (const char of this.value) {
       if (char >= '0' && char <= '9') {
         const cell = document.createElement('div');
-        cell.className = 'sprite-number__cell';
+        cell.className = 'digits__cell';
         cell.style.minWidth = `${24 * s}px`;
 
         const img = document.createElement('img');
-        img.className = 'sprite-number__digit';
+        img.className = 'digits__digit';
         img.src = `${ASSET_PATH}num-${char}.png`;
         img.style.height = `${48 * s}px`;
 
@@ -61,11 +61,11 @@ export class SpriteNumber {
         this.element.appendChild(cell);
       } else if (char === '.') {
         const cell = document.createElement('div');
-        cell.className = 'sprite-number__cell';
+        cell.className = 'digits__cell';
         cell.style.minWidth = `${8 * s}px`;
 
         const img = document.createElement('img');
-        img.className = 'sprite-number__dot';
+        img.className = 'digits__dot';
         img.src = `${ASSET_PATH}num-dot.png`;
         img.style.height = `${9 * s}px`;
 
@@ -73,7 +73,7 @@ export class SpriteNumber {
         this.element.appendChild(cell);
       } else if (char === '-') {
         const dash = document.createElement('div');
-        dash.className = 'sprite-number__dash';
+        dash.className = 'digits__dash';
         dash.style.cssText = `
           width: ${12 * s}px;
           height: ${3 * s}px;

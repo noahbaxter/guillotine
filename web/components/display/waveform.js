@@ -1,4 +1,4 @@
-// Waveform/Envelope Visualizer Component
+// Waveform Component - Envelope visualization with clipping display
 // Draws envelope with clipping visualization based on current threshold
 
 import { loadStyles } from '../../lib/component-loader.js';
@@ -11,14 +11,14 @@ const DEFAULTS = {
   clippedColor: 'rgba(180, 30, 30, 0.9)'
 };
 
-export class Visualizer {
+export class Waveform {
   static stylesLoaded = false;
 
   constructor(container, options = {}) {
     this.options = { ...DEFAULTS, ...options };
     this.container = container;
     this.canvas = document.createElement('canvas');
-    this.canvas.className = 'visualizer';
+    this.canvas.className = 'waveform';
     this.ctx = this.canvas.getContext('2d');
     this.data = null;
     this.threshold = 0;
@@ -30,9 +30,9 @@ export class Visualizer {
   }
 
   async init() {
-    if (!Visualizer.stylesLoaded) {
-      await loadStyles('components/visualizer/visualizer.css');
-      Visualizer.stylesLoaded = true;
+    if (!Waveform.stylesLoaded) {
+      await loadStyles('components/display/waveform.css');
+      Waveform.stylesLoaded = true;
     }
     this.container.appendChild(this.canvas);
   }

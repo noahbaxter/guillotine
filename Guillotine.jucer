@@ -34,16 +34,16 @@
       <FILE id="WebCSS" name="main.css" compile="0" resource="1" file="web/styles/main.css"/>
       <FILE id="WebJuceBridge" name="juce-bridge.js" compile="0" resource="1" file="web/lib/juce-bridge.js"/>
       <FILE id="WebCompLoader" name="component-loader.js" compile="0" resource="1" file="web/lib/component-loader.js"/>
-      <FILE id="WebGuillotineJs" name="guillotine.js" compile="0" resource="1" file="web/components/guillotine/guillotine.js"/>
-      <FILE id="WebGuillotineCss" name="guillotine.css" compile="0" resource="1" file="web/components/guillotine/guillotine.css"/>
-      <FILE id="WebVisualizerJs" name="visualizer.js" compile="0" resource="1" file="web/components/visualizer/visualizer.js"/>
-      <FILE id="WebVisualizerCss" name="visualizer.css" compile="0" resource="1" file="web/components/visualizer/visualizer.css"/>
-      <FILE id="WebKnobJs" name="knob.js" compile="0" resource="1" file="web/components/knob/knob.js"/>
-      <FILE id="WebKnobCss" name="knob.css" compile="0" resource="1" file="web/components/knob/knob.css"/>
-      <FILE id="WebMicroscopeJs" name="microscope.js" compile="0" resource="1" file="web/components/microscope/microscope.js"/>
-      <FILE id="WebMicroscopeCss" name="microscope.css" compile="0" resource="1" file="web/components/microscope/microscope.css"/>
-      <FILE id="WebSpriteNumberJs" name="sprite-number.js" compile="0" resource="1" file="web/components/sprite-number/sprite-number.js"/>
-      <FILE id="WebSpriteNumberCss" name="sprite-number.css" compile="0" resource="1" file="web/components/sprite-number/sprite-number.css"/>
+      <FILE id="WebGuillotineJs" name="guillotine.js" compile="0" resource="1" file="web/components/views/guillotine.js"/>
+      <FILE id="WebGuillotineCss" name="guillotine.css" compile="0" resource="1" file="web/components/views/guillotine.css"/>
+      <FILE id="WebMicroscopeJs" name="microscope.js" compile="0" resource="1" file="web/components/views/microscope.js"/>
+      <FILE id="WebMicroscopeCss" name="microscope.css" compile="0" resource="1" file="web/components/views/microscope.css"/>
+      <FILE id="WebKnobJs" name="knob.js" compile="0" resource="1" file="web/components/controls/knob.js"/>
+      <FILE id="WebKnobCss" name="knob.css" compile="0" resource="1" file="web/components/controls/knob.css"/>
+      <FILE id="WebWaveformJs" name="waveform.js" compile="0" resource="1" file="web/components/display/waveform.js"/>
+      <FILE id="WebWaveformCss" name="waveform.css" compile="0" resource="1" file="web/components/display/waveform.css"/>
+      <FILE id="WebDigitsJs" name="digits.js" compile="0" resource="1" file="web/components/display/digits.js"/>
+      <FILE id="WebDigitsCss" name="digits.css" compile="0" resource="1" file="web/components/display/digits.css"/>
     </GROUP>
     <GROUP id="{577BFFED-2E98-5329-03C4-711F74395056}" name="src">
       <FILE id="PZm7UN" name="PluginProcessor.cpp" compile="1" resource="0"

@@ -27,7 +27,7 @@ export class Guillotine {
 
   async init() {
     if (!Guillotine.stylesLoaded) {
-      await loadStyles('components/guillotine/guillotine.css');
+      await loadStyles('components/views/guillotine.css');
       Guillotine.stylesLoaded = true;
     }
 
