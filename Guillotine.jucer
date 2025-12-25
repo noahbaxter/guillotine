@@ -11,6 +11,7 @@
       <FILE id="BladePng" name="blade.png" compile="0" resource="1" file="assets/blade.png"/>
       <FILE id="RopePng" name="rope.png" compile="0" resource="1" file="assets/rope.png"/>
       <FILE id="SidePng" name="side.png" compile="0" resource="1" file="assets/side.png"/>
+      <FILE id="GuillotineLogoPng" name="guillotine-logo.png" compile="0" resource="1" file="assets/guillotine-logo.png"/>
       <FILE id="Num0Png" name="num-0.png" compile="0" resource="1" file="assets/numeric/num-0.png"/>
       <FILE id="Num1Png" name="num-1.png" compile="0" resource="1" file="assets/numeric/num-1.png"/>
       <FILE id="Num2Png" name="num-2.png" compile="0" resource="1" file="assets/numeric/num-2.png"/>
@@ -38,6 +39,8 @@
             file="web/lib/juce-bridge.js"/>
       <FILE id="WebCompLoader" name="component-loader.js" compile="0" resource="1"
             file="web/lib/component-loader.js"/>
+      <FILE id="WebGuillotineUtils" name="guillotine-utils.js" compile="0" resource="1"
+            file="web/lib/guillotine-utils.js"/>
       <FILE id="WebJuceLibIndex" name="index.js" compile="0" resource="1"
             file="web/lib/juce/index.js"/>
       <FILE id="WebJuceLibCheck" name="check_native_interop.js" compile="0"
@@ -52,6 +55,8 @@
             file="web/components/views/microscope.css"/>
       <FILE id="WebKnobJs" name="knob.js" compile="0" resource="1" file="web/components/controls/knob.js"/>
       <FILE id="WebKnobCss" name="knob.css" compile="0" resource="1" file="web/components/controls/knob.css"/>
+      <FILE id="WebLeverJs" name="lever.js" compile="0" resource="1" file="web/components/controls/lever.js"/>
+      <FILE id="WebLeverCss" name="lever.css" compile="0" resource="1" file="web/components/controls/lever.css"/>
       <FILE id="WebWaveformJs" name="waveform.js" compile="0" resource="1"
             file="web/components/display/waveform.js"/>
       <FILE id="WebWaveformCss" name="waveform.css" compile="0" resource="1"

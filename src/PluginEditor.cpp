@@ -108,6 +108,7 @@ std::optional<juce::WebBrowserComponent::Resource> GuillotineEditor::getResource
         { "main.js",                 BinaryData::main_js,         BinaryData::main_jsSize,         "text/javascript" },
         { "lib/juce-bridge.js",      BinaryData::jucebridge_js,   BinaryData::jucebridge_jsSize,   "text/javascript" },
         { "lib/component-loader.js", BinaryData::componentloader_js, BinaryData::componentloader_jsSize, "text/javascript" },
+        { "lib/guillotine-utils.js", BinaryData::guillotineutils_js, BinaryData::guillotineutils_jsSize, "text/javascript" },
         // JUCE frontend library
         { "lib/juce/index.js",       BinaryData::index_js,        BinaryData::index_jsSize,        "text/javascript" },
         { "lib/juce/check_native_interop.js", BinaryData::check_native_interop_js, BinaryData::check_native_interop_jsSize, "text/javascript" },
@@ -119,6 +120,8 @@ std::optional<juce::WebBrowserComponent::Resource> GuillotineEditor::getResource
         // Components - controls
         { "components/controls/knob.js",   BinaryData::knob_js,   BinaryData::knob_jsSize,   "text/javascript" },
         { "components/controls/knob.css",  BinaryData::knob_css,  BinaryData::knob_cssSize,  "text/css" },
+        { "components/controls/lever.js",  BinaryData::lever_js,  BinaryData::lever_jsSize,  "text/javascript" },
+        { "components/controls/lever.css", BinaryData::lever_css, BinaryData::lever_cssSize, "text/css" },
         // Components - display
         { "components/display/waveform.js",   BinaryData::waveform_js,   BinaryData::waveform_jsSize,   "text/javascript" },
         { "components/display/waveform.css",  BinaryData::waveform_css,  BinaryData::waveform_cssSize,  "text/css" },
@@ -131,6 +134,7 @@ std::optional<juce::WebBrowserComponent::Resource> GuillotineEditor::getResource
         { "assets/blade.png",        BinaryData::blade_png,       BinaryData::blade_pngSize,       "image/png" },
         { "assets/rope.png",         BinaryData::rope_png,        BinaryData::rope_pngSize,        "image/png" },
         { "assets/side.png",         BinaryData::side_png,        BinaryData::side_pngSize,        "image/png" },
+        { "assets/guillotine-logo.png", BinaryData::guillotinelogo_png, BinaryData::guillotinelogo_pngSize, "image/png" },
         // Numeric sprites
         { "assets/numeric/num-0.png",   BinaryData::num0_png,       BinaryData::num0_pngSize,       "image/png" },
         { "assets/numeric/num-1.png",   BinaryData::num1_png,       BinaryData::num1_pngSize,       "image/png" },
