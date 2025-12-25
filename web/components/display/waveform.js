@@ -7,8 +7,7 @@ const DEFAULTS = {
   displayMinDb: -60,
   displayMaxDb: 0,
   smoothingFactor: 0.3,
-  normalColor: 'rgba(255, 255, 255, 0.9)',
-  clippedColor: 'rgba(180, 30, 30, 0.9)'
+  clippedColor: 'rgba(120, 20, 20, 0.25)'  // Ghostly remnant of clipped signal
 };
 
 export class Waveform {
@@ -23,6 +22,7 @@ export class Waveform {
     this.data = null;
     this.threshold = 0;
     this.thresholdY = 0;
+    this.bladeJitterFn = null;  // Function to get blade jitter offset at x
 
     this.ready = this.init();
     this.render = this.render.bind(this);
@@ -52,6 +52,10 @@ export class Waveform {
   setThreshold(value) {
     this.threshold = Math.max(0, Math.min(1, value));
     this.updateThresholdY();
+  }
+
+  setBladeJitter(jitterFn) {
+    this.bladeJitterFn = jitterFn;
   }
 
   updateThresholdY() {
@@ -85,7 +89,7 @@ export class Waveform {
     if (!this.data) return;
 
     const { envelope, writePos } = this.data;
-    const { smoothingFactor, normalColor, clippedColor } = this.options;
+    const { smoothingFactor, clippedColor } = this.options;
 
     const width = this.canvas.width / (window.devicePixelRatio || 1);
     const height = this.canvas.height / (window.devicePixelRatio || 1);
@@ -99,23 +103,52 @@ export class Waveform {
     const points = this.computePoints(envelope, writePos, pointsToShow, bufferSize, width, height, smoothingFactor);
     const threshY = this.thresholdY;
 
-    // Draw white fill (waveform capped at threshold)
+    // Jittered threshold function
+    const getJitteredThreshY = (x) => {
+      if (this.bladeJitterFn) {
+        return threshY + this.bladeJitterFn(x);
+      }
+      return threshY;
+    };
+
+    // Create gradient for waveform fill (fades from top to bottom)
+    const gradient = this.ctx.createLinearGradient(0, 0, 0, height);
+    gradient.addColorStop(0, 'rgba(255, 255, 255, 0.7)');
+    gradient.addColorStop(0.5, 'rgba(255, 255, 255, 0.4)');
+    gradient.addColorStop(1, 'rgba(255, 255, 255, 0.15)');
+
+    // Draw white fill (follows jittery blade edge)
     this.ctx.beginPath();
     this.ctx.moveTo(0, height);
 
+    const edge = [];
     for (let i = 0; i < pointsToShow; i++) {
       const x = points[i].x;
       const y = points[i].y;
-      this.ctx.lineTo(x, Math.max(y, threshY));
+      // Cap at jittered threshold (blade line)
+      const jitteredThresh = getJitteredThreshY(x);
+      const edgeY = Math.max(y, jitteredThresh);
+      edge.push({ x, y: edgeY });
+      this.ctx.lineTo(x, edgeY);
     }
 
     this.ctx.lineTo(width, height);
     this.ctx.closePath();
-    this.ctx.fillStyle = normalColor;
+    this.ctx.fillStyle = gradient;
     this.ctx.fill();
 
-    // Draw red fill (portion above threshold)
-    this.drawClippedRegions(points, threshY, clippedColor);
+    // Draw white outline on upper edge (follows jitter)
+    this.ctx.beginPath();
+    this.ctx.moveTo(edge[0].x, edge[0].y);
+    for (let i = 1; i < edge.length; i++) {
+      this.ctx.lineTo(edge[i].x, edge[i].y);
+    }
+    this.ctx.strokeStyle = 'rgba(255, 255, 255, 0.9)';
+    this.ctx.lineWidth = 1.5;
+    this.ctx.stroke();
+
+    // Draw red fill (portion above threshold) - ghostly remnant
+    this.drawClippedRegions(points, clippedColor, getJitteredThreshY);
   }
 
   computePoints(envelope, writePos, pointsToShow, bufferSize, width, height, smoothingFactor) {
@@ -145,22 +178,29 @@ export class Waveform {
     return points;
   }
 
-  drawClippedRegions(points, threshY, color) {
+  drawClippedRegions(points, color, getJitteredThreshY) {
     this.ctx.beginPath();
     let inClip = false;
+    let clipStartX = 0;
 
     for (let i = 0; i < points.length; i++) {
       const { x, y } = points[i];
-      const isClipped = y < threshY;
+      const jitteredThreshY = getJitteredThreshY(x);
+      const isClipped = y < jitteredThreshY;
 
       if (isClipped) {
         if (!inClip) {
-          this.ctx.moveTo(x, threshY);
+          clipStartX = x;
+          this.ctx.moveTo(x, jitteredThreshY);
           inClip = true;
         }
         this.ctx.lineTo(x, y);
       } else if (inClip) {
-        this.ctx.lineTo(x, threshY);
+        this.ctx.lineTo(x, getJitteredThreshY(x));
+        // Draw jagged bottom edge back to start
+        for (let bx = x; bx >= clipStartX; bx -= 2) {
+          this.ctx.lineTo(bx, getJitteredThreshY(bx));
+        }
         this.ctx.closePath();
         this.ctx.fillStyle = color;
         this.ctx.fill();
@@ -171,7 +211,11 @@ export class Waveform {
 
     if (inClip) {
       const lastX = points[points.length - 1].x;
-      this.ctx.lineTo(lastX, threshY);
+      this.ctx.lineTo(lastX, getJitteredThreshY(lastX));
+      // Draw jagged bottom edge back to start
+      for (let bx = lastX; bx >= clipStartX; bx -= 2) {
+        this.ctx.lineTo(bx, getJitteredThreshY(bx));
+      }
       this.ctx.closePath();
       this.ctx.fillStyle = color;
       this.ctx.fill();

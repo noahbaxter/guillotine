@@ -10,6 +10,8 @@ const SCALE_PRESETS = [
   { label: '-60', minDb: -60 }
 ];
 
+const MAX_JITTER = 20;
+
 const DEFAULTS = {
   displayMinDb: -60,
   displayMaxDb: 0
@@ -22,6 +24,8 @@ export class Microscope {
     this.options = { ...DEFAULTS, ...options };
     this.container = container;
     this.threshold = 0.5;
+    this.sharpness = 1.0;  // 0 = dull/jittery, 1 = sharp/flat
+    this.bladeBasePattern = [];  // Fixed random pattern, scaled by sharpness when drawing
     this.lineYFrac = 0;
     this.onThresholdChange = null;
     this.onScaleChange = null;
@@ -47,9 +51,14 @@ export class Microscope {
     this.scaleButton.className = 'microscope__scale-btn';
     this.container.appendChild(this.scaleButton);
 
-    // Threshold line with label and drag handle
+    // Threshold line container with canvas, label, and drag handle
     this.thresholdLine = document.createElement('div');
     this.thresholdLine.className = 'microscope__threshold-line';
+
+    // Canvas for jittery blade line
+    this.bladeCanvas = document.createElement('canvas');
+    this.bladeCanvas.className = 'microscope__blade-canvas';
+    this.thresholdLine.appendChild(this.bladeCanvas);
 
     this.thresholdLabelContainer = document.createElement('div');
     this.thresholdLabelContainer.className = 'microscope__threshold-label';
@@ -66,13 +75,13 @@ export class Microscope {
 
     // Create digits for threshold label
     this.thresholdLabel = new Digits(this.thresholdLabelContainer, {
-      scale: 0.45,
+      scale: 0.3,
       color: 'red',
       glow: false
     });
     await this.thresholdLabel.ready;
 
-    // Add dB suffix after sprite number
+    // Add dB suffix as sibling to digits (appended to container so it won't be cleared by render)
     this.dbSuffix = document.createElement('span');
     this.dbSuffix.className = 'microscope__db-suffix';
     this.dbSuffix.textContent = 'dB';
@@ -156,6 +165,7 @@ export class Microscope {
   bindEvents() {
     const onMouseDown = (e) => {
       this.dragging = true;
+      this.thresholdLine.classList.add('microscope__threshold-line--dragging');
       e.preventDefault();
     };
 
@@ -182,6 +192,7 @@ export class Microscope {
 
     const onMouseUp = () => {
       this.dragging = false;
+      this.thresholdLine.classList.remove('microscope__threshold-line--dragging');
     };
 
     this.thresholdLine.addEventListener('mousedown', onMouseDown);
@@ -206,7 +217,78 @@ export class Microscope {
   handleResize() {
     const rect = this.container.getBoundingClientRect();
     this.waveform.setBounds(0, 0, rect.width, rect.height);
+    this.setupBladeCanvas(rect.width);
     this.updateVisuals();
+  }
+
+  setupBladeCanvas(width) {
+    const dpr = window.devicePixelRatio || 1;
+    const height = MAX_JITTER * 2;  // Tall enough for max jitter
+    this.bladeCanvas.width = width * dpr;
+    this.bladeCanvas.height = height * dpr;
+    this.bladeCanvas.style.width = width + 'px';
+    this.bladeCanvas.style.height = height + 'px';
+    this.bladeWidth = width;
+    this.bladeHeight = height;
+    this.bladeDpr = dpr;
+    this.generateBasePattern();
+    this.drawJitteryBlade();
+  }
+
+  generateBasePattern() {
+    this.bladeBasePattern = [];
+    for (let x = 0; x <= this.bladeWidth; x += 2) {
+      this.bladeBasePattern.push(Math.random() - 0.5);  // Normalized: -0.5 to 0.5
+    }
+    this.updateWaveformJitter();
+  }
+
+  updateWaveformJitter() {
+    const pattern = this.bladeBasePattern;
+    const sharpness = this.sharpness;
+    this.waveform.setBladeJitter((x) => {
+      const i = Math.floor(x / 2);
+      const p = pattern[i] || 0;
+      return p * (1 - sharpness) * MAX_JITTER;
+    });
+  }
+
+  drawJitteryBlade() {
+    if (!this.bladeCanvas || !this.bladeBasePattern.length) return;
+
+    const ctx = this.bladeCanvas.getContext('2d');
+    ctx.setTransform(this.bladeDpr, 0, 0, this.bladeDpr, 0, 0);
+    ctx.clearRect(0, 0, this.bladeWidth, this.bladeHeight);
+
+    const centerY = this.bladeHeight / 2;
+    const jitterScale = (1 - this.sharpness) * MAX_JITTER;
+
+    ctx.beginPath();
+    ctx.moveTo(0, centerY + this.bladeBasePattern[0] * jitterScale);
+
+    for (let i = 1; i < this.bladeBasePattern.length; i++) {
+      const x = i * 2;
+      const y = centerY + this.bladeBasePattern[i] * jitterScale;
+      ctx.lineTo(x, y);
+    }
+
+    ctx.strokeStyle = 'rgba(180, 30, 30, 0.9)';
+    ctx.lineWidth = 2;
+    ctx.stroke();
+  }
+
+  setSharpness(value) {
+    this.sharpness = Math.max(0, Math.min(1, value));
+    this.drawJitteryBlade();
+    this.updateWaveformJitter();
+  }
+
+  showThresholdLabel() {
+    this.thresholdLine.classList.add('microscope__threshold-line--dragging');
+  }
+
+  hideThresholdLabel() {
+    this.thresholdLine.classList.remove('microscope__threshold-line--dragging');
   }
 
   setThreshold(value) {
