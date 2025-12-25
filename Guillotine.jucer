@@ -69,6 +69,10 @@
       <FILE id="WebDigitsJs" name="digits.js" compile="0" resource="1" file="web/components/display/digits.js"/>
       <FILE id="WebDigitsCss" name="digits.css" compile="0" resource="1"
             file="web/components/display/digits.css"/>
+      <FILE id="WebBloodPoolJs" name="blood-pool.js" compile="0" resource="1"
+            file="web/components/display/blood-pool.js"/>
+      <FILE id="WebBloodPoolCss" name="blood-pool.css" compile="0" resource="1"
+            file="web/components/display/blood-pool.css"/>
       <FILE id="WebGrungeTexture" name="grunge-texture.jpg" compile="0" resource="1"
             file="web/assets/grunge-texture.jpg"/>
     </GROUP>

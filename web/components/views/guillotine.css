@@ -24,6 +24,11 @@
   z-index: 2;
 }
 
+.guillotine__layer--blood-line {
+  z-index: 2;
+  pointer-events: none;
+}
+
 .guillotine__layer--base {
   z-index: 3;
 }

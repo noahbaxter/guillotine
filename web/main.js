@@ -3,6 +3,7 @@
 
 import { Guillotine } from './components/views/guillotine.js';
 import { Microscope } from './components/views/microscope.js';
+import { BloodPool } from './components/display/blood-pool.js';
 import { Knob } from './components/controls/knob.js';
 import { Lever } from './components/controls/lever.js';
 import {
@@ -73,6 +74,7 @@ class GuillotineApp {
     // Create components
     this.guillotine = new Guillotine(this.guillotineContainer);
     this.lever = new Lever(this.guillotineContainer);
+    this.bloodPool = new BloodPool(this.guillotineContainer);
     this.microscope = new Microscope(this.microscopeContainer);
 
     // Sharpness knob (0-1, continuous) - LEFT
@@ -134,6 +136,7 @@ class GuillotineApp {
     await Promise.all([
       this.guillotine.ready,
       this.lever.ready,
+      this.bloodPool.ready,
       this.microscope.ready,
       this.thresholdKnob.ready,
       this.sharpnessKnob.ready,
@@ -185,8 +188,9 @@ class GuillotineApp {
       this.draggingParam = null;
     };
 
-    // Set initial sharpness on microscope (use knob's default value)
+    // Set initial sharpness on microscope and guillotine (use knob's default value)
     this.microscope.setSharpness(this.sharpnessKnob.getValue());
+    this.guillotine.setSharpness(this.sharpnessKnob.getValue());
 
     // Wire up threshold changes from microscope drag
     this.microscope.onThresholdChange = (value) => {
@@ -316,6 +320,7 @@ class GuillotineApp {
 
   setSharpness(value) {
     this.microscope.setSharpness(value);
+    this.guillotine.setSharpness(value);
   }
 
   setOversampling(value) {
@@ -350,6 +355,7 @@ class GuillotineApp {
     const active = !this.bypass;
     this.guillotine.setActive(active);
     this.lever.setActive(active);
+    this.bloodPool.setActive(active);
     this.microscope.setActive(active);
   }
 }

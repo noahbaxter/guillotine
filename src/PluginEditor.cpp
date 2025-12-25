@@ -128,6 +128,8 @@ std::optional<juce::WebBrowserComponent::Resource> GuillotineEditor::getResource
         { "components/display/waveform.css",  BinaryData::waveform_css,  BinaryData::waveform_cssSize,  "text/css" },
         { "components/display/digits.js",   BinaryData::digits_js,   BinaryData::digits_jsSize,   "text/javascript" },
         { "components/display/digits.css",  BinaryData::digits_css,  BinaryData::digits_cssSize,  "text/css" },
+        { "components/display/blood-pool.js",   BinaryData::bloodpool_js,   BinaryData::bloodpool_jsSize,   "text/javascript" },
+        { "components/display/blood-pool.css",  BinaryData::bloodpool_css,  BinaryData::bloodpool_cssSize,  "text/css" },
         // CSS - global
         { "main.css",                BinaryData::main_css,        BinaryData::main_cssSize,        "text/css" },
         // Assets
