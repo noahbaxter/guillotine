@@ -73,6 +73,7 @@ class GuillotineApp {
   async init() {
     // Create components
     this.guillotine = new Guillotine(this.guillotineContainer);
+    this.lever = new Lever(this.guillotineContainer);
     this.microscope = new Microscope(this.microscopeContainer);
 
     // Sharpness knob (0-1, continuous) - LEFT
@@ -133,6 +134,7 @@ class GuillotineApp {
     // Wait for all components to initialize
     await Promise.all([
       this.guillotine.ready,
+      this.lever.ready,
       this.microscope.ready,
       this.thresholdKnob.ready,
       this.sharpnessKnob.ready,
@@ -228,8 +230,7 @@ class GuillotineApp {
     });
 
     registerCallback('setBypass', (value) => {
-      this.bypass = value;
-      this.updateBypassVisual();
+      this.setBypass(value);
     });
 
     // Register envelope data callback (from C++ timer)
