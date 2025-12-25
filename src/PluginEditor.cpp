@@ -109,6 +109,7 @@ std::optional<juce::WebBrowserComponent::Resource> GuillotineEditor::getResource
         { "lib/juce-bridge.js",      BinaryData::jucebridge_js,   BinaryData::jucebridge_jsSize,   "text/javascript" },
         { "lib/component-loader.js", BinaryData::componentloader_js, BinaryData::componentloader_jsSize, "text/javascript" },
         { "lib/guillotine-utils.js", BinaryData::guillotineutils_js, BinaryData::guillotineutils_jsSize, "text/javascript" },
+        { "lib/svg-utils.js",        BinaryData::svgutils_js,       BinaryData::svgutils_jsSize,       "text/javascript" },
         // JUCE frontend library
         { "lib/juce/index.js",       BinaryData::index_js,        BinaryData::index_jsSize,        "text/javascript" },
         { "lib/juce/check_native_interop.js", BinaryData::check_native_interop_js, BinaryData::check_native_interop_jsSize, "text/javascript" },
@@ -150,6 +151,10 @@ std::optional<juce::WebBrowserComponent::Resource> GuillotineEditor::getResource
         // Text artwork for comparison
         { "assets/text/text-1.png",     BinaryData::text1_png,      BinaryData::text1_pngSize,      "image/png" },
         { "assets/text/text-2.png",     BinaryData::text2_png,      BinaryData::text2_pngSize,      "image/png" },
+        // Wood textures
+        { "assets/original/wood-1.png", BinaryData::wood1_png,      BinaryData::wood1_pngSize,      "image/png" },
+        { "assets/original/wood-2.png", BinaryData::wood2_png,      BinaryData::wood2_pngSize,      "image/png" },
+        { "assets/original/wood-3.png", BinaryData::wood3_png,      BinaryData::wood3_pngSize,      "image/png" },
         // Fonts
         { "assets/fonts/zeyada.ttf",    BinaryData::zeyada_ttf,     BinaryData::zeyada_ttfSize,     "application/x-font-ttf" },
         { "assets/fonts/cedarville.ttf", BinaryData::cedarville_ttf, BinaryData::cedarville_ttfSize, "application/x-font-ttf" },
