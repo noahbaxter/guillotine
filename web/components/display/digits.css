@@ -11,47 +11,38 @@
   align-items: flex-end;
 }
 
-.digits__digit {
+/* Mask-based digit coloring - PNG defines shape, background-color defines color */
+.digits__digit,
+.digits__dot {
   display: block;
-  width: auto;
+  mask-size: contain;
+  mask-repeat: no-repeat;
+  mask-position: center;
+  mask-mode: alpha;
+  -webkit-mask-size: contain;
+  -webkit-mask-repeat: no-repeat;
+  -webkit-mask-position: center;
+  background-color: var(--color-text-tertiary);
 }
 
 .digits__dot {
-  display: block;
-  width: auto;
   margin-bottom: 2px;
 }
 
 .digits__dash {
-  background: currentColor;
+  background-color: var(--color-text-tertiary);
 }
 
-/* Color variants via CSS filters */
+/* Color variants - now just set background-color */
 .digits--red .digits__digit,
-.digits--red .digits__dot {
-  filter: brightness(0) saturate(100%) invert(12%) sepia(100%) saturate(5000%) hue-rotate(360deg) brightness(0.95);
-}
-
+.digits--red .digits__dot,
 .digits--red .digits__dash {
-  background: rgba(180, 30, 30, 1);
+  background-color: var(--color-blood-threshold);
 }
 
-.digits--white .digits__digit,
-.digits--white .digits__dot {
-  filter: brightness(1.2);
-}
-
+/* Glow effect */
 .digits--glow .digits__digit,
-.digits--glow .digits__dot {
-  filter: drop-shadow(0 0 2px rgba(255,255,255,0.8));
-}
-
-.digits--red.digits--glow .digits__digit,
-.digits--red.digits--glow .digits__dot {
-  filter: brightness(0) saturate(100%) invert(12%) sepia(100%) saturate(5000%) hue-rotate(360deg) brightness(0.95) drop-shadow(0 0 2px rgba(255,255,255,0.8));
-}
-
-.digits--white.digits--glow .digits__digit,
-.digits--white.digits--glow .digits__dot {
-  filter: brightness(1.2) drop-shadow(0 0 2px rgba(255,255,255,0.8));
+.digits--glow .digits__dot,
+.digits--glow .digits__dash {
+  filter: drop-shadow(0 0 2px var(--color-white-80));
 }

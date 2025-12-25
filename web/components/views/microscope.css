@@ -11,16 +11,16 @@
   padding: 2px 6px;
   font-size: 9px;
   font-family: monospace;
-  background: rgba(255,255,255,0.1);
-  border: 1px solid rgba(255,255,255,0.2);
+  background: var(--color-white-10);
+  border: 1px solid var(--color-white-20);
   border-radius: 3px;
-  color: rgba(255,255,255,0.7);
+  color: var(--color-white-70);
   cursor: pointer;
   z-index: 20;
 }
 
 .microscope__scale-btn:hover {
-  background: rgba(255,255,255,0.15);
+  background: var(--color-white-15);
 }
 
 .microscope__threshold-line {
@@ -37,7 +37,7 @@
 }
 
 .microscope__threshold-line:hover {
-  box-shadow: 0 0 8px rgba(180, 30, 30, 0.6);
+  box-shadow: 0 0 8px var(--color-blood-glow);
 }
 
 .microscope__threshold-line:active {
@@ -58,11 +58,11 @@
   transform: translateY(-50%);
   pointer-events: none;
   white-space: nowrap;
-  background: rgba(20, 20, 20, 0.95);
+  background: var(--color-surface-overlay);
   padding: 2px 6px;
   border-radius: 3px;
-  border: 1px solid rgba(180, 30, 30, 0.6);
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.8);
+  border: 1px solid var(--color-blood-threshold);
+  box-shadow: 0 2px 8px var(--color-shadow-80);
   overflow: visible;
   display: flex;
   align-items: center;
@@ -79,8 +79,9 @@
 .microscope__db-suffix {
   font-family: var(--cursive-font);
   font-size: 17px;
-  color: rgba(180, 30, 30, 0.9);
+  color: var(--color-blood-threshold);
   margin-left: 2px;
+  margin-bottom: -4px;
 }
 
 .microscope__drag-handle {

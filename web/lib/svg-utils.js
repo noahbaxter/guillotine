@@ -1,4 +1,5 @@
 // SVG utilities for hand-drawn effects (jitter, blur)
+import { COLORS } from './theme.js';
 
 const SVG_CONFIG = {
   jitterAmount: 0.5,      // perpendicular jitter distance
@@ -54,7 +55,8 @@ function createJitteryLine(p1, p2, options = {}) {
 
   const polyline = document.createElementNS('http://www.w3.org/2000/svg', 'polyline');
   polyline.setAttribute('points', points);
-  polyline.setAttribute('stroke', `rgba(255, 255, 255, ${opacity})`);
+  // Use white50 from theme (opacity 0.5 matches SVG_CONFIG default)
+  polyline.setAttribute('stroke', COLORS.white50);
   polyline.setAttribute('stroke-width', strokeWidth);
   polyline.setAttribute('fill', 'none');
   polyline.setAttribute('filter', `url(#${filterId})`);
@@ -113,7 +115,8 @@ function createRoundedRectOutline(width, height, radius, filterId = 'arm-blur') 
 
   const polyline = document.createElementNS('http://www.w3.org/2000/svg', 'polyline');
   polyline.setAttribute('points', points);
-  polyline.setAttribute('stroke', `rgba(255, 255, 255, ${SVG_CONFIG.opacity})`);
+  // Use white50 from theme
+  polyline.setAttribute('stroke', COLORS.white50);
   polyline.setAttribute('stroke-width', SVG_CONFIG.strokeWidth);
   polyline.setAttribute('fill', 'none');
   polyline.setAttribute('filter', `url(#${filterId})`);

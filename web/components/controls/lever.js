@@ -166,6 +166,10 @@ export class Lever {
     this.element.appendChild(this.arm);
     this.container.appendChild(this.element);
 
+    // Add deltable class for DELTA mode transitions
+    this.base.classList.add('deltable');
+    this.arm.classList.add('deltable');
+
     this.updateVisuals();
   }
 

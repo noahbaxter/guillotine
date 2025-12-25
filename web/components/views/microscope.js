@@ -4,6 +4,7 @@ import { loadStyles } from '../../lib/component-loader.js';
 import { animateValue } from '../../lib/guillotine-utils.js';
 import { Waveform } from '../display/waveform.js';
 import { Digits } from '../display/digits.js';
+import { getThresholdColor, onDeltaModeChange } from '../../lib/theme.js';
 
 const SCALE_PRESETS = [
   { label: '-24', minDb: -24 },
@@ -97,6 +98,14 @@ export class Microscope {
     if (this.labelBottom) {
       this.labelBottom.textContent = this.options.displayMinDb + 'dB';
     }
+
+    // Add deltable class for DELTA mode transitions
+    this.scaleButton.classList.add('deltable');
+    if (this.labelTop) this.labelTop.classList.add('deltable');
+    if (this.labelBottom) this.labelBottom.classList.add('deltable');
+
+    // Redraw blade when delta mode changes
+    onDeltaModeChange(() => this.drawJitteryBlade());
 
     this.updateScaleButtonText();
     this.bindEvents();
@@ -277,13 +286,12 @@ export class Microscope {
     }
 
     // Solid line when active, dotted when bypassed
+    ctx.strokeStyle = getThresholdColor(this.active);
     if (this.active) {
       ctx.setLineDash([]);
-      ctx.strokeStyle = 'rgba(180, 30, 30, 0.9)';
       ctx.lineWidth = 2;
     } else {
       ctx.setLineDash([8, 6]);
-      ctx.strokeStyle = 'rgba(200, 60, 60, 0.75)';
       ctx.lineWidth = 2.5;
     }
     ctx.stroke();

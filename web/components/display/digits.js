@@ -1,5 +1,5 @@
 // Sprite-based Number Display
-// Renders numbers using individual digit images at their natural aspect ratios
+// Renders numbers using individual digit images as CSS masks for direct color control
 
 import { loadStyles } from '../../lib/component-loader.js';
 
@@ -11,7 +11,7 @@ export class Digits {
   constructor(container, options = {}) {
     this.container = container;
     this.scale = options.scale || 0.5;
-    this.color = options.color || null;  // 'red', 'white', or null
+    this.color = options.color || null;  // 'red', 'white', or null (inherits)
     this.glow = options.glow || false;
     this.value = '';
     this.element = null;
@@ -52,24 +52,28 @@ export class Digits {
         cell.className = 'digits__cell';
         cell.style.minWidth = `${24 * s}px`;
 
-        const img = document.createElement('img');
-        img.className = 'digits__digit';
-        img.src = `${ASSET_PATH}num-${char}.png`;
-        img.style.height = `${48 * s}px`;
+        const digit = document.createElement('div');
+        digit.className = 'digits__digit';
+        digit.style.height = `${48 * s}px`;
+        digit.style.width = `${24 * s}px`;
+        digit.style.maskImage = `url('${ASSET_PATH}num-${char}.png')`;
+        digit.style.webkitMaskImage = `url('${ASSET_PATH}num-${char}.png')`;
 
-        cell.appendChild(img);
+        cell.appendChild(digit);
         this.element.appendChild(cell);
       } else if (char === '.') {
         const cell = document.createElement('div');
         cell.className = 'digits__cell';
         cell.style.minWidth = `${8 * s}px`;
 
-        const img = document.createElement('img');
-        img.className = 'digits__dot';
-        img.src = `${ASSET_PATH}num-dot.png`;
-        img.style.height = `${9 * s}px`;
+        const dot = document.createElement('div');
+        dot.className = 'digits__dot';
+        dot.style.height = `${9 * s}px`;
+        dot.style.width = `${8 * s}px`;
+        dot.style.maskImage = `url('${ASSET_PATH}num-dot.png')`;
+        dot.style.webkitMaskImage = `url('${ASSET_PATH}num-dot.png')`;
 
-        cell.appendChild(img);
+        cell.appendChild(dot);
         this.element.appendChild(cell);
       } else if (char === '-') {
         const dash = document.createElement('div');

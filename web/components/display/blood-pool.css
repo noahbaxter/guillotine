@@ -15,7 +15,7 @@
   transform: translateX(-50%);
   width: 150px;
   height: 40px;
-  background: radial-gradient(ellipse, rgba(100, 0, 0, 0.85) 0%, transparent 70%);
+  /* Color set via delta-mode.css using var(--color-blood-puddle) */
   border-radius: 50%;
   opacity: 0;
   transition: opacity 0.3s ease;

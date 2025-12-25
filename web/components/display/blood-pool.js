@@ -45,6 +45,10 @@ export class BloodPool {
     }
   }
 
+  getElement() {
+    return this.element;
+  }
+
   destroy() {
     if (this.element) this.element.remove();
   }

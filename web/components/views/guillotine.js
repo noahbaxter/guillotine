@@ -3,6 +3,7 @@
 
 import { loadStyles } from '../../lib/component-loader.js';
 import { GUILLOTINE_CONFIG, animateValue } from '../../lib/guillotine-utils.js';
+import { getBloodColors, onDeltaModeChange } from '../../lib/theme.js';
 
 const DEFAULTS = {
   maxBladeTravel: 0.35,
@@ -61,6 +62,15 @@ export class Guillotine {
     };
 
     this.container.appendChild(this.element);
+
+    // Add deltable class for DELTA mode transitions
+    this.elements.rope.classList.add('deltable');
+    this.elements.blade.classList.add('deltable');
+    this.elements.base.classList.add('deltable');
+
+    // Redraw blood line when delta mode changes
+    onDeltaModeChange(() => this.drawBloodLine());
+
     this.setupBloodLine();
     this.updateVisuals();
   }
@@ -182,11 +192,14 @@ export class Guillotine {
     const dy = p2.y - p1.y;
     const angle = Math.atan2(dy, dx);
 
+    // Get current colors from theme
+    const colors = getBloodColors();
+
     // Draw straight line first
     ctx.beginPath();
     ctx.moveTo(p1.x, p1.y);
     ctx.lineTo(p2.x, p2.y);
-    ctx.strokeStyle = 'rgba(139, 0, 0, 0.85)';
+    ctx.strokeStyle = colors.line1;
     ctx.lineWidth = 3;
     ctx.lineCap = 'round';
     ctx.stroke();
@@ -207,7 +220,7 @@ export class Guillotine {
       ctx.lineTo(x, y);
     }
 
-    ctx.strokeStyle = 'rgba(139, 0, 0, 0.65)';
+    ctx.strokeStyle = colors.line2;
     ctx.lineWidth = 3;
     ctx.lineCap = 'round';
     ctx.stroke();

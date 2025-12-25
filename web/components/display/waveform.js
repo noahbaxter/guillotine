@@ -2,12 +2,12 @@
 // Draws envelope with clipping visualization based on current threshold
 
 import { loadStyles } from '../../lib/component-loader.js';
+import { getClippedColor, getClippedOutlineColor, getWaveformColors } from '../../lib/theme.js';
 
 const DEFAULTS = {
   displayMinDb: -60,
   displayMaxDb: 0,
-  smoothingFactor: 0.3,
-  clippedColor: 'rgba(120, 20, 20, 0.25)'  // Ghostly remnant of clipped signal
+  smoothingFactor: 0.3
 };
 
 export class Waveform {
@@ -99,7 +99,7 @@ export class Waveform {
     if (!this.data) return;
 
     const { envelope, writePos } = this.data;
-    const { smoothingFactor, clippedColor } = this.options;
+    const { smoothingFactor } = this.options;
 
     const width = this.canvas.width / (window.devicePixelRatio || 1);
     const height = this.canvas.height / (window.devicePixelRatio || 1);
@@ -123,11 +123,16 @@ export class Waveform {
       return effectiveThreshY;
     };
 
+    // Get current colors from theme
+    const waveformColors = getWaveformColors();
+    const clippedColor = getClippedColor();
+    const clippedOutlineColor = getClippedOutlineColor();
+
     // Create gradient for waveform fill (fades from top to bottom)
     const gradient = this.ctx.createLinearGradient(0, 0, 0, height);
-    gradient.addColorStop(0, 'rgba(255, 255, 255, 0.7)');
-    gradient.addColorStop(0.5, 'rgba(255, 255, 255, 0.4)');
-    gradient.addColorStop(1, 'rgba(255, 255, 255, 0.15)');
+    gradient.addColorStop(0, waveformColors.gradientTop);
+    gradient.addColorStop(0.5, waveformColors.gradientMid);
+    gradient.addColorStop(1, waveformColors.gradientBottom);
 
     // Draw white fill (capped at blade edge when active, full when bypassed)
     this.ctx.beginPath();
@@ -154,13 +159,13 @@ export class Waveform {
     for (let i = 1; i < edge.length; i++) {
       this.ctx.lineTo(edge[i].x, edge[i].y);
     }
-    this.ctx.strokeStyle = 'rgba(255, 255, 255, 0.9)';
+    this.ctx.strokeStyle = waveformColors.outline;
     this.ctx.lineWidth = 1.5;
     this.ctx.stroke();
 
     // Draw red fill (portion above threshold) - only when cutting (cutPosition > 0)
     if (this.cutPosition > 0) {
-      this.drawClippedRegions(points, clippedColor, getJitteredThreshY);
+      this.drawClippedRegions(points, clippedColor, clippedOutlineColor, getJitteredThreshY);
     }
   }
 
@@ -191,10 +196,11 @@ export class Waveform {
     return points;
   }
 
-  drawClippedRegions(points, color, getJitteredThreshY) {
+  drawClippedRegions(points, color, outlineColor, getJitteredThreshY) {
     this.ctx.beginPath();
     let inClip = false;
     let clipStartX = 0;
+    const outlineSegments = [];  // Store outline points for each clipped region
 
     for (let i = 0; i < points.length; i++) {
       const { x, y } = points[i];
@@ -205,11 +211,23 @@ export class Waveform {
         if (!inClip) {
           clipStartX = x;
           this.ctx.moveTo(x, jitteredThreshY);
+          outlineSegments.push([]);  // Start new outline segment
+          // Include entry point at threshold level for steep edge visibility
+          outlineSegments[outlineSegments.length - 1].push({ x, y: jitteredThreshY });
           inClip = true;
         }
         this.ctx.lineTo(x, y);
+        // Track the actual waveform point for outline
+        if (outlineSegments.length > 0) {
+          outlineSegments[outlineSegments.length - 1].push({ x, y });
+        }
       } else if (inClip) {
-        this.ctx.lineTo(x, getJitteredThreshY(x));
+        // Include exit point at threshold level for steep edge visibility
+        const exitThreshY = getJitteredThreshY(x);
+        if (outlineSegments.length > 0) {
+          outlineSegments[outlineSegments.length - 1].push({ x, y: exitThreshY });
+        }
+        this.ctx.lineTo(x, exitThreshY);
         // Draw jagged bottom edge back to start
         for (let bx = x; bx >= clipStartX; bx -= 2) {
           this.ctx.lineTo(bx, getJitteredThreshY(bx));
@@ -232,6 +250,31 @@ export class Waveform {
       this.ctx.closePath();
       this.ctx.fillStyle = color;
       this.ctx.fill();
+    }
+
+    // Draw red outline on top edge of clipped regions (only in delta mode)
+    if (outlineColor && outlineSegments.length > 0) {
+      this.ctx.strokeStyle = outlineColor;
+      this.ctx.fillStyle = outlineColor;
+      this.ctx.lineWidth = 2;
+      this.ctx.lineCap = 'round';
+      this.ctx.lineJoin = 'round';
+
+      for (const segment of outlineSegments) {
+        if (segment.length === 1) {
+          // Single point - draw a small circle so it's visible
+          this.ctx.beginPath();
+          this.ctx.arc(segment[0].x, segment[0].y, 2, 0, Math.PI * 2);
+          this.ctx.fill();
+        } else if (segment.length > 1) {
+          this.ctx.beginPath();
+          this.ctx.moveTo(segment[0].x, segment[0].y);
+          for (let i = 1; i < segment.length; i++) {
+            this.ctx.lineTo(segment[i].x, segment[i].y);
+          }
+          this.ctx.stroke();
+        }
+      }
     }
   }
 

@@ -1,3 +1,5 @@
+@import url('lib/delta-mode.css');
+
 :root {
   --cursive-font: 'Zeyada', cursive;
 }
@@ -14,8 +16,8 @@
 }
 
 body {
-  background: #1a1a1a;
-  color: #fff;
+  background: var(--color-surface-body);
+  color: var(--color-text-primary);
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
   overflow: hidden;
   width: 600px;
@@ -130,10 +132,11 @@ body::before {
   font-size: 18px;
   line-height: 1;
   font-family: var(--cursive-font);
-  color: rgba(255,255,255,0.5);
+  color: var(--color-delta-text);
   padding-right: 6px;
   text-align: right;
   width: 40px;
+  transition: color 0.2s ease;
 }
 
 #microscope-labels span {
@@ -146,8 +149,8 @@ body::before {
 
 #microscope-container {
   flex: 1;
-  background: #141414;
-  border: 1px solid rgba(255, 255, 255, 0.15);
+  background: var(--color-surface-panel);
+  border: 1px solid var(--color-white-15);
   border-radius: 4px;
   position: relative;
   overflow: visible;

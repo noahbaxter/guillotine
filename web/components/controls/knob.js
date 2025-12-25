@@ -69,7 +69,14 @@ export class Knob {
 
     this.indicatorEl = document.createElement('div');
     this.indicatorEl.className = 'knob__indicator';
-    this.indicatorEl.style.height = `${size * 0.3}px`;
+    const indicatorHeight = size * 0.3;
+    const indicatorTop = size * 0.15;
+    const knobCenter = size * 0.5;
+    // Transform-origin Y as percentage of indicator height, measured from indicator top
+    const originY = ((knobCenter - indicatorTop) / indicatorHeight) * 100;
+    this.indicatorEl.style.height = `${indicatorHeight}px`;
+    this.indicatorEl.style.top = `${indicatorTop}px`;
+    this.indicatorEl.style.transformOrigin = `center ${originY}%`;
     this.knobEl.appendChild(this.indicatorEl);
 
     this.element.appendChild(this.knobEl);
@@ -79,6 +86,9 @@ export class Knob {
     this.element.appendChild(this.valueDisplayEl);
 
     this.container.appendChild(this.element);
+
+    // Add deltable class for DELTA mode transitions
+    this.element.classList.add('deltable');
 
     if (this.options.useSprites) {
       this.digits = new Digits(this.valueDisplayEl, { scale: this.options.spriteScale });

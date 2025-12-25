@@ -14,6 +14,7 @@ import {
   parameterDragEnded,
   registerCallback
 } from './lib/juce-bridge.js';
+import { setDeltaMode } from './lib/theme.js';
 
 // Load locally embedded fonts
 const fontStyles = document.createElement('style');
@@ -48,7 +49,8 @@ class GuillotineApp {
     this.gainKnobsContainer = document.getElementById('gain-knobs');
 
     // State
-    this.bypass = false;
+    this.bypass = true;         // Start bypassed (blade up) - click to activate
+    this.deltaMode = false;     // DELTA mode - intensifies red, dulls everything else
     this.threshold = 0;         // Display threshold (0-1 in current scale, 0 = 0dB)
     this.currentMinDb = -60;    // Current microscope scale
     this.fonts = ['Zeyada', 'Cedarville Cursive', 'Dawning of a New Day'];
@@ -208,6 +210,9 @@ class GuillotineApp {
     // Bypass toggle on guillotine click
     this.guillotineContainer.addEventListener('click', () => this.toggleBypass());
 
+    // Setup DELTA mode click handlers
+    this.setupDeltaModeHandlers();
+
     // Listen for parameter changes from C++ (DAW automation, presets, etc.)
     onParameterChange('threshold', () => {
       if (this.draggingParam !== 'threshold') {
@@ -257,6 +262,44 @@ class GuillotineApp {
     this.fontIndex = (this.fontIndex + 1) % this.fonts.length;
     const font = this.fonts[this.fontIndex];
     document.documentElement.style.setProperty('--cursive-font', `'${font}', cursive`);
+  }
+
+  setupDeltaModeHandlers() {
+    const bucketText = document.getElementById('bucket-text');
+    const bloodPoolEl = this.bloodPool.getElement();
+
+    const toggleDelta = (e) => {
+      // Only toggle when blade is down
+      if (!this.guillotine.isActive()) return;
+
+      // Prevent bypass toggle from firing
+      e.stopPropagation();
+
+      this.deltaMode = !this.deltaMode;
+      setDeltaMode(this.deltaMode);
+    };
+
+    // Click handlers for delta mode toggle
+    bucketText.addEventListener('click', toggleDelta);
+    bloodPoolEl.addEventListener('click', toggleDelta);
+
+    // Hover effects - blood pool lights up when bucket text is hovered
+    bucketText.addEventListener('mouseenter', () => {
+      bloodPoolEl.classList.add('blood-pool--hover-glow');
+    });
+    bucketText.addEventListener('mouseleave', () => {
+      bloodPoolEl.classList.remove('blood-pool--hover-glow');
+    });
+  }
+
+  updateDeltaClickable() {
+    const bucketText = document.getElementById('bucket-text');
+    const bloodPoolEl = this.bloodPool.getElement();
+    const active = !this.bypass;
+
+    // Add/remove delta-clickable class based on blade state
+    bucketText.classList.toggle('delta-clickable', active);
+    bloodPoolEl.classList.toggle('delta-clickable', active);
   }
 
   // Convert threshold (0-1) to dB (always uses full -60dB range internally)
@@ -353,10 +396,20 @@ class GuillotineApp {
     // Lever DOWN + Blade DOWN = active (not bypassed, processing audio)
     // Lever UP + Blade UP = bypass (no processing)
     const active = !this.bypass;
+
+    // Exit delta mode when blade raises
+    if (!active && this.deltaMode) {
+      this.deltaMode = false;
+      setDeltaMode(false);
+    }
+
     this.guillotine.setActive(active);
     this.lever.setActive(active);
     this.bloodPool.setActive(active);
     this.microscope.setActive(active);
+
+    // Update hover affordance for delta mode triggers
+    this.updateDeltaClickable();
   }
 }
 
