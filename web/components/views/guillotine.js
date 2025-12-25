@@ -5,7 +5,7 @@ import { loadStyles } from '../../lib/component-loader.js';
 
 const DEFAULTS = {
   maxBladeTravel: 0.35,
-  ropeClipOffset: 0.10,
+  ropeClipOffset: 0.25,
   images: {
     rope: 'assets/rope.png',
     blade: 'assets/blade.png',
