@@ -1,6 +1,7 @@
 // Microscope Component - Zoomed waveform view with draggable threshold line
 
 import { loadStyles } from '../../lib/component-loader.js';
+import { animateValue } from '../../lib/guillotine-utils.js';
 import { Waveform } from '../display/waveform.js';
 import { Digits } from '../display/digits.js';
 
@@ -25,6 +26,9 @@ export class Microscope {
     this.container = container;
     this.threshold = 0.5;
     this.sharpness = 1.0;  // 0 = dull/jittery, 1 = sharp/flat
+    this.active = true;    // When false: dotted line, no red clipping
+    this.cutPosition = 1;  // 0 = cut at top (no visible clipping), 1 = cut at threshold line
+    this.cancelCutAnimation = null;
     this.bladeBasePattern = [];  // Fixed random pattern, scaled by sharpness when drawing
     this.lineYFrac = 0;
     this.onThresholdChange = null;
@@ -272,15 +276,48 @@ export class Microscope {
       ctx.lineTo(x, y);
     }
 
-    ctx.strokeStyle = 'rgba(180, 30, 30, 0.9)';
-    ctx.lineWidth = 2;
+    // Solid line when active, dotted when bypassed
+    if (this.active) {
+      ctx.setLineDash([]);
+      ctx.strokeStyle = 'rgba(180, 30, 30, 0.9)';
+      ctx.lineWidth = 2;
+    } else {
+      ctx.setLineDash([8, 6]);
+      ctx.strokeStyle = 'rgba(200, 60, 60, 0.75)';
+      ctx.lineWidth = 2.5;
+    }
     ctx.stroke();
+    ctx.setLineDash([]);
   }
 
   setSharpness(value) {
     this.sharpness = Math.max(0, Math.min(1, value));
     this.drawJitteryBlade();
     this.updateWaveformJitter();
+  }
+
+  setActive(active) {
+    if (this.active === active) return;
+    this.active = active;
+
+    // Cancel any in-progress animation
+    if (this.cancelCutAnimation) {
+      this.cancelCutAnimation();
+    }
+
+    // Animate cut position: 0 = top (no clipping visible), 1 = at threshold (full clipping)
+    this.cancelCutAnimation = animateValue(this.cutPosition, active ? 1 : 0, {
+      onFrame: (value) => {
+        this.cutPosition = value;
+        this.waveform.setCutPosition(value);
+        this.drawJitteryBlade();
+      },
+      onComplete: () => {
+        this.cancelCutAnimation = null;
+      }
+    });
+
+    this.waveform.setActive(active);
   }
 
   showThresholdLabel() {
@@ -319,6 +356,7 @@ export class Microscope {
 
   destroy() {
     this.stop();
+    if (this.cancelCutAnimation) this.cancelCutAnimation();
     if (this.cleanup) this.cleanup();
     this.waveform.destroy();
     this.thresholdLabel.destroy();

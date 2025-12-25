@@ -42,7 +42,6 @@ class GuillotineApp {
   constructor() {
     // Container references
     this.guillotineContainer = document.getElementById('guillotine-container');
-    this.bucketContainer = document.getElementById('bucket-container');
     this.microscopeContainer = document.getElementById('microscope-container');
     this.mainKnobsContainer = document.getElementById('main-knobs');
     this.gainKnobsContainer = document.getElementById('gain-knobs');
@@ -287,7 +286,6 @@ class GuillotineApp {
       this.threshold = newThreshold;
       this.thresholdKnob.setValue(this.threshold);
       this.microscope.setThreshold(this.threshold);
-      this.guillotine.setPosition(this.threshold);
       setParameterNormalized('threshold', this.threshold);
     }
   }
@@ -308,7 +306,7 @@ class GuillotineApp {
     // Update all components except the source to avoid feedback loops
     if (source !== 'knob') this.thresholdKnob.setValue(clampedValue);
     if (source !== 'microscope') this.microscope.setThreshold(clampedValue);
-    this.guillotine.setPosition(clampedValue);
+    // Note: guillotine blade position is now controlled by bypass/lever, not threshold
 
     // Notify JUCE (except when change came from JUCE)
     if (source !== 'juce' && source !== 'init') {
@@ -337,13 +335,22 @@ class GuillotineApp {
   toggleBypass() {
     this.bypass = !this.bypass;
     this.updateBypassVisual();
-    // TODO: Add bypass relay when needed
+    // TODO: Add bypass relay to JUCE when needed
+  }
+
+  setBypass(value) {
+    if (this.bypass === value) return;
+    this.bypass = value;
+    this.updateBypassVisual();
   }
 
   updateBypassVisual() {
-    // Visual feedback for bypass state
-    // When bypassed, guillotine area dims slightly
-    this.guillotineContainer.style.opacity = this.bypass ? '0.5' : '1';
+    // Lever DOWN + Blade DOWN = active (not bypassed, processing audio)
+    // Lever UP + Blade UP = bypass (no processing)
+    const active = !this.bypass;
+    this.guillotine.setActive(active);
+    this.lever.setActive(active);
+    this.microscope.setActive(active);
   }
 }
 
