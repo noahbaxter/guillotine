@@ -18,7 +18,7 @@ Guillotine is a JUCE-based audio plugin (VST3/AU) implementing a clipping effect
 ./scripts/watch.sh             # Auto-reload: watches src/ and assets/, rebuilds on change
 ```
 
-**Note:** When `watch.sh` is running, it handles all builds automatically. Don't manually trigger builds - just save files and watch will rebuild.
+**Note:** When `watch.sh` is running, it handles all builds automatically including Xcode project regeneration from `.jucer` changes. Don't manually trigger builds or regen - just save files and watch will rebuild.
 
 Build outputs: `Builds/MacOSX/build/Release/Guillotine.vst3` and `.component`
 
@@ -76,7 +76,32 @@ Example for adding `web/components/foo.js`:
 { "components/foo.js", BinaryData::foo_js, BinaryData::foo_jsSize, "text/javascript" },
 ```
 
-JUCE BinaryData naming: `my-file.js` → `myfile_js`, `num-0.png` → `num0_png`
+**CRITICAL:** JUCE BinaryData naming uses underscores, hyphens become underscores:
+- `my-file.js` → `myfile_js` (hyphen removed, becomes underscore before suffix)
+- `num-0.png` → `num0_png`
+- `guillotine-logo.png` → `guillotinelogo_png`
+
+**For PNG images:** Crop to remove unnecessary whitespace using ImageMagick before committing:
+```bash
+magick convert assets/image.png -trim -fuzz 0% -format "%wx%h%O\n" info:  # Check bounds
+magick convert assets/image.png -crop WxH+X+Y +repage assets/image.png    # Crop in place
+```
+This ensures consistent alignment across layered images (e.g., guillotine blade/rope/base must stay aligned).
+
+## Web Component Patterns
+
+**Use HTML templates, not algorithmic generation:**
+- Define component HTML as template strings in JavaScript, not via `createElement()` loops
+- Easier to visualize structure, less error-prone, cleaner diff history
+- Example: Guillotine component uses template with hardcoded layers for rope/blade/base
+- Query elements with `querySelector()` after inserting template into DOM
+
+**Centralize animation logic:**
+- Extract reusable animation functions to `web/lib/guillotine-utils.js`
+- Define animation durations in `GUILLOTINE_CONFIG` and `LEVER_CONFIG` constants
+- Support direction-aware easing (fast drop, slow raise for gravity-like effects)
+- Use `requestAnimationFrame` with cleanup functions that can be cancelled
+- Each component should have `animateTo()` methods that accept options from utils
 
 ## Key Details
 
@@ -84,3 +109,4 @@ JUCE BinaryData naming: `my-file.js` → `myfile_js`, `num-0.png` → `num0_png`
 - Project config in `Guillotine.jucer` - edit this for build settings, then run `./scripts/build.sh regen`
 - Envelope buffer: 220 samples/point at 44.1kHz, atomic write position for thread safety
 - Blade position 0.0-1.0 maps to 35% vertical travel
+- **Blade travel multiplier (1.25x):** Accounts for `object-fit: contain` constraining rendered image size; scales travel distance to match visual size
