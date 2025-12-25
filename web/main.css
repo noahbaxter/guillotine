@@ -66,6 +66,19 @@ body::before {
   object-fit: contain;
   opacity: 0.8;
   margin-top: 30px;
+  margin-left: -25px;
+}
+
+#lockslip-text {
+  position: absolute;
+  top: 100px;
+  left: 70px;
+}
+
+#lockslip-text img {
+  height: 40px;
+  width: auto;
+  opacity: 1.0;
 }
 
 #guillotine-container {

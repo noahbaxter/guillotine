@@ -25,6 +25,7 @@
       <FILE id="NumDotPng" name="num-dot.png" compile="0" resource="1" file="assets/numeric/num-dot.png"/>
       <FILE id="Text1Png" name="text-1.png" compile="0" resource="1" file="assets/text/text-1.png"/>
       <FILE id="Text2Png" name="text-2.png" compile="0" resource="1" file="assets/text/text-2.png"/>
+      <FILE id="TextLockslipPng" name="text-lockslip.png" compile="0" resource="1" file="assets/text/text-lockslip.png"/>
       <FILE id="Wood1Png" name="wood-1.png" compile="0" resource="1" file="assets/original/wood-1.png"/>
       <FILE id="Wood2Png" name="wood-2.png" compile="0" resource="1" file="assets/original/wood-2.png"/>
       <FILE id="Wood3Png" name="wood-3.png" compile="0" resource="1" file="assets/original/wood-3.png"/>

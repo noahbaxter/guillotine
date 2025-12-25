@@ -155,6 +155,7 @@ std::optional<juce::WebBrowserComponent::Resource> GuillotineEditor::getResource
         // Text artwork for comparison
         { "assets/text/text-1.png",     BinaryData::text1_png,      BinaryData::text1_pngSize,      "image/png" },
         { "assets/text/text-2.png",     BinaryData::text2_png,      BinaryData::text2_pngSize,      "image/png" },
+        { "assets/text/text-lockslip.png", BinaryData::textlockslip_png, BinaryData::textlockslip_pngSize, "image/png" },
         // Wood textures
         { "assets/original/wood-1.png", BinaryData::wood1_png,      BinaryData::wood1_pngSize,      "image/png" },
         { "assets/original/wood-2.png", BinaryData::wood2_png,      BinaryData::wood2_pngSize,      "image/png" },
