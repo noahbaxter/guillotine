@@ -1,7 +1,16 @@
+:root {
+  --cursive-font: 'Zeyada', cursive;
+}
+
 * {
   margin: 0;
   padding: 0;
   box-sizing: border-box;
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+  user-select: none;
+  -webkit-user-drag: none;
 }
 
 body {
@@ -11,6 +20,16 @@ body {
   overflow: hidden;
   width: 600px;
   height: 500px;
+  position: relative;
+}
+
+body::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: url('assets/grunge-texture.jpg') center/cover;
+  opacity: 0.25;
+  pointer-events: none;
 }
 
 #app {
@@ -19,6 +38,8 @@ body {
   height: 100%;
   padding: 8px;
   gap: 8px;
+  position: relative;
+  z-index: 1;
 }
 
 /* Left column: Guillotine + Bucket */
@@ -58,28 +79,44 @@ body {
   flex: 1;
   display: flex;
   flex-direction: row;
-  padding: 12px;
+  padding: 12px 12px 12px 0;
   padding-top: 20px;
-  gap: 6px;
+  position: relative;
 }
 
 #microscope-labels {
+  position: absolute;
+  left: -40px;
+  top: 20px;
+  bottom: 12px;
   display: flex;
   flex-direction: column;
   justify-content: space-between;
   font-size: 18px;
-  font-family: 'Zeyada', cursive;
+  line-height: 1;
+  font-family: var(--cursive-font);
   color: rgba(255,255,255,0.5);
-  padding: 2px 0;
+  padding-right: 6px;
+  text-align: right;
+  width: 40px;
+}
+
+#microscope-labels span {
+  transform: translateY(50%);
+}
+
+#microscope-labels span:first-child {
+  transform: translateY(-50%);
 }
 
 #microscope-container {
   flex: 1;
-  background: rgba(255, 255, 255, 0.03);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: #141414;
+  border: 1px solid rgba(255, 255, 255, 0.15);
   border-radius: 4px;
   position: relative;
   overflow: visible;
+  overflow-clip-margin: 100px;
 }
 
 #main-knobs {
