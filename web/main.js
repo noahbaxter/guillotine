@@ -4,7 +4,14 @@
 import { Guillotine } from './components/views/guillotine.js';
 import { Microscope } from './components/views/microscope.js';
 import { Knob } from './components/controls/knob.js';
-import { sendParameter, registerCallback } from './lib/juce-bridge.js';
+import {
+  setParameterNormalized,
+  getParameterNormalized,
+  onParameterChange,
+  parameterDragStarted,
+  parameterDragEnded,
+  registerCallback
+} from './lib/juce-bridge.js';
 
 // Load locally embedded fonts
 const fontStyles = document.createElement('style');
@@ -26,10 +33,25 @@ class GuillotineApp {
 
     // State
     this.bypass = false;
-    this.threshold = 0.5;       // Display threshold (0-1 in current scale)
+    this.threshold = 0;         // Display threshold (0-1 in current scale, 0 = 0dB)
     this.currentMinDb = -60;    // Current microscope scale
+    this.fonts = ['Zeyada', 'Cedarville Cursive', 'Dawning of a New Day'];
+    this.fontIndex = 0;
+
+    // Track if we're currently dragging to avoid feedback loops
+    this.draggingParam = null;
 
     this.init();
+  }
+
+  // Normalize dB value to 0-1 for inputGain/outputGain (-24 to 24 dB)
+  dbToNormalized(db) {
+    return (db + 24) / 48;  // -24..24 -> 0..1
+  }
+
+  // Convert normalized 0-1 back to dB for inputGain/outputGain
+  normalizedToDb(normalized) {
+    return normalized * 48 - 24;  // 0..1 -> -24..24
   }
 
   async init() {
@@ -37,27 +59,110 @@ class GuillotineApp {
     this.guillotine = new Guillotine(this.guillotineContainer);
     this.microscope = new Microscope(this.microscopeContainer);
 
-    // Threshold knob (0-1 maps to 0dB to currentMinDb dynamically)
-    this.thresholdKnob = new Knob(this.mainKnobsContainer, {
-      label: 'Threshold',
-      value: this.threshold,
+    // Sharpness knob (0-1, continuous) - LEFT
+    this.sharpnessKnob = new Knob(this.mainKnobsContainer, {
+      label: 'Sharpness',
+      min: 0, max: 1, value: 1.0,
       size: 50,
       useSprites: true,
       spriteScale: 0.35,
-      formatValue: (v) => this.thresholdToDb(v).toFixed(1) + 'dB'
+      formatValue: (v) => Math.round(v * 100) + '%'
+    });
+
+    // Threshold knob (0-1 maps to 0dB to currentMinDb dynamically) - CENTER, larger
+    this.thresholdKnob = new Knob(this.mainKnobsContainer, {
+      label: 'Threshold',
+      value: this.threshold,
+      size: 60,
+      useSprites: true,
+      spriteScale: 0.4,
+      spriteSuffix: 'dB',
+      formatValue: (v) => this.thresholdToDb(v).toFixed(1)
+    });
+
+    // Oversampling knob (stepped: 1x, 2x, 4x, 8x) - RIGHT
+    this.oversamplingKnob = new Knob(this.mainKnobsContainer, {
+      label: 'Oversample',
+      min: 0, max: 3, value: 0, step: 1,
+      size: 50,
+      useSprites: false,
+      formatValue: (v) => ['1x', '2x', '4x', '8x'][Math.round(v)]
+    });
+
+    // Input Gain knob
+    this.inputGainKnob = new Knob(this.gainKnobsContainer, {
+      label: 'Input',
+      min: -24, max: 24, value: 0, step: 0.1,
+      size: 40,
+      useSprites: false,
+      formatValue: (v) => v.toFixed(1) + 'dB'
+    });
+
+    // Output Gain knob
+    this.outputGainKnob = new Knob(this.gainKnobsContainer, {
+      label: 'Output',
+      min: -24, max: 24, value: 0, step: 0.1,
+      size: 40,
+      useSprites: false,
+      formatValue: (v) => v.toFixed(1) + 'dB'
     });
 
     // Wait for all components to initialize
     await Promise.all([
       this.guillotine.ready,
       this.microscope.ready,
-      this.thresholdKnob.ready
+      this.thresholdKnob.ready,
+      this.sharpnessKnob.ready,
+      this.oversamplingKnob.ready,
+      this.inputGainKnob.ready,
+      this.outputGainKnob.ready
     ]);
 
     // Wire up threshold changes from knob
     this.thresholdKnob.onChange = (value) => {
       this.setThreshold(value, 'knob');
     };
+    this.thresholdKnob.onDragStart = () => {
+      this.draggingParam = 'threshold';
+      parameterDragStarted('threshold');
+      this.microscope.showThresholdLabel();
+    };
+    this.thresholdKnob.onDragEnd = () => {
+      parameterDragEnded('threshold');
+      this.draggingParam = null;
+      this.microscope.hideThresholdLabel();
+    };
+
+    // Wire up other knob changes
+    this.sharpnessKnob.onChange = (v) => {
+      this.setSharpness(v);
+    };
+    this.oversamplingKnob.onChange = (v) => this.setOversampling(v);
+
+    // Input gain knob with drag tracking
+    this.inputGainKnob.onChange = (v) => this.setInputGain(v);
+    this.inputGainKnob.onDragStart = () => {
+      this.draggingParam = 'inputGain';
+      parameterDragStarted('inputGain');
+    };
+    this.inputGainKnob.onDragEnd = () => {
+      parameterDragEnded('inputGain');
+      this.draggingParam = null;
+    };
+
+    // Output gain knob with drag tracking
+    this.outputGainKnob.onChange = (v) => this.setOutputGain(v);
+    this.outputGainKnob.onDragStart = () => {
+      this.draggingParam = 'outputGain';
+      parameterDragStarted('outputGain');
+    };
+    this.outputGainKnob.onDragEnd = () => {
+      parameterDragEnded('outputGain');
+      this.draggingParam = null;
+    };
+
+    // Set initial sharpness on microscope (use knob's default value)
+    this.microscope.setSharpness(this.sharpnessKnob.getValue());
 
     // Wire up threshold changes from microscope drag
     this.microscope.onThresholdChange = (value) => {
@@ -75,9 +180,28 @@ class GuillotineApp {
     // Bypass toggle on guillotine click
     this.guillotineContainer.addEventListener('click', () => this.toggleBypass());
 
-    // Register JUCE callbacks
-    registerCallback('setThreshold', (value) => {
-      this.setThreshold(value, 'juce');
+    // Listen for parameter changes from C++ (DAW automation, presets, etc.)
+    onParameterChange('threshold', () => {
+      if (this.draggingParam !== 'threshold') {
+        const normalized = getParameterNormalized('threshold');
+        this.setThreshold(normalized, 'juce');
+      }
+    });
+
+    onParameterChange('inputGain', () => {
+      if (this.draggingParam !== 'inputGain') {
+        const normalized = getParameterNormalized('inputGain');
+        const db = this.normalizedToDb(normalized);
+        this.inputGainKnob.setValue(db);
+      }
+    });
+
+    onParameterChange('outputGain', () => {
+      if (this.draggingParam !== 'outputGain') {
+        const normalized = getParameterNormalized('outputGain');
+        const db = this.normalizedToDb(normalized);
+        this.outputGainKnob.setValue(db);
+      }
     });
 
     registerCallback('setBypass', (value) => {
@@ -93,6 +217,19 @@ class GuillotineApp {
     // Initial state
     this.updateBypassVisual();
     this.setThreshold(this.threshold, 'init');
+
+    // Font cycling with F key
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'f' || e.key === 'F') {
+        this.cycleFont();
+      }
+    });
+  }
+
+  cycleFont() {
+    this.fontIndex = (this.fontIndex + 1) % this.fonts.length;
+    const font = this.fonts[this.fontIndex];
+    document.documentElement.style.setProperty('--cursive-font', `'${font}', cursive`);
   }
 
   // Convert threshold (0-1) to dB (always uses full -60dB range internally)
@@ -127,7 +264,7 @@ class GuillotineApp {
       this.thresholdKnob.setValue(this.threshold);
       this.microscope.setThreshold(this.threshold);
       this.guillotine.setPosition(this.threshold);
-      sendParameter('threshold', this.threshold);
+      setParameterNormalized('threshold', this.threshold);
     }
   }
 
@@ -151,14 +288,32 @@ class GuillotineApp {
 
     // Notify JUCE (except when change came from JUCE)
     if (source !== 'juce' && source !== 'init') {
-      sendParameter('threshold', clampedValue);
+      setParameterNormalized('threshold', clampedValue);
     }
+  }
+
+  setSharpness(value) {
+    this.microscope.setSharpness(value);
+  }
+
+  setOversampling(value) {
+    // TODO: Add oversampling relay when needed
+  }
+
+  setInputGain(dbValue) {
+    const normalized = this.dbToNormalized(dbValue);
+    setParameterNormalized('inputGain', normalized);
+  }
+
+  setOutputGain(dbValue) {
+    const normalized = this.dbToNormalized(dbValue);
+    setParameterNormalized('outputGain', normalized);
   }
 
   toggleBypass() {
     this.bypass = !this.bypass;
     this.updateBypassVisual();
-    sendParameter('bypass', this.bypass);
+    // TODO: Add bypass relay when needed
   }
 
   updateBypassVisual() {

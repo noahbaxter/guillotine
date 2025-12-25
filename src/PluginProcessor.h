@@ -48,9 +48,6 @@ public:
     const std::array<float, envelopeBufferSize>& getEnvelopeClipThresholds() const { return envelopeClipThresholds; }
     const std::atomic<int>& getEnvelopeWritePosition() const { return envelopeWritePos; }
 
-    // Set current clip threshold (called from GUI when blade position changes)
-    void setClipThreshold(float threshold) { currentClipThreshold = juce::jlimit(0.0f, 1.0f, threshold); }
-
     // Test oscillator for UI development (1Hz ramp)
     void setTestOscEnabled(bool enabled) { testOscEnabled = enabled; }
     bool isTestOscEnabled() const { return testOscEnabled; }
@@ -64,7 +61,6 @@ private:
     std::atomic<int> envelopeWritePos{0};
     float currentPeak = 0.0f;
     int samplesSincePeak = 0;
-    float currentClipThreshold = 1.0f;  // Current clip threshold (1.0 = no clipping)
 
     // Test oscillator (1Hz ramp for UI development)
 #if defined(JUCE_DEBUG) && JucePlugin_Build_Standalone

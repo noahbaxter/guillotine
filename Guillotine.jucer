@@ -25,25 +25,42 @@
       <FILE id="Text1Png" name="text-1.png" compile="0" resource="1" file="assets/text/text-1.png"/>
       <FILE id="Text2Png" name="text-2.png" compile="0" resource="1" file="assets/text/text-2.png"/>
       <FILE id="FontZeyada" name="zeyada.ttf" compile="0" resource="1" file="assets/fonts/zeyada.ttf"/>
-      <FILE id="FontCedarville" name="cedarville.ttf" compile="0" resource="1" file="assets/fonts/cedarville.ttf"/>
-      <FILE id="FontDawning" name="dawning.ttf" compile="0" resource="1" file="assets/fonts/dawning.ttf"/>
+      <FILE id="FontCedarville" name="cedarville.ttf" compile="0" resource="1"
+            file="assets/fonts/cedarville.ttf"/>
+      <FILE id="FontDawning" name="dawning.ttf" compile="0" resource="1"
+            file="assets/fonts/dawning.ttf"/>
     </GROUP>
     <GROUP id="{WEBUI001-0000-0000-0000-000000000000}" name="web">
       <FILE id="WebIndex" name="index.html" compile="0" resource="1" file="web/index.html"/>
       <FILE id="WebMain" name="main.js" compile="0" resource="1" file="web/main.js"/>
       <FILE id="WebCSS" name="main.css" compile="0" resource="1" file="web/main.css"/>
-      <FILE id="WebJuceBridge" name="juce-bridge.js" compile="0" resource="1" file="web/lib/juce-bridge.js"/>
-      <FILE id="WebCompLoader" name="component-loader.js" compile="0" resource="1" file="web/lib/component-loader.js"/>
-      <FILE id="WebGuillotineJs" name="guillotine.js" compile="0" resource="1" file="web/components/views/guillotine.js"/>
-      <FILE id="WebGuillotineCss" name="guillotine.css" compile="0" resource="1" file="web/components/views/guillotine.css"/>
-      <FILE id="WebMicroscopeJs" name="microscope.js" compile="0" resource="1" file="web/components/views/microscope.js"/>
-      <FILE id="WebMicroscopeCss" name="microscope.css" compile="0" resource="1" file="web/components/views/microscope.css"/>
+      <FILE id="WebJuceBridge" name="juce-bridge.js" compile="0" resource="1"
+            file="web/lib/juce-bridge.js"/>
+      <FILE id="WebCompLoader" name="component-loader.js" compile="0" resource="1"
+            file="web/lib/component-loader.js"/>
+      <FILE id="WebJuceLibIndex" name="index.js" compile="0" resource="1"
+            file="web/lib/juce/index.js"/>
+      <FILE id="WebJuceLibCheck" name="check_native_interop.js" compile="0"
+            resource="1" file="web/lib/juce/check_native_interop.js"/>
+      <FILE id="WebGuillotineJs" name="guillotine.js" compile="0" resource="1"
+            file="web/components/views/guillotine.js"/>
+      <FILE id="WebGuillotineCss" name="guillotine.css" compile="0" resource="1"
+            file="web/components/views/guillotine.css"/>
+      <FILE id="WebMicroscopeJs" name="microscope.js" compile="0" resource="1"
+            file="web/components/views/microscope.js"/>
+      <FILE id="WebMicroscopeCss" name="microscope.css" compile="0" resource="1"
+            file="web/components/views/microscope.css"/>
       <FILE id="WebKnobJs" name="knob.js" compile="0" resource="1" file="web/components/controls/knob.js"/>
       <FILE id="WebKnobCss" name="knob.css" compile="0" resource="1" file="web/components/controls/knob.css"/>
-      <FILE id="WebWaveformJs" name="waveform.js" compile="0" resource="1" file="web/components/display/waveform.js"/>
-      <FILE id="WebWaveformCss" name="waveform.css" compile="0" resource="1" file="web/components/display/waveform.css"/>
+      <FILE id="WebWaveformJs" name="waveform.js" compile="0" resource="1"
+            file="web/components/display/waveform.js"/>
+      <FILE id="WebWaveformCss" name="waveform.css" compile="0" resource="1"
+            file="web/components/display/waveform.css"/>
       <FILE id="WebDigitsJs" name="digits.js" compile="0" resource="1" file="web/components/display/digits.js"/>
-      <FILE id="WebDigitsCss" name="digits.css" compile="0" resource="1" file="web/components/display/digits.css"/>
+      <FILE id="WebDigitsCss" name="digits.css" compile="0" resource="1"
+            file="web/components/display/digits.css"/>
+      <FILE id="WebGrungeTexture" name="grunge-texture.jpg" compile="0" resource="1"
+            file="web/assets/grunge-texture.jpg"/>
     </GROUP>
     <GROUP id="{577BFFED-2E98-5329-03C4-711F74395056}" name="src">
       <FILE id="PZm7UN" name="PluginProcessor.cpp" compile="1" resource="0"

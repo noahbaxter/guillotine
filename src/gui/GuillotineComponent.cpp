@@ -81,9 +81,7 @@ void GuillotineComponent::setBladePosition(float position)
     // Sync envelope clip amount (blade down = more clipping = lower threshold)
     envelope.setClipAmount(bladePosition);
 
-    // Also update processor's clip threshold for non-retroactive clipping
-    if (processor != nullptr)
-        processor->setClipThreshold(bladePosition);
+    // Note: threshold is now managed via APVTS and WebView relay system
 
     repaint();
 }

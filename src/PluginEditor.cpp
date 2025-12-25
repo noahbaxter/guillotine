@@ -3,7 +3,33 @@
 #include "BinaryData.h"
 
 GuillotineEditor::GuillotineEditor(GuillotineProcessor& p)
-    : AudioProcessorEditor(&p), audioProcessor(p)
+    : AudioProcessorEditor(&p),
+      audioProcessor(p),
+      // Initialize relay objects with parameter IDs
+      inputGainRelay{"inputGain"},
+      outputGainRelay{"outputGain"},
+      thresholdRelay{"threshold"},
+      // Initialize WebView with relays
+      webView{
+          juce::WebBrowserComponent::Options{}
+              .withNativeIntegrationEnabled()
+              .withResourceProvider(
+                  [this](const auto& url) { return getResource(url); },
+                  juce::URL{"http://localhost/"}.getOrigin())
+              .withOptionsFrom(inputGainRelay)
+              .withOptionsFrom(outputGainRelay)
+              .withOptionsFrom(thresholdRelay)
+      },
+      // Initialize parameter attachments (connect relays to APVTS)
+      inputGainAttachment{
+          *audioProcessor.getAPVTS().getParameter("inputGain"),
+          inputGainRelay, nullptr},
+      outputGainAttachment{
+          *audioProcessor.getAPVTS().getParameter("outputGain"),
+          outputGainRelay, nullptr},
+      thresholdAttachment{
+          *audioProcessor.getAPVTS().getParameter("threshold"),
+          thresholdRelay, nullptr}
 {
     addAndMakeVisible(webView);
 
@@ -33,15 +59,6 @@ void GuillotineEditor::resized()
 void GuillotineEditor::timerCallback()
 {
     pushEnvelopeData();
-}
-
-void GuillotineEditor::handleParameterChange(const juce::String& paramId, float value)
-{
-    if (paramId == "clip")
-    {
-        lastClipValue = value;
-        audioProcessor.setClipThreshold(value);
-    }
 }
 
 void GuillotineEditor::pushEnvelopeData()
@@ -91,6 +108,9 @@ std::optional<juce::WebBrowserComponent::Resource> GuillotineEditor::getResource
         { "main.js",                 BinaryData::main_js,         BinaryData::main_jsSize,         "text/javascript" },
         { "lib/juce-bridge.js",      BinaryData::jucebridge_js,   BinaryData::jucebridge_jsSize,   "text/javascript" },
         { "lib/component-loader.js", BinaryData::componentloader_js, BinaryData::componentloader_jsSize, "text/javascript" },
+        // JUCE frontend library
+        { "lib/juce/index.js",       BinaryData::index_js,        BinaryData::index_jsSize,        "text/javascript" },
+        { "lib/juce/check_native_interop.js", BinaryData::check_native_interop_js, BinaryData::check_native_interop_jsSize, "text/javascript" },
         // Components - views
         { "components/views/guillotine.js",   BinaryData::guillotine_js,   BinaryData::guillotine_jsSize,   "text/javascript" },
         { "components/views/guillotine.css",  BinaryData::guillotine_css,  BinaryData::guillotine_cssSize,  "text/css" },
@@ -130,6 +150,8 @@ std::optional<juce::WebBrowserComponent::Resource> GuillotineEditor::getResource
         { "assets/fonts/zeyada.ttf",    BinaryData::zeyada_ttf,     BinaryData::zeyada_ttfSize,     "application/x-font-ttf" },
         { "assets/fonts/cedarville.ttf", BinaryData::cedarville_ttf, BinaryData::cedarville_ttfSize, "application/x-font-ttf" },
         { "assets/fonts/dawning.ttf",   BinaryData::dawning_ttf,    BinaryData::dawning_ttfSize,    "application/x-font-ttf" },
+        // Textures
+        { "assets/grunge-texture.jpg",  BinaryData::grungetexture_jpg, BinaryData::grungetexture_jpgSize, "image/jpeg" },
     };
 
     for (const auto& res : resources)
