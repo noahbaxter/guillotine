@@ -98,7 +98,7 @@ body::before {
 #guillotine-side {
   position: absolute;
   left: 0px;
-  top: 30%;
+  top: 45%;
   transform: translateY(-50%);
   height: 100px;
   width: auto;
