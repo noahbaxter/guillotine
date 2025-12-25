@@ -58,9 +58,10 @@
 }
 
 .knob__suffix {
-  font-family: monospace;
-  font-size: 14px;
-  color: #888;
+  font-family: var(--cursive-font);
+  font-size: 19px;
+  margin-bottom: -5px;
+  color: #aaa;
   margin-left: 2px;
 }
 
@@ -68,8 +69,4 @@
   font-family: var(--cursive-font);
   font-size: 25px;
   margin-bottom: -10px;
-}
-
-.knob__suffix--cursive {
-  font-family: var(--cursive-font);
 }

@@ -104,8 +104,7 @@ class GuillotineApp {
       size: 50,
       spriteScale: 0.35,
       suffix: 'x',
-      formatter: (v) => [1, 2, 4, 8][Math.round(v)],
-      suffixVariant: 'cursive'
+      formatter: (v) => [1, 2, 4, 8][Math.round(v)]
     }));
 
     // Input Gain knob
