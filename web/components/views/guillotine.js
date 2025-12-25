@@ -9,8 +9,8 @@ const DEFAULTS = {
   ropeClipOffset: 0.25,
   bloodLineMaxJitter: 8,
   // Blood line endpoints (x, y) - relative to guillotine container
-  bloodLineP1: { x: 100, y: 70 },   // Left point (upper)
-  bloodLineP2: { x: 180, y: 110 },  // Right point (lower)
+  bloodLineP1: { x: 100, y: 63 },   // Left point (upper)
+  bloodLineP2: { x: 180, y: 98 },  // Right point (lower)
   ...GUILLOTINE_CONFIG,
   images: {
     rope: 'assets/rope.png',
@@ -182,11 +182,21 @@ export class Guillotine {
     const dy = p2.y - p1.y;
     const angle = Math.atan2(dy, dx);
 
+    // Draw straight line first
+    ctx.beginPath();
+    ctx.moveTo(p1.x, p1.y);
+    ctx.lineTo(p2.x, p2.y);
+    ctx.strokeStyle = 'rgba(139, 0, 0, 0.85)';
+    ctx.lineWidth = 3;
+    ctx.lineCap = 'round';
+    ctx.stroke();
+
     // Perpendicular vector for jitter
     const perpX = -Math.sin(angle);
     const perpY = Math.cos(angle);
     const jitterScale = (1 - this.sharpness) * bloodLineMaxJitter;
 
+    // Draw jittery line on top
     ctx.beginPath();
     ctx.moveTo(p1.x + perpX * this.bloodPattern[0] * jitterScale, p1.y + perpY * this.bloodPattern[0] * jitterScale);
 
@@ -197,7 +207,7 @@ export class Guillotine {
       ctx.lineTo(x, y);
     }
 
-    ctx.strokeStyle = 'rgba(139, 0, 0, 0.85)';
+    ctx.strokeStyle = 'rgba(139, 0, 0, 0.65)';
     ctx.lineWidth = 3;
     ctx.lineCap = 'round';
     ctx.stroke();
