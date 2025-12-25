@@ -22,6 +22,21 @@ fontStyles.textContent = `
 `;
 document.head.appendChild(fontStyles);
 
+// Utility for creating sprite-based knobs
+function createSpriteKnob(config) {
+  const { label, suffix, formatter, spriteScale = 0.4, suffixVariant, sizeVariant, ...rest } = config;
+  return {
+    label,
+    useSprites: true,
+    spriteScale,
+    spriteSuffix: suffix,
+    formatValue: (v) => String(formatter(v)),
+    suffixVariant,
+    sizeVariant,
+    ...rest
+  };
+}
+
 class GuillotineApp {
   constructor() {
     // Container references
@@ -60,52 +75,60 @@ class GuillotineApp {
     this.microscope = new Microscope(this.microscopeContainer);
 
     // Sharpness knob (0-1, continuous) - LEFT
-    this.sharpnessKnob = new Knob(this.mainKnobsContainer, {
+    this.sharpnessKnob = new Knob(this.mainKnobsContainer, createSpriteKnob({
       label: 'Sharpness',
       min: 0, max: 1, value: 1.0,
       size: 50,
-      useSprites: true,
       spriteScale: 0.35,
-      formatValue: (v) => Math.round(v * 100) + '%'
-    });
+      suffix: '%',
+      formatter: (v) => Math.round(v * 100)
+    }));
 
     // Threshold knob (0-1 maps to 0dB to currentMinDb dynamically) - CENTER, larger
-    this.thresholdKnob = new Knob(this.mainKnobsContainer, {
+    this.thresholdKnob = new Knob(this.mainKnobsContainer, createSpriteKnob({
       label: 'Threshold',
       value: this.threshold,
       size: 60,
-      useSprites: true,
       spriteScale: 0.4,
-      spriteSuffix: 'dB',
-      formatValue: (v) => this.thresholdToDb(v).toFixed(1)
-    });
+      suffix: 'dB',
+      formatter: (v) => this.thresholdToDb(v).toFixed(1),
+      suffixVariant: 'large',
+      sizeVariant: 'large',
+      wrapperClass: 'knob-wrapper--threshold'
+    }));
 
     // Oversampling knob (stepped: 1x, 2x, 4x, 8x) - RIGHT
-    this.oversamplingKnob = new Knob(this.mainKnobsContainer, {
+    this.oversamplingKnob = new Knob(this.mainKnobsContainer, createSpriteKnob({
       label: 'Oversample',
       min: 0, max: 3, value: 0, step: 1,
       size: 50,
-      useSprites: false,
-      formatValue: (v) => ['1x', '2x', '4x', '8x'][Math.round(v)]
-    });
+      spriteScale: 0.35,
+      suffix: 'x',
+      formatter: (v) => [1, 2, 4, 8][Math.round(v)],
+      suffixVariant: 'cursive'
+    }));
 
     // Input Gain knob
-    this.inputGainKnob = new Knob(this.gainKnobsContainer, {
+    this.inputGainKnob = new Knob(this.gainKnobsContainer, createSpriteKnob({
       label: 'Input',
       min: -24, max: 24, value: 0, step: 0.1,
-      size: 40,
-      useSprites: false,
-      formatValue: (v) => v.toFixed(1) + 'dB'
-    });
+      size: 32,
+      spriteScale: 0.25,
+      suffix: 'dB',
+      formatter: (v) => v.toFixed(1),
+      wrapperClass: 'knob-wrapper--side'
+    }));
 
     // Output Gain knob
-    this.outputGainKnob = new Knob(this.gainKnobsContainer, {
+    this.outputGainKnob = new Knob(this.gainKnobsContainer, createSpriteKnob({
       label: 'Output',
       min: -24, max: 24, value: 0, step: 0.1,
-      size: 40,
-      useSprites: false,
-      formatValue: (v) => v.toFixed(1) + 'dB'
-    });
+      size: 32,
+      spriteScale: 0.25,
+      suffix: 'dB',
+      formatter: (v) => v.toFixed(1),
+      wrapperClass: 'knob-wrapper--side'
+    }));
 
     // Wait for all components to initialize
     await Promise.all([
