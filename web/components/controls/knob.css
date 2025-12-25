@@ -6,9 +6,21 @@
   user-select: none;
 }
 
+.knob-wrapper--large {
+  transform: scale(1.25);
+}
+
+.knob-wrapper--large.knob-wrapper--threshold {
+  transform: scale(1.25) translateY(40px);
+}
+
+.knob-wrapper--side {
+  margin: 0 20px;
+}
+
 .knob__label {
   font-size: 22px;
-  font-family: 'Zeyada', cursive;
+  font-family: var(--cursive-font);
   color: #fff;
 }
 
@@ -39,7 +51,25 @@
   color: #888;
   font-family: monospace;
   min-height: 20px;
+  width: 80px;
   display: flex;
   align-items: center;
   justify-content: center;
+}
+
+.knob__suffix {
+  font-family: monospace;
+  font-size: 14px;
+  color: #888;
+  margin-left: 2px;
+}
+
+.knob__suffix--large {
+  font-family: var(--cursive-font);
+  font-size: 25px;
+  margin-bottom: -10px;
+}
+
+.knob__suffix--cursive {
+  font-family: var(--cursive-font);
 }

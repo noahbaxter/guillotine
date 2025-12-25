@@ -15,7 +15,8 @@ const DEFAULTS = {
   formatValue: null,
   size: 60,
   useSprites: false,
-  spriteScale: 0.4
+  spriteScale: 0.4,
+  spriteSuffix: ''  // Text suffix after sprite digits (e.g., 'dB')
 };
 
 export class Knob {
@@ -25,7 +26,10 @@ export class Knob {
     this.container = container;
     this.options = { ...DEFAULTS, ...options };
     this.value = this.options.value;
+    this.defaultValue = this.options.value;  // Store default for reset
     this.onChange = null;
+    this.onDragStart = null;
+    this.onDragEnd = null;
     this.dragging = false;
     this.startY = 0;
     this.startValue = 0;
@@ -44,6 +48,12 @@ export class Knob {
 
     this.element = document.createElement('div');
     this.element.className = 'knob-wrapper';
+    if (this.options.sizeVariant) {
+      this.element.classList.add(`knob-wrapper--${this.options.sizeVariant}`);
+    }
+    if (this.options.wrapperClass) {
+      this.element.classList.add(this.options.wrapperClass);
+    }
 
     if (label) {
       const labelEl = document.createElement('label');
@@ -68,11 +78,24 @@ export class Knob {
     this.valueDisplayEl.className = 'knob__value';
     this.element.appendChild(this.valueDisplayEl);
 
+    this.container.appendChild(this.element);
+
     if (this.options.useSprites) {
       this.digits = new Digits(this.valueDisplayEl, { scale: this.options.spriteScale });
+      if (this.options.spriteSuffix) {
+        this.suffixEl = document.createElement('span');
+        this.suffixEl.className = 'knob__suffix';
+        if (this.options.suffixVariant) {
+          this.suffixEl.classList.add(`knob__suffix--${this.options.suffixVariant}`);
+        }
+        this.suffixEl.textContent = this.options.spriteSuffix;
+        // Append suffix after digits are ready
+        this.digits.ready.then(() => {
+          this.valueDisplayEl.appendChild(this.suffixEl);
+        });
+      }
     }
 
-    this.container.appendChild(this.element);
     this.bindEvents();
     this.render();
   }
@@ -83,6 +106,7 @@ export class Knob {
       this.startY = e.clientY;
       this.startValue = this.value;
       this.knobEl.classList.add('knob__dial--grabbing');
+      if (this.onDragStart) this.onDragStart();
       e.preventDefault();
     };
 
@@ -104,16 +128,25 @@ export class Knob {
     };
 
     const onMouseUp = () => {
+      if (this.dragging && this.onDragEnd) this.onDragEnd();
       this.dragging = false;
       this.knobEl.classList.remove('knob__dial--grabbing');
     };
 
+    const onDoubleClick = () => {
+      this.value = this.defaultValue;
+      this.render();
+      if (this.onChange) this.onChange(this.value);
+    };
+
     this.knobEl.addEventListener('mousedown', onMouseDown);
+    this.knobEl.addEventListener('dblclick', onDoubleClick);
     document.addEventListener('mousemove', onMouseMove);
     document.addEventListener('mouseup', onMouseUp);
 
     this.cleanup = () => {
       this.knobEl.removeEventListener('mousedown', onMouseDown);
+      this.knobEl.removeEventListener('dblclick', onDoubleClick);
       document.removeEventListener('mousemove', onMouseMove);
       document.removeEventListener('mouseup', onMouseUp);
     };
