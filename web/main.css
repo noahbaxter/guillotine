@@ -63,6 +63,7 @@ body::before {
   max-width: 100%;
   object-fit: contain;
   opacity: 0.8;
+  margin-top: 30px;
 }
 
 #guillotine-container {
@@ -75,13 +76,30 @@ body::before {
   padding: 30px 0 20px 0;
 }
 
+#guillotine-container {
+  position: relative;
+}
+
+#guillotine-side {
+  position: absolute;
+  left: 0px;
+  top: 30%;
+  transform: translateY(-50%);
+  height: 100px;
+  width: auto;
+  pointer-events: none;
+  opacity: 1.0;
+}
+
 #bucket-text {
-  height: 24px;
-  font-family: var(--cursive-font);
-  font-size: 14px;
-  color: rgba(255, 255, 255, 0.4);
+  height: 50px;
   text-align: center;
-  line-height: 24px;
+}
+
+#bucket-text img {
+  height: 100%;
+  width: auto;
+  opacity: 1.0;
 }
 
 /* Right column: Microscope + Knobs */
@@ -144,6 +162,15 @@ body::before {
 
 #gain-knobs {
   display: flex;
-  justify-content: space-around;
+  justify-content: center;
+  gap: 60px;
   padding: 8px 0;
+}
+
+#gain-knobs .knob:first-child {
+  margin-right: 40px;
+}
+
+#gain-knobs .knob:last-child {
+  margin-left: 40px;
 }
