@@ -42,12 +42,27 @@ body::before {
   z-index: 1;
 }
 
-/* Left column: Guillotine + Bucket */
+/* Left column: Title + Guillotine + Bucket Text */
 #left-panel {
   display: flex;
   flex-direction: column;
   width: 50%;
-  gap: 8px;
+  gap: 4px;
+}
+
+#plugin-title {
+  height: 90px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+#plugin-logo {
+  height: 100%;
+  width: auto;
+  max-width: 100%;
+  object-fit: contain;
+  opacity: 0.8;
 }
 
 #guillotine-container {
@@ -57,14 +72,16 @@ body::before {
   align-items: center;
   justify-content: center;
   cursor: pointer;
+  padding: 30px 0 20px 0;
 }
 
-#bucket-container {
-  height: 60px;
-  background: rgba(255, 255, 255, 0.03);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 4px;
-  cursor: pointer;
+#bucket-text {
+  height: 24px;
+  font-family: var(--cursive-font);
+  font-size: 14px;
+  color: rgba(255, 255, 255, 0.4);
+  text-align: center;
+  line-height: 24px;
 }
 
 /* Right column: Microscope + Knobs */

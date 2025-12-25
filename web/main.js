@@ -4,6 +4,7 @@
 import { Guillotine } from './components/views/guillotine.js';
 import { Microscope } from './components/views/microscope.js';
 import { Knob } from './components/controls/knob.js';
+import { Lever } from './components/controls/lever.js';
 import {
   setParameterNormalized,
   getParameterNormalized,
