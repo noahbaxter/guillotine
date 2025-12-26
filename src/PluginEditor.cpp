@@ -8,7 +8,13 @@ GuillotineEditor::GuillotineEditor(GuillotineProcessor& p)
       // Initialize relay objects with parameter IDs
       inputGainRelay{"inputGain"},
       outputGainRelay{"outputGain"},
-      thresholdRelay{"threshold"},
+      ceilingRelay{"ceiling"},
+      sharpnessRelay{"sharpness"},
+      oversamplingRelay{"oversampling"},
+      filterTypeRelay{"filterType"},
+      channelModeRelay{"channelMode"},
+      stereoLinkRelay{"stereoLink"},
+      deltaMonitorRelay{"deltaMonitor"},
       // Initialize WebView with relays
       webView{
           juce::WebBrowserComponent::Options{}
@@ -18,7 +24,13 @@ GuillotineEditor::GuillotineEditor(GuillotineProcessor& p)
                   juce::URL{"http://localhost/"}.getOrigin())
               .withOptionsFrom(inputGainRelay)
               .withOptionsFrom(outputGainRelay)
-              .withOptionsFrom(thresholdRelay)
+              .withOptionsFrom(ceilingRelay)
+              .withOptionsFrom(sharpnessRelay)
+              .withOptionsFrom(oversamplingRelay)
+              .withOptionsFrom(filterTypeRelay)
+              .withOptionsFrom(channelModeRelay)
+              .withOptionsFrom(stereoLinkRelay)
+              .withOptionsFrom(deltaMonitorRelay)
       },
       // Initialize parameter attachments (connect relays to APVTS)
       inputGainAttachment{
@@ -27,9 +39,27 @@ GuillotineEditor::GuillotineEditor(GuillotineProcessor& p)
       outputGainAttachment{
           *audioProcessor.getAPVTS().getParameter("outputGain"),
           outputGainRelay, nullptr},
-      thresholdAttachment{
-          *audioProcessor.getAPVTS().getParameter("threshold"),
-          thresholdRelay, nullptr}
+      ceilingAttachment{
+          *audioProcessor.getAPVTS().getParameter("ceiling"),
+          ceilingRelay, nullptr},
+      sharpnessAttachment{
+          *audioProcessor.getAPVTS().getParameter("sharpness"),
+          sharpnessRelay, nullptr},
+      oversamplingAttachment{
+          *audioProcessor.getAPVTS().getParameter("oversampling"),
+          oversamplingRelay, nullptr},
+      filterTypeAttachment{
+          *audioProcessor.getAPVTS().getParameter("filterType"),
+          filterTypeRelay, nullptr},
+      channelModeAttachment{
+          *audioProcessor.getAPVTS().getParameter("channelMode"),
+          channelModeRelay, nullptr},
+      stereoLinkAttachment{
+          *audioProcessor.getAPVTS().getParameter("stereoLink"),
+          stereoLinkRelay, nullptr},
+      deltaMonitorAttachment{
+          *audioProcessor.getAPVTS().getParameter("deltaMonitor"),
+          deltaMonitorRelay, nullptr}
 {
     addAndMakeVisible(webView);
 

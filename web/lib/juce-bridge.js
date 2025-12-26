@@ -5,7 +5,13 @@ import * as Juce from './juce/index.js';
 const sliderStates = {
     inputGain: Juce.getSliderState("inputGain"),
     outputGain: Juce.getSliderState("outputGain"),
-    threshold: Juce.getSliderState("threshold")
+    ceiling: Juce.getSliderState("ceiling"),
+    sharpness: Juce.getSliderState("sharpness"),
+    oversampling: Juce.getSliderState("oversampling"),
+    filterType: Juce.getSliderState("filterType"),
+    channelMode: Juce.getSliderState("channelMode"),
+    stereoLink: Juce.getSliderState("stereoLink"),
+    deltaMonitor: Juce.getSliderState("deltaMonitor")
 };
 
 // Set a parameter value (normalized 0-1)
@@ -59,6 +65,28 @@ export function parameterDragEnded(id) {
 // Register a global callback function (for C++ to call via evaluateJavascript)
 export function registerCallback(name, callback) {
     window[name] = callback;
+}
+
+// Delta monitor helpers - syncs UI delta mode with C++ param
+export function setDeltaMonitor(enabled) {
+    const state = sliderStates.deltaMonitor;
+    if (state) {
+        state.setNormalisedValue(enabled ? 1.0 : 0.0);
+    }
+}
+
+export function getDeltaMonitor() {
+    const state = sliderStates.deltaMonitor;
+    return state ? state.getNormalisedValue() > 0.5 : false;
+}
+
+export function onDeltaMonitorChange(callback) {
+    const state = sliderStates.deltaMonitor;
+    if (state) {
+        state.valueChangedEvent.addListener(() => {
+            callback(state.getNormalisedValue() > 0.5);
+        });
+    }
 }
 
 // Export JUCE library for direct access if needed

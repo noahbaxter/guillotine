@@ -22,7 +22,13 @@ private:
     // WebView relay objects (bridge between WebView and parameters)
     juce::WebSliderRelay inputGainRelay;
     juce::WebSliderRelay outputGainRelay;
-    juce::WebSliderRelay thresholdRelay;
+    juce::WebSliderRelay ceilingRelay;
+    juce::WebSliderRelay sharpnessRelay;
+    juce::WebSliderRelay oversamplingRelay;
+    juce::WebSliderRelay filterTypeRelay;
+    juce::WebSliderRelay channelModeRelay;
+    juce::WebSliderRelay stereoLinkRelay;
+    juce::WebSliderRelay deltaMonitorRelay;
 
     // WebView component (must be declared after relays)
     juce::WebBrowserComponent webView;
@@ -30,7 +36,13 @@ private:
     // Parameter attachments (connect relays to APVTS parameters)
     juce::WebSliderParameterAttachment inputGainAttachment;
     juce::WebSliderParameterAttachment outputGainAttachment;
-    juce::WebSliderParameterAttachment thresholdAttachment;
+    juce::WebSliderParameterAttachment ceilingAttachment;
+    juce::WebSliderParameterAttachment sharpnessAttachment;
+    juce::WebSliderParameterAttachment oversamplingAttachment;
+    juce::WebSliderParameterAttachment filterTypeAttachment;
+    juce::WebSliderParameterAttachment channelModeAttachment;
+    juce::WebSliderParameterAttachment stereoLinkAttachment;
+    juce::WebSliderParameterAttachment deltaMonitorAttachment;
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(GuillotineEditor)
 };

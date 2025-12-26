@@ -12,7 +12,9 @@ import {
   onParameterChange,
   parameterDragStarted,
   parameterDragEnded,
-  registerCallback
+  registerCallback,
+  setDeltaMonitor,
+  onDeltaMonitorChange
 } from './lib/juce-bridge.js';
 import { setDeltaMode } from './lib/theme.js';
 
@@ -152,12 +154,12 @@ class GuillotineApp {
       this.setThreshold(value, 'knob');
     };
     this.thresholdKnob.onDragStart = () => {
-      this.draggingParam = 'threshold';
-      parameterDragStarted('threshold');
+      this.draggingParam = 'ceiling';
+      parameterDragStarted('ceiling');
       this.microscope.showThresholdLabel();
     };
     this.thresholdKnob.onDragEnd = () => {
-      parameterDragEnded('threshold');
+      parameterDragEnded('ceiling');
       this.draggingParam = null;
       this.microscope.hideThresholdLabel();
     };
@@ -214,10 +216,12 @@ class GuillotineApp {
     this.setupDeltaModeHandlers();
 
     // Listen for parameter changes from C++ (DAW automation, presets, etc.)
-    onParameterChange('threshold', () => {
-      if (this.draggingParam !== 'threshold') {
-        const normalized = getParameterNormalized('threshold');
-        this.setThreshold(normalized, 'juce');
+    // ceiling param: -60dB (normalized=0) to 0dB (normalized=1)
+    // UI threshold: 0 (no clipping) to 1 (max clipping)
+    onParameterChange('ceiling', () => {
+      if (this.draggingParam !== 'ceiling') {
+        const ceilingNorm = getParameterNormalized('ceiling');
+        this.setThreshold(1 - ceilingNorm, 'juce');  // Invert: ceiling 0dB→thresh 0, ceiling -60dB→thresh 1
       }
     });
 
@@ -280,7 +284,16 @@ class GuillotineApp {
 
       this.deltaMode = !this.deltaMode;
       setDeltaMode(this.deltaMode);
+      setDeltaMonitor(this.deltaMode);  // Sync to C++ param
     };
+
+    // Listen for C++ param changes (DAW automation, etc.)
+    onDeltaMonitorChange((enabled) => {
+      if (this.deltaMode !== enabled) {
+        this.deltaMode = enabled;
+        setDeltaMode(enabled);
+      }
+    });
 
     // Click handlers for delta mode toggle
     bucketText.addEventListener('click', toggleDelta);
@@ -336,7 +349,7 @@ class GuillotineApp {
       this.threshold = newThreshold;
       this.thresholdKnob.setValue(this.threshold);
       this.microscope.setThreshold(this.threshold);
-      setParameterNormalized('threshold', this.threshold);
+      setParameterNormalized('ceiling', 1 - this.threshold);
     }
   }
 
@@ -359,18 +372,23 @@ class GuillotineApp {
     // Note: guillotine blade position is now controlled by bypass/lever, not threshold
 
     // Notify JUCE (except when change came from JUCE)
+    // UI threshold 0→1 maps to ceiling 0dB→-60dB (normalized 1→0)
     if (source !== 'juce' && source !== 'init') {
-      setParameterNormalized('threshold', clampedValue);
+      setParameterNormalized('ceiling', 1 - clampedValue);
     }
   }
 
   setSharpness(value) {
     this.microscope.setSharpness(value);
     this.guillotine.setSharpness(value);
+    setParameterNormalized('sharpness', value);
   }
 
   setOversampling(value) {
-    // TODO: Add oversampling relay when needed
+    // Oversampling is a choice param (0-3), value comes in as 0-1 from knob
+    // Map to 0-3 range: 0=1x, 1=4x, 2=16x, 3=32x
+    const index = Math.round(value * 3);
+    setParameterNormalized('oversampling', index / 3);
   }
 
   setInputGain(dbValue) {
