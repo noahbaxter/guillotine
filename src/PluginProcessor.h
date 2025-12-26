@@ -3,6 +3,7 @@
 #include <JuceHeader.h>
 #include <array>
 #include <atomic>
+#include "dsp/ClipperEngine.h"
 
 class GuillotineProcessor : public juce::AudioProcessor
 {
@@ -70,6 +71,10 @@ private:
 #endif
     double testOscPhase = 0.0;
     double sampleRate = 44100.0;
+
+    // DSP engine
+    dsp::ClipperEngine clipperEngine;
+    int lastReportedLatency = 0;
 
     static juce::AudioProcessorValueTreeState::ParameterLayout createParameterLayout();
 

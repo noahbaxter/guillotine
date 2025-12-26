@@ -24,6 +24,7 @@ juce::AudioProcessorValueTreeState::ParameterLayout GuillotineProcessor::createP
 {
     std::vector<std::unique_ptr<juce::RangedAudioParameter>> params;
 
+    // Legacy gain param (kept for compatibility)
     params.push_back(std::make_unique<juce::AudioParameterFloat>(
         juce::ParameterID{"gain", 1},
         "Gain",
@@ -35,12 +36,14 @@ juce::AudioProcessorValueTreeState::ParameterLayout GuillotineProcessor::createP
         juce::ParameterID{"sharpness", 1},
         "Sharpness",
         juce::NormalisableRange<float>(0.0f, 1.0f, 0.01f),
-        0.5f));
+        1.0f));  // Default to hard clip
 
-    params.push_back(std::make_unique<juce::AudioParameterInt>(
+    // Oversampling: 0=1x, 1=4x, 2=16x, 3=32x
+    params.push_back(std::make_unique<juce::AudioParameterChoice>(
         juce::ParameterID{"oversampling", 1},
         "Oversampling",
-        0, 3, 0));  // 0=1x, 1=2x, 2=4x, 3=8x
+        juce::StringArray{"1x", "4x", "16x", "32x"},
+        0));
 
     params.push_back(std::make_unique<juce::AudioParameterFloat>(
         juce::ParameterID{"inputGain", 1},
@@ -56,11 +59,39 @@ juce::AudioProcessorValueTreeState::ParameterLayout GuillotineProcessor::createP
         0.0f,
         juce::AudioParameterFloatAttributes().withLabel("dB")));
 
+    // Ceiling (clip threshold in dB)
     params.push_back(std::make_unique<juce::AudioParameterFloat>(
-        juce::ParameterID{"threshold", 1},
-        "Threshold",
-        juce::NormalisableRange<float>(0.0f, 1.0f, 0.01f),
-        0.0f));  // 0 = no clipping, 1 = max clipping
+        juce::ParameterID{"ceiling", 1},
+        "Ceiling",
+        juce::NormalisableRange<float>(-60.0f, 0.0f, 0.1f),
+        0.0f,
+        juce::AudioParameterFloatAttributes().withLabel("dB")));
+
+    // Filter type: 0=Minimum Phase, 1=Linear Phase
+    params.push_back(std::make_unique<juce::AudioParameterChoice>(
+        juce::ParameterID{"filterType", 1},
+        "Filter Type",
+        juce::StringArray{"Minimum Phase", "Linear Phase"},
+        0));
+
+    // Channel mode: 0=L/R, 1=M/S
+    params.push_back(std::make_unique<juce::AudioParameterChoice>(
+        juce::ParameterID{"channelMode", 1},
+        "Channel Mode",
+        juce::StringArray{"L/R", "M/S"},
+        0));
+
+    // Stereo link
+    params.push_back(std::make_unique<juce::AudioParameterBool>(
+        juce::ParameterID{"stereoLink", 1},
+        "Stereo Link",
+        false));
+
+    // Delta monitor
+    params.push_back(std::make_unique<juce::AudioParameterBool>(
+        juce::ParameterID{"deltaMonitor", 1},
+        "Delta Monitor",
+        false));
 
     return {params.begin(), params.end()};
 }
@@ -130,9 +161,11 @@ void GuillotineProcessor::changeProgramName(int index, const juce::String& newNa
 
 void GuillotineProcessor::prepareToPlay(double newSampleRate, int samplesPerBlock)
 {
-    juce::ignoreUnused(samplesPerBlock);
     sampleRate = newSampleRate;
     testOscPhase = 0.0;
+
+    clipperEngine.prepare(newSampleRate, samplesPerBlock, getTotalNumInputChannels());
+    lastReportedLatency = 0;
 }
 
 void GuillotineProcessor::releaseResources()
@@ -172,27 +205,49 @@ void GuillotineProcessor::processBlock(juce::AudioBuffer<float>& buffer, juce::M
     for (auto i = totalNumInputChannels; i < totalNumOutputChannels; ++i)
         buffer.clear(i, 0, buffer.getNumSamples());
 
-    // Get gain parameter values from APVTS
-    float gainDb = apvts.getRawParameterValue("gain")->load();
-    float gainLinear = juce::Decibels::decibelsToGain(gainDb);
+    // Get parameter values from APVTS
     float inputGainDb = apvts.getRawParameterValue("inputGain")->load();
     float outputGainDb = apvts.getRawParameterValue("outputGain")->load();
-    float threshold = apvts.getRawParameterValue("threshold")->load();
-    float inputGainLinear = juce::Decibels::decibelsToGain(inputGainDb);
-    float outputGainLinear = juce::Decibels::decibelsToGain(outputGainDb);
+    float sharpness = apvts.getRawParameterValue("sharpness")->load();
+    float ceilingDb = apvts.getRawParameterValue("ceiling")->load();
+    int oversamplingChoice = static_cast<int>(apvts.getRawParameterValue("oversampling")->load());
+    int filterType = static_cast<int>(apvts.getRawParameterValue("filterType")->load());
+    int channelMode = static_cast<int>(apvts.getRawParameterValue("channelMode")->load());
+    bool stereoLink = apvts.getRawParameterValue("stereoLink")->load() > 0.5f;
+    bool deltaMonitor = apvts.getRawParameterValue("deltaMonitor")->load() > 0.5f;
 
-    // Combined: apply gains, optionally inject test osc, extract envelope PRE-clip
-    float preGainLinear = gainLinear * inputGainLinear;
-    const double testOscFreq = 1.0;
-    const double phaseIncrement = testOscFreq / sampleRate;
+    // Map choice index to oversampler factor index: 0=1x, 1=4x, 2=16x, 3=32x → 0, 2, 4, 5
+    static constexpr int oversamplingFactorMap[] = {0, 2, 4, 5};
+    int oversamplingFactor = oversamplingFactorMap[oversamplingChoice];
 
-    for (int sample = 0; sample < buffer.getNumSamples(); ++sample)
+    // Update clipper engine parameters
+    clipperEngine.setInputGain(inputGainDb);
+    clipperEngine.setOutputGain(outputGainDb);
+    clipperEngine.setSharpness(sharpness);
+    clipperEngine.setCeiling(ceilingDb);
+    clipperEngine.setOversamplingFactor(oversamplingFactor);
+    clipperEngine.setFilterType(filterType == 1);  // 1 = linear phase
+    clipperEngine.setChannelMode(channelMode == 1);  // 1 = M/S
+    clipperEngine.setStereoLink(stereoLink);
+    clipperEngine.setDeltaMonitor(deltaMonitor);
+
+    // Update latency if changed
+    int currentLatency = clipperEngine.getLatencyInSamples();
+    if (currentLatency != lastReportedLatency)
     {
-        float monoSample = 0.0f;
+        setLatencySamples(currentLatency);
+        lastReportedLatency = currentLatency;
+    }
 
-        if (testOscEnabled)
+    // Test oscillator for UI development
+    if (testOscEnabled)
+    {
+        const double testOscFreq = 1.0;
+        const double phaseIncrement = testOscFreq / sampleRate;
+        float inputGainLinear = juce::Decibels::decibelsToGain(inputGainDb);
+
+        for (int sample = 0; sample < buffer.getNumSamples(); ++sample)
         {
-            // Generate test signal, write to all channels
             const float minTestDb = -60.0f;
             const float dbValue = minTestDb + static_cast<float>(testOscPhase) * (-minTestDb);
             float testSample = juce::Decibels::decibelsToGain(dbValue) * inputGainLinear;
@@ -200,25 +255,20 @@ void GuillotineProcessor::processBlock(juce::AudioBuffer<float>& buffer, juce::M
             for (int channel = 0; channel < totalNumInputChannels; ++channel)
                 buffer.setSample(channel, sample, testSample);
 
-            monoSample = std::abs(testSample);
-
             testOscPhase += phaseIncrement;
             if (testOscPhase >= 1.0)
                 testOscPhase -= 1.0;
         }
-        else
-        {
-            // Apply gain and capture pre-clip envelope
-            for (int channel = 0; channel < totalNumInputChannels; ++channel)
-            {
-                auto* channelData = buffer.getWritePointer(channel);
-                channelData[sample] *= preGainLinear;
-                monoSample += std::abs(channelData[sample]);
-            }
-            monoSample /= static_cast<float>(std::max(1, totalNumInputChannels));
-        }
+    }
 
-        // Track peak (PRE-clip)
+    // Extract envelope PRE-clip for visualization
+    for (int sample = 0; sample < buffer.getNumSamples(); ++sample)
+    {
+        float monoSample = 0.0f;
+        for (int channel = 0; channel < totalNumInputChannels; ++channel)
+            monoSample += std::abs(buffer.getSample(channel, sample));
+        monoSample /= static_cast<float>(std::max(1, totalNumInputChannels));
+
         if (monoSample > currentPeak)
             currentPeak = monoSample;
 
@@ -228,7 +278,7 @@ void GuillotineProcessor::processBlock(juce::AudioBuffer<float>& buffer, juce::M
         {
             int writePos = envelopeWritePos.load();
             envelopeBuffer[writePos] = currentPeak;
-            envelopeClipThresholds[writePos] = threshold;
+            envelopeClipThresholds[writePos] = -ceilingDb / 60.0f;  // Convert dB to 0-1 range
             writePos = (writePos + 1) % envelopeBufferSize;
             envelopeWritePos.store(writePos);
 
@@ -237,31 +287,8 @@ void GuillotineProcessor::processBlock(juce::AudioBuffer<float>& buffer, juce::M
         }
     }
 
-    // Convert threshold (0-1) to linear amplitude
-    // threshold=0 → 0dB (1.0 linear, no clipping)
-    // threshold=1 → -60dB (0.001 linear, max clipping)
-    const float thresholdDb = -threshold * 60.0f;
-    const float thresholdLinear = juce::Decibels::decibelsToGain(thresholdDb);
-
-    // Apply clipping to audio
-    for (int channel = 0; channel < totalNumInputChannels; ++channel)
-    {
-        auto* channelData = buffer.getWritePointer(channel);
-        for (int sample = 0; sample < buffer.getNumSamples(); ++sample)
-        {
-            channelData[sample] = juce::jlimit(-thresholdLinear, thresholdLinear, channelData[sample]);
-        }
-    }
-
-    // Apply output gain after clipping
-    for (int channel = 0; channel < totalNumInputChannels; ++channel)
-    {
-        auto* channelData = buffer.getWritePointer(channel);
-        for (int sample = 0; sample < buffer.getNumSamples(); ++sample)
-        {
-            channelData[sample] *= outputGainLinear;
-        }
-    }
+    // Process through clipper engine
+    clipperEngine.process(buffer);
 }
 
 bool GuillotineProcessor::hasEditor() const
