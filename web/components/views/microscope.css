@@ -34,6 +34,7 @@
   pointer-events: auto;
   overflow: visible;
   transition: box-shadow 0.15s ease;
+  touch-action: none;
 }
 
 .microscope__threshold-line:hover {

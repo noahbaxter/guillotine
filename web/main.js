@@ -256,6 +256,9 @@ class GuillotineApp {
         this.cycleFont();
       }
     });
+
+    // Disable browser context menu
+    document.addEventListener('contextmenu', e => e.preventDefault());
   }
 
   cycleFont() {
