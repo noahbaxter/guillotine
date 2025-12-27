@@ -74,13 +74,10 @@ int Oversampler::getLatencyInSamples() const
     if (currentFactorIndex == 0 || !oversampler)
         return 0;
 
-    if (currentFilterType == FilterType::MinimumPhase)
-        return 0;
-
-    // Linear phase has latency
+    bool isLinearPhase = (currentFilterType == FilterType::LinearPhase);
     return static_cast<int>(oversampler->getLatency(
         static_cast<uint32_t>(currentFactorIndex),
-        true));
+        isLinearPhase));
 }
 
 float* const* Oversampler::processSamplesUp(juce::AudioBuffer<float>& inputBuffer, int& numOversampledSamples)

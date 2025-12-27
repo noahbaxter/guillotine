@@ -24,8 +24,9 @@ void ClipperEngine::prepare(double sampleRate, int maxBlockSize, int numChannels
     oversampler.prepare(sampleRate, maxBlockSize, numChannels);
     dcBlocker.prepare(sampleRate, numChannels);
 
-    // Prepare dry buffer for delta monitoring
+    // Prepare dry buffer and delay line for delta monitoring
     dryBuffer.setSize(numChannels, maxBlockSize);
+    dryDelayLine.prepare(spec);
 }
 
 void ClipperEngine::reset()
@@ -35,6 +36,7 @@ void ClipperEngine::reset()
     oversampler.reset();
     dcBlocker.reset();
     clipper.reset();
+    dryDelayLine.reset();
 }
 
 void ClipperEngine::setInputGain(float dB)
@@ -137,15 +139,39 @@ void ClipperEngine::process(juce::AudioBuffer<float>& buffer)
     juce::dsp::AudioBlock<float> outputBlock(buffer);
     outputGain.process(juce::dsp::ProcessContextReplacing<float>(outputBlock));
 
-    // 9. Delta monitor: output = wet - dry
+    // 9. Delta monitor: output = wet - dry (with latency compensation if needed)
     if (deltaMonitorEnabled)
     {
-        for (int ch = 0; ch < numChannels; ++ch)
+        int latency = oversampler.getLatencyInSamples();
+
+        if (latency == 0)
         {
-            float* wet = buffer.getWritePointer(ch);
-            const float* dry = dryBuffer.getReadPointer(ch);
-            for (int i = 0; i < numSamples; ++i)
-                wet[i] -= dry[i];
+            // No oversampling latency - direct subtraction
+            for (int ch = 0; ch < numChannels; ++ch)
+            {
+                float* wet = buffer.getWritePointer(ch);
+                const float* dry = dryBuffer.getReadPointer(ch);
+                for (int i = 0; i < numSamples; ++i)
+                    wet[i] -= dry[i];
+            }
+        }
+        else
+        {
+            // Compensate for oversampler latency
+            dryDelayLine.setDelay(static_cast<float>(latency));
+
+            for (int ch = 0; ch < numChannels; ++ch)
+            {
+                float* wet = buffer.getWritePointer(ch);
+                float* dry = dryBuffer.getWritePointer(ch);
+
+                for (int i = 0; i < numSamples; ++i)
+                {
+                    float delayedDry = dryDelayLine.popSample(ch);
+                    dryDelayLine.pushSample(ch, dry[i]);
+                    wet[i] -= delayedDry;
+                }
+            }
         }
     }
 }

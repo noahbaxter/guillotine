@@ -41,8 +41,9 @@ private:
     Clipper clipper;
     DCBlocker dcBlocker;
 
-    // Delta monitoring
+    // Delta monitoring with latency compensation
     juce::AudioBuffer<float> dryBuffer;
+    juce::dsp::DelayLine<float> dryDelayLine{8192};  // Max delay for highest oversampling
     bool deltaMonitorEnabled = false;
 
     // State
