@@ -91,6 +91,12 @@ juce::AudioProcessorValueTreeState::ParameterLayout GuillotineProcessor::createP
         "Bypass",
         true));  // Default to bypassed (blade up)
 
+    // Enforce ceiling - hard limit output to ceiling after downsampling
+    params.push_back(std::make_unique<juce::AudioParameterBool>(
+        juce::ParameterID{"enforceCeiling", 1},
+        "Enforce Ceiling",
+        true));  // Default to enforced (true peak safe)
+
     return {params.begin(), params.end()};
 }
 
@@ -214,6 +220,7 @@ void GuillotineProcessor::processBlock(juce::AudioBuffer<float>& buffer, juce::M
     bool stereoLink = apvts.getRawParameterValue("stereoLink")->load() > 0.5f;
     bool deltaMonitor = apvts.getRawParameterValue("deltaMonitor")->load() > 0.5f;
     bool bypass = apvts.getRawParameterValue("bypass")->load() > 0.5f;
+    bool enforceCeiling = apvts.getRawParameterValue("enforceCeiling")->load() > 0.5f;
 
     // Map choice index to oversampler factor index: 0=1x, 1=4x, 2=16x, 3=32x → 0, 2, 4, 5
     static constexpr int oversamplingFactorMap[] = {0, 2, 4, 5};
@@ -229,6 +236,7 @@ void GuillotineProcessor::processBlock(juce::AudioBuffer<float>& buffer, juce::M
     clipperEngine.setChannelMode(channelMode == 1);  // 1 = M/S
     clipperEngine.setStereoLink(stereoLink);
     clipperEngine.setDeltaMonitor(deltaMonitor);
+    clipperEngine.setEnforceCeiling(enforceCeiling);
 
     // Update latency if changed
     int currentLatency = clipperEngine.getLatencyInSamples();

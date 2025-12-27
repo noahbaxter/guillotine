@@ -22,7 +22,6 @@ void ClipperEngine::prepare(double sampleRate, int maxBlockSize, int numChannels
     outputGain.prepare(spec);
     clipper.prepare(spec);
     oversampler.prepare(sampleRate, maxBlockSize, numChannels);
-    dcBlocker.prepare(sampleRate, numChannels);
 
     // Prepare dry buffer and delay line for delta monitoring
     dryBuffer.setSize(numChannels, maxBlockSize);
@@ -34,7 +33,6 @@ void ClipperEngine::reset()
     inputGain.reset();
     outputGain.reset();
     oversampler.reset();
-    dcBlocker.reset();
     clipper.reset();
     dryDelayLine.reset();
 }
@@ -51,8 +49,8 @@ void ClipperEngine::setOutputGain(float dB)
 
 void ClipperEngine::setCeiling(float dB)
 {
-    float linear = juce::Decibels::decibelsToGain(dB);
-    clipper.setCeiling(linear);
+    ceilingLinear = juce::Decibels::decibelsToGain(dB);
+    clipper.setCeiling(ceilingLinear);
 }
 
 void ClipperEngine::setSharpness(float sharpness)
@@ -84,6 +82,11 @@ void ClipperEngine::setStereoLink(bool enabled)
 void ClipperEngine::setDeltaMonitor(bool enabled)
 {
     deltaMonitorEnabled = enabled;
+}
+
+void ClipperEngine::setEnforceCeiling(bool enabled)
+{
+    enforceCeilingEnabled = enabled;
 }
 
 int ClipperEngine::getLatencyInSamples() const
@@ -132,8 +135,16 @@ void ClipperEngine::process(juce::AudioBuffer<float>& buffer)
     // 6. M/S decode (if enabled)
     stereoProcessor.decodeFromMidSide(buffer);
 
-    // 7. DC block
-    dcBlocker.process(buffer);
+    // 7. Enforce ceiling (final hard limiter to catch filter overshoot)
+    if (enforceCeilingEnabled)
+    {
+        for (int ch = 0; ch < numChannels; ++ch)
+        {
+            float* data = buffer.getWritePointer(ch);
+            for (int i = 0; i < numSamples; ++i)
+                data[i] = std::clamp(data[i], -ceilingLinear, ceilingLinear);
+        }
+    }
 
     // 8. Output gain
     juce::dsp::AudioBlock<float> outputBlock(buffer);

@@ -24,6 +24,7 @@ void Oversampler::rebuildOversampler()
     settings.fftBlockSize = 1024;
 
     oversampler = std::make_unique<oversimple::TOversampling<float>>(settings);
+    oversampler->reset();  // Zero-initialize filter buffers
 }
 
 void Oversampler::prepare(double /*sampleRate*/, int maxBlock, int channels)
@@ -48,7 +49,10 @@ void Oversampler::setOversamplingFactor(int factorIndex)
     {
         currentFactorIndex = newIndex;
         if (isPrepared && oversampler && newIndex > 0)
+        {
             oversampler->setOrder(static_cast<uint32_t>(newIndex));
+            oversampler->reset();  // Clear filter state after order change
+        }
     }
 }
 
@@ -58,7 +62,10 @@ void Oversampler::setFilterType(FilterType type)
     {
         currentFilterType = type;
         if (isPrepared && oversampler)
+        {
             oversampler->setUseLinearPhase(type == FilterType::LinearPhase);
+            oversampler->reset();  // Clear filter state after type change
+        }
     }
 }
 

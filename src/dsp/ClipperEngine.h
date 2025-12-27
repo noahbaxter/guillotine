@@ -4,7 +4,6 @@
 #include <juce_dsp/juce_dsp.h>
 
 #include "Clipper.h"
-#include "DCBlocker.h"
 #include "Oversampler.h"
 #include "StereoProcessor.h"
 
@@ -29,6 +28,7 @@ public:
     void setChannelMode(bool isMidSide);
     void setStereoLink(bool enabled);
     void setDeltaMonitor(bool enabled);
+    void setEnforceCeiling(bool enabled);
 
     int getLatencyInSamples() const;
 
@@ -39,12 +39,15 @@ private:
     StereoProcessor stereoProcessor;
     Oversampler oversampler;
     Clipper clipper;
-    DCBlocker dcBlocker;
 
     // Delta monitoring with latency compensation
     juce::AudioBuffer<float> dryBuffer;
     juce::dsp::DelayLine<float> dryDelayLine{8192};  // Max delay for highest oversampling
     bool deltaMonitorEnabled = false;
+
+    // Enforce ceiling (final hard limiter after downsampling)
+    bool enforceCeilingEnabled = true;
+    float ceilingLinear = 1.0f;
 
     // State
     double currentSampleRate = 44100.0;
