@@ -193,6 +193,17 @@ void ClipperEngine::process(juce::AudioBuffer<float>& buffer)
                 wet[i] = dry[i] - wet[i];
         }
     }
+
+    // 10. Sanitize output - replace NaN/Inf with 0 (defensive against oversimple bugs)
+    for (int ch = 0; ch < numChannels; ++ch)
+    {
+        float* data = buffer.getWritePointer(ch);
+        for (int i = 0; i < numSamples; ++i)
+        {
+            if (!std::isfinite(data[i]))
+                data[i] = 0.0f;
+        }
+    }
 }
 
 } // namespace dsp

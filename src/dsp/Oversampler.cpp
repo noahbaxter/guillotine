@@ -57,8 +57,9 @@ void Oversampler::setOversamplingFactor(int factorIndex)
         currentFactorIndex = newIndex;
         if (isPrepared && oversampler && newIndex > 0)
         {
+            // Just change order, don't call reset() - it's buggy and resets wrong filters
+            // Filter state discontinuity is acceptable; NaNs are not
             oversampler->setOrder(static_cast<uint32_t>(newIndex));
-            oversampler->reset();  // Clear filter state after order change
         }
     }
 }
@@ -70,8 +71,8 @@ void Oversampler::setFilterType(FilterType type)
         currentFilterType = type;
         if (isPrepared && oversampler)
         {
+            // Just change type, don't call reset() - it's buggy and resets wrong filters
             oversampler->setUseLinearPhase(type == FilterType::LinearPhase);
-            oversampler->reset();  // Clear filter state after type change
         }
     }
 }
