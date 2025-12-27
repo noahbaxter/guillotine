@@ -1,8 +1,14 @@
 """
-Hard clip behavior tests.
+Hard clip integration tests.
 
-Focused integration tests for hard clipping (sharpness=1.0).
-Tests core functionality without exhaustive parameter matrix.
+Tests hard clipping (sharpness=1.0) through the full plugin chain.
+Mathematical correctness is covered by C++ unit tests (tests/unit/test_clipper.cpp).
+These tests focus on:
+- Enforce ceiling post-limiter
+- Oversampling mode integration
+- Filter overshoot bounds
+- Gain stage interactions
+- Stereo processing
 """
 import pytest
 import numpy as np
@@ -14,7 +20,6 @@ from clipper.test_consts import (
     PEAK_TOLERANCE_DB,
     EXACT_TOLERANCE,
     PASSTHROUGH_TOLERANCE,
-    SYMMETRY_TOLERANCE,
     MIN_EXPECTED_OVERSHOOT_DB,
     MAX_OVERSHOOT_MIN_PHASE_DB,
     MAX_OVERSHOOT_LINEAR_PHASE_DB,
@@ -22,14 +27,14 @@ from clipper.test_consts import (
 
 
 # =============================================================================
-# Core Clipping Tests
+# Parameter Binding Smoke Test
 # =============================================================================
 
-class TestHardClipCore:
-    """Core hard clip functionality."""
+class TestHardClipParameterBinding:
+    """Verify core clipping works through plugin interface."""
 
-    def test_clips_at_ceiling(self, plugin_path):
-        """Signal above ceiling is clipped to ceiling."""
+    def test_clips_above_ceiling(self, plugin_path):
+        """Signal above ceiling is clipped (smoke test for parameter binding)."""
         plugin = load_plugin(plugin_path)
         plugin.bypass = False
         plugin.sharpness = 1.0
@@ -43,49 +48,13 @@ class TestHardClipCore:
         output_peak = peak(output)
         assert output_peak <= ceiling_linear * db_to_linear(PEAK_TOLERANCE_DB)
 
-    def test_clips_symmetrically(self, plugin_path):
-        """Positive and negative peaks clip to same magnitude."""
-        plugin = load_plugin(plugin_path)
-        plugin.bypass = False
-        plugin.sharpness = 1.0
-        plugin.ceiling_db = -6.0
-        plugin.enforce_ceiling = True
-
-        ceiling_linear = db_to_linear(-6.0)
-        input_audio = generate_sine(amplitude=ceiling_linear * 2, duration=0.5)
-        output = plugin.process(input_audio, 44100)
-
-        pos_peak = np.max(output)
-        neg_peak = np.min(output)
-
-        assert abs(pos_peak - ceiling_linear) < SYMMETRY_TOLERANCE
-        assert abs(neg_peak + ceiling_linear) < SYMMETRY_TOLERANCE
-
-    def test_dc_clips_to_exact_ceiling(self, plugin_path):
-        """DC signal clips to exact ceiling value."""
-        plugin = load_plugin(plugin_path)
-        plugin.bypass = False
-        plugin.sharpness = 1.0
-        plugin.ceiling_db = -6.0
-        plugin.enforce_ceiling = True
-
-        ceiling_linear = db_to_linear(-6.0)
-        input_audio = generate_dc(level=ceiling_linear * 2, duration=0.1)
-        output = plugin.process(input_audio, 44100)
-
-        # Check steady-state (skip first samples for filter settling)
-        steady = output[len(output)//2:]
-        clipped_value = np.mean(steady)
-
-        assert abs(clipped_value - ceiling_linear) < EXACT_TOLERANCE
-
-    def test_below_ceiling_passes_through(self, plugin_path):
+    def test_passthrough_below_ceiling(self, plugin_path):
         """Signal below ceiling passes through unchanged."""
         plugin = load_plugin(plugin_path)
         plugin.bypass = False
         plugin.sharpness = 1.0
         plugin.ceiling_db = 0.0
-        plugin.oversampling = "1x"  # No latency for easy comparison
+        plugin.oversampling = "1x"
 
         input_audio = generate_sine(amplitude=0.5, duration=0.1)
         output = plugin.process(input_audio, 44100)
@@ -93,26 +62,13 @@ class TestHardClipCore:
         max_diff = np.max(np.abs(input_audio - output))
         assert max_diff < EXACT_TOLERANCE, f"Signal modified by {max_diff}"
 
-    def test_zero_stays_zero(self, plugin_path):
-        """Zero input produces zero output."""
-        plugin = load_plugin(plugin_path)
-        plugin.bypass = False
-        plugin.sharpness = 1.0
-        plugin.ceiling_db = -6.0
-
-        input_audio = generate_dc(level=0.0, duration=0.1)
-        output = plugin.process(input_audio, 44100)
-
-        max_deviation = np.max(np.abs(output))
-        assert max_deviation < EXACT_TOLERANCE
-
 
 # =============================================================================
 # Enforce Ceiling Tests
 # =============================================================================
 
 class TestEnforceCeiling:
-    """Test enforce_ceiling parameter."""
+    """Test enforce_ceiling post-limiter catches filter overshoot."""
 
     def test_enforce_on_limits_output(self, plugin_path):
         """enforce_ceiling=True guarantees output <= ceiling."""
@@ -146,15 +102,15 @@ class TestEnforceCeiling:
         output_peak = peak(output)
         overshoot_db = linear_to_db(output_peak / ceiling_linear)
 
-        # Should have measurable overshoot with oversampling
         assert overshoot_db > MIN_EXPECTED_OVERSHOOT_DB, f"Expected overshoot, got {overshoot_db:.3f}dB"
 
+
 # =============================================================================
-# Oversampling Tests
+# Oversampling Integration Tests
 # =============================================================================
 
 class TestOversampling:
-    """Verify oversampling modes work correctly."""
+    """Verify clipping works correctly with all oversampling modes."""
 
     @pytest.mark.parametrize("os_mode", OVERSAMPLING_MODES)
     def test_clipping_works_all_os_modes(self, plugin_path, os_mode):
@@ -176,7 +132,7 @@ class TestOversampling:
     @pytest.mark.parametrize("filter_type", FILTER_TYPES)
     @pytest.mark.parametrize("os_mode", ["4x", "32x"])
     def test_filter_types_work(self, plugin_path, filter_type, os_mode):
-        """Both filter types clip correctly at different oversampling rates."""
+        """Both filter types clip correctly."""
         plugin = load_plugin(plugin_path)
         plugin.bypass = False
         plugin.sharpness = 1.0
@@ -248,7 +204,7 @@ class TestFilterOvershoot:
 class TestCeilingRange:
     """Test ceiling parameter at different values."""
 
-    @pytest.mark.parametrize("ceiling_db", [-6.0, -24.0])  # Moderate and extreme
+    @pytest.mark.parametrize("ceiling_db", [-6.0, -24.0])
     def test_ceiling_respected(self, plugin_path, ceiling_db):
         """Ceiling is respected at various dB values."""
         plugin = load_plugin(plugin_path)
@@ -258,7 +214,6 @@ class TestCeilingRange:
         plugin.enforce_ceiling = True
 
         ceiling_linear = db_to_linear(ceiling_db)
-        # Use fixed amplitude that will clip at all ceiling values
         input_audio = generate_sine(amplitude=1.5, duration=0.2)
         output = plugin.process(input_audio, 44100)
 
@@ -285,7 +240,6 @@ class TestGainInteraction:
         plugin.enforce_ceiling = True
 
         ceiling_linear = db_to_linear(-6.0)
-        # Quiet signal that won't clip
         input_audio = generate_sine(amplitude=0.2, duration=0.2)
 
         # Without gain - should pass through
@@ -307,21 +261,20 @@ class TestGainInteraction:
 # =============================================================================
 
 class TestStereo:
-    """Test stereo behavior."""
+    """Test stereo behavior through plugin interface."""
 
-    def test_channels_independent(self, plugin_path):
-        """Clipping one channel doesn't affect the other."""
+    def test_channels_independent_when_unlinked(self, plugin_path):
+        """Clipping one channel doesn't affect the other when stereo_link=False."""
         plugin = load_plugin(plugin_path)
         plugin.bypass = False
         plugin.sharpness = 1.0
         plugin.ceiling_db = -6.0
-        plugin.oversampling = "1x"  # No latency
+        plugin.oversampling = "1x"
         plugin.stereo_link = False
         plugin.enforce_ceiling = True
 
         ceiling_linear = db_to_linear(-6.0)
 
-        # Left clips, right doesn't
         left = generate_sine(amplitude=ceiling_linear * 2, duration=0.2, stereo=False)
         right = generate_sine(amplitude=ceiling_linear * 0.3, duration=0.2, stereo=False)
         stereo_input = np.column_stack([left, right])
@@ -329,16 +282,13 @@ class TestStereo:
         output = plugin.process(stereo_input, 44100)
 
         left_peak = peak(output[:, 0])
-
-        # Left should be clipped
         assert left_peak <= ceiling_linear * (1 + PASSTHROUGH_TOLERANCE)
 
-        # Right should be unchanged
         right_diff = np.max(np.abs(right.flatten() - output[:, 1]))
         assert right_diff < PASSTHROUGH_TOLERANCE, f"Right channel modified: diff={right_diff}"
 
-    def test_stereo_link_clips_both_channels(self, plugin_path):
-        """With stereo link, both channels clip based on the louder one."""
+    def test_stereo_link_affects_both_channels(self, plugin_path):
+        """With stereo link, both channels are affected by the louder one."""
         plugin = load_plugin(plugin_path)
         plugin.bypass = False
         plugin.sharpness = 1.0
@@ -349,19 +299,15 @@ class TestStereo:
 
         ceiling_linear = db_to_linear(-6.0)
 
-        # Left loud (clips), right quiet (would not clip alone)
         left = generate_sine(amplitude=ceiling_linear * 2, duration=0.2, stereo=False)
         right = generate_sine(amplitude=ceiling_linear * 0.3, duration=0.2, stereo=False)
         stereo_input = np.column_stack([left, right])
 
         output = plugin.process(stereo_input, 44100)
 
-        # Both channels should be affected by the clipping
-        # Right channel should be reduced proportionally, not pass through unchanged
         right_output = output[:, 1]
         right_input = right.flatten()
 
-        # With stereo link, right should be modified (gain reduction from left's clipping)
         right_diff = np.max(np.abs(right_input - right_output))
         assert right_diff > PASSTHROUGH_TOLERANCE, (
             f"Right channel unchanged with stereo link on: diff={right_diff}"
