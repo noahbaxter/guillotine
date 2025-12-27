@@ -55,7 +55,7 @@ def delta_plugin(plugin_path, request):
     oversampling, filter_type = request.param
 
     plugin = load_plugin(plugin_path)
-    plugin.bypass = False
+    plugin.bypass_clipper = False
     plugin.sharpness = 1.0
     plugin.input_gain_db = 0.0
     plugin.output_gain_db = 0.0
@@ -122,7 +122,7 @@ class TestDeltaOutputsClippedPortion:
     def test_signal_above_ceiling_has_nonzero_delta(self, plugin_path):
         """Clipped signal → delta is nonzero."""
         plugin = load_plugin(plugin_path)
-        plugin.bypass = False
+        plugin.bypass_clipper = False
         plugin.sharpness = 1.0
         plugin.ceiling_db = -6.0
         plugin.oversampling = "1x"
@@ -141,7 +141,7 @@ class TestDeltaOutputsClippedPortion:
     def test_dc_above_ceiling_outputs_correct_delta(self, plugin_path):
         """DC above ceiling → delta = input - ceiling (positive value)."""
         plugin = load_plugin(plugin_path)
-        plugin.bypass = False
+        plugin.bypass_clipper = False
         plugin.sharpness = 1.0
         plugin.ceiling_db = -6.0
         plugin.oversampling = "1x"
@@ -169,7 +169,7 @@ class TestDeltaOutputsClippedPortion:
     def test_delta_with_input_output_gain(self, plugin_path):
         """Delta scales correctly with input/output gain applied."""
         plugin = load_plugin(plugin_path)
-        plugin.bypass = False
+        plugin.bypass_clipper = False
         plugin.sharpness = 1.0
         plugin.ceiling_db = -6.0
         plugin.oversampling = "1x"
@@ -206,7 +206,7 @@ class TestSignalReconstruction:
     def test_reconstruction_at_1x(self, plugin_path):
         """At 1x oversampling, wet + delta should equal dry input."""
         plugin = load_plugin(plugin_path)
-        plugin.bypass = False
+        plugin.bypass_clipper = False
         plugin.sharpness = 1.0
         plugin.ceiling_db = -6.0
         plugin.oversampling = "1x"
@@ -249,7 +249,7 @@ class TestDeltaOff:
     def test_delta_off_outputs_clipped_signal(self, plugin_path):
         """With delta off, output is the clipped signal."""
         plugin = load_plugin(plugin_path)
-        plugin.bypass = False
+        plugin.bypass_clipper = False
         plugin.sharpness = 1.0
         plugin.ceiling_db = -6.0
         plugin.oversampling = "1x"
@@ -269,7 +269,7 @@ class TestDeltaOff:
     def test_delta_toggle_changes_output(self, plugin_path):
         """Toggling delta should change the output."""
         plugin = load_plugin(plugin_path)
-        plugin.bypass = False
+        plugin.bypass_clipper = False
         plugin.sharpness = 1.0
         plugin.ceiling_db = -6.0
         plugin.oversampling = "1x"
@@ -299,7 +299,7 @@ class TestDeltaStereo:
     def test_independent_channel_delta(self, plugin_path):
         """Each channel should have independent delta calculation."""
         plugin = load_plugin(plugin_path)
-        plugin.bypass = False
+        plugin.bypass_clipper = False
         plugin.sharpness = 1.0
         plugin.ceiling_db = -6.0
         plugin.oversampling = "1x"
@@ -330,7 +330,7 @@ class TestDeltaStereo:
     def test_delta_in_mid_side_mode(self, plugin_path):
         """Delta works correctly in M/S processing mode."""
         plugin = load_plugin(plugin_path)
-        plugin.bypass = False
+        plugin.bypass_clipper = False
         plugin.sharpness = 1.0
         plugin.ceiling_db = -6.0
         plugin.oversampling = "1x"
@@ -372,7 +372,7 @@ class TestDeltaEdgeCases:
     def test_zero_input_produces_zero_delta(self, plugin_path):
         """Zero input → zero delta."""
         plugin = load_plugin(plugin_path)
-        plugin.bypass = False
+        plugin.bypass_clipper = False
         plugin.delta_monitor = True
         plugin.ceiling_db = -6.0
 
@@ -386,7 +386,7 @@ class TestDeltaEdgeCases:
     def test_signal_exactly_at_ceiling(self, plugin_path):
         """Signal exactly at ceiling → near-zero delta."""
         plugin = load_plugin(plugin_path)
-        plugin.bypass = False
+        plugin.bypass_clipper = False
         plugin.sharpness = 1.0
         plugin.ceiling_db = -6.0
         plugin.oversampling = "1x"
@@ -405,7 +405,7 @@ class TestDeltaEdgeCases:
     def test_soft_clip_has_gradual_delta(self, plugin_path):
         """Soft clipping produces delta in the knee region where hard clip doesn't."""
         plugin = load_plugin(plugin_path)
-        plugin.bypass = False
+        plugin.bypass_clipper = False
         plugin.ceiling_db = -6.0
         plugin.oversampling = "1x"
         plugin.delta_monitor = True

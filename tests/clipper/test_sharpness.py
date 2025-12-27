@@ -27,7 +27,7 @@ class TestSoftVsHardClipDifference:
     def test_soft_clip_compresses_in_knee_region(self, plugin_path):
         """In the knee region, soft clip compresses while hard clip passes through."""
         plugin = load_plugin(plugin_path)
-        plugin.bypass = False
+        plugin.bypass_clipper = False
         plugin.ceiling_db = -6.0
         plugin.oversampling = "1x"
 
@@ -53,7 +53,7 @@ class TestSoftVsHardClipDifference:
     def test_soft_clip_smoother_waveform(self, plugin_path):
         """Soft clip produces smoother waveform (rounded vs flat tops)."""
         plugin = load_plugin(plugin_path)
-        plugin.bypass = False
+        plugin.bypass_clipper = False
         plugin.ceiling_db = -6.0
         plugin.oversampling = "1x"
         plugin.enforce_ceiling = False
@@ -92,7 +92,7 @@ class TestOutputNeverExceedsCeiling:
     def test_output_bounded_by_ceiling(self, plugin_path, sharpness):
         """Output peak never exceeds ceiling at any sharpness."""
         plugin = load_plugin(plugin_path)
-        plugin.bypass = False
+        plugin.bypass_clipper = False
         plugin.sharpness = sharpness
         plugin.ceiling_db = -6.0
         plugin.oversampling = "1x"
@@ -119,7 +119,7 @@ class TestSharpnessParameterBinding:
     def test_sharpness_parameter_has_effect(self, plugin_path):
         """Changing sharpness parameter produces different output."""
         plugin = load_plugin(plugin_path)
-        plugin.bypass = False
+        plugin.bypass_clipper = False
         plugin.ceiling_db = -6.0
         plugin.oversampling = "1x"
 

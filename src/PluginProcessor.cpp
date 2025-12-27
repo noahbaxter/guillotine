@@ -85,10 +85,10 @@ juce::AudioProcessorValueTreeState::ParameterLayout GuillotineProcessor::createP
         "Delta Monitor",
         false));
 
-    // Bypass (blade up = bypassed, blade down = active)
+    // Bypass clipper (blade up = bypassed, blade down = active)
     params.push_back(std::make_unique<juce::AudioParameterBool>(
-        juce::ParameterID{"bypass", 1},
-        "Bypass",
+        juce::ParameterID{"bypassClipper", 1},
+        "Bypass Clipper",
         true));  // Default to bypassed (blade up)
 
     // Enforce ceiling - hard limit output to ceiling after downsampling
@@ -219,7 +219,7 @@ void GuillotineProcessor::processBlock(juce::AudioBuffer<float>& buffer, juce::M
     int channelMode = static_cast<int>(apvts.getRawParameterValue("channelMode")->load());
     bool stereoLink = apvts.getRawParameterValue("stereoLink")->load() > 0.5f;
     bool deltaMonitor = apvts.getRawParameterValue("deltaMonitor")->load() > 0.5f;
-    bool bypass = apvts.getRawParameterValue("bypass")->load() > 0.5f;
+    bool bypassClipper = apvts.getRawParameterValue("bypassClipper")->load() > 0.5f;
     bool enforceCeiling = apvts.getRawParameterValue("enforceCeiling")->load() > 0.5f;
 
     // Map choice index to oversampler factor index: 0=1x, 1=4x, 2=16x, 3=32x → 0, 2, 4, 5
@@ -296,9 +296,9 @@ void GuillotineProcessor::processBlock(juce::AudioBuffer<float>& buffer, juce::M
         }
     }
 
-    // Process through clipper engine (skip if bypassed)
-    if (!bypass)
-        clipperEngine.process(buffer);
+    // Process through clipper engine
+    clipperEngine.setBypass(bypassClipper);
+    clipperEngine.process(buffer);
 }
 
 bool GuillotineProcessor::hasEditor() const

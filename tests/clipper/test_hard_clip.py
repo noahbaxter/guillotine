@@ -36,7 +36,7 @@ class TestHardClipParameterBinding:
     def test_clips_above_ceiling(self, plugin_path):
         """Signal above ceiling is clipped (smoke test for parameter binding)."""
         plugin = load_plugin(plugin_path)
-        plugin.bypass = False
+        plugin.bypass_clipper = False
         plugin.sharpness = 1.0
         plugin.ceiling_db = -6.0
         plugin.enforce_ceiling = True
@@ -51,7 +51,7 @@ class TestHardClipParameterBinding:
     def test_passthrough_below_ceiling(self, plugin_path):
         """Signal below ceiling passes through unchanged."""
         plugin = load_plugin(plugin_path)
-        plugin.bypass = False
+        plugin.bypass_clipper = False
         plugin.sharpness = 1.0
         plugin.ceiling_db = 0.0
         plugin.oversampling = "1x"
@@ -73,7 +73,7 @@ class TestEnforceCeiling:
     def test_enforce_on_limits_output(self, plugin_path):
         """enforce_ceiling=True guarantees output <= ceiling."""
         plugin = load_plugin(plugin_path)
-        plugin.bypass = False
+        plugin.bypass_clipper = False
         plugin.sharpness = 1.0
         plugin.ceiling_db = -12.0
         plugin.oversampling = "4x"
@@ -89,7 +89,7 @@ class TestEnforceCeiling:
     def test_enforce_off_allows_overshoot(self, plugin_path):
         """enforce_ceiling=False allows filter overshoot."""
         plugin = load_plugin(plugin_path)
-        plugin.bypass = False
+        plugin.bypass_clipper = False
         plugin.sharpness = 1.0
         plugin.ceiling_db = -12.0
         plugin.oversampling = "4x"
@@ -116,7 +116,7 @@ class TestOversampling:
     def test_clipping_works_all_os_modes(self, plugin_path, os_mode):
         """Clipping works correctly at all oversampling rates."""
         plugin = load_plugin(plugin_path)
-        plugin.bypass = False
+        plugin.bypass_clipper = False
         plugin.sharpness = 1.0
         plugin.ceiling_db = -6.0
         plugin.oversampling = os_mode
@@ -134,7 +134,7 @@ class TestOversampling:
     def test_filter_types_work(self, plugin_path, filter_type, os_mode):
         """Both filter types clip correctly."""
         plugin = load_plugin(plugin_path)
-        plugin.bypass = False
+        plugin.bypass_clipper = False
         plugin.sharpness = 1.0
         plugin.ceiling_db = -6.0
         plugin.oversampling = os_mode
@@ -160,7 +160,7 @@ class TestFilterOvershoot:
     def test_min_phase_overshoot_bounded(self, plugin_path, os_mode):
         """Min-phase filter overshoot should be reasonable."""
         plugin = load_plugin(plugin_path)
-        plugin.bypass = False
+        plugin.bypass_clipper = False
         plugin.sharpness = 1.0
         plugin.ceiling_db = -6.0
         plugin.oversampling = os_mode
@@ -180,7 +180,7 @@ class TestFilterOvershoot:
     def test_linear_phase_overshoot_bounded(self, plugin_path, os_mode):
         """Linear-phase filter overshoot should be reasonable."""
         plugin = load_plugin(plugin_path)
-        plugin.bypass = False
+        plugin.bypass_clipper = False
         plugin.sharpness = 1.0
         plugin.ceiling_db = -6.0
         plugin.oversampling = os_mode
@@ -208,7 +208,7 @@ class TestCeilingRange:
     def test_ceiling_respected(self, plugin_path, ceiling_db):
         """Ceiling is respected at various dB values."""
         plugin = load_plugin(plugin_path)
-        plugin.bypass = False
+        plugin.bypass_clipper = False
         plugin.sharpness = 1.0
         plugin.ceiling_db = ceiling_db
         plugin.enforce_ceiling = True
@@ -233,7 +233,7 @@ class TestGainInteraction:
     def test_input_gain_pushes_into_clipping(self, plugin_path):
         """Input gain can push a quiet signal into clipping."""
         plugin = load_plugin(plugin_path)
-        plugin.bypass = False
+        plugin.bypass_clipper = False
         plugin.sharpness = 1.0
         plugin.ceiling_db = -6.0
         plugin.output_gain_db = 0.0
@@ -266,7 +266,7 @@ class TestStereo:
     def test_channels_independent_when_unlinked(self, plugin_path):
         """Clipping one channel doesn't affect the other when stereo_link=False."""
         plugin = load_plugin(plugin_path)
-        plugin.bypass = False
+        plugin.bypass_clipper = False
         plugin.sharpness = 1.0
         plugin.ceiling_db = -6.0
         plugin.oversampling = "1x"
@@ -290,7 +290,7 @@ class TestStereo:
     def test_stereo_link_affects_both_channels(self, plugin_path):
         """With stereo link, both channels are affected by the louder one."""
         plugin = load_plugin(plugin_path)
-        plugin.bypass = False
+        plugin.bypass_clipper = False
         plugin.sharpness = 1.0
         plugin.ceiling_db = -6.0
         plugin.oversampling = "1x"

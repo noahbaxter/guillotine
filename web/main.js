@@ -15,9 +15,9 @@ import {
   registerCallback,
   setDeltaMonitor,
   onDeltaMonitorChange,
-  setBypass,
-  getBypass,
-  onBypassChange
+  setBypassClipper,
+  getBypassClipper,
+  onBypassClipperChange
 } from './lib/juce-bridge.js';
 import { setDeltaMode } from './lib/theme.js';
 
@@ -284,7 +284,7 @@ class GuillotineApp {
     });
 
     // Listen for bypass changes from C++ (DAW automation)
-    onBypassChange((bypassed) => {
+    onBypassClipperChange((bypassed) => {
       this.setBypass(bypassed);
     });
 
@@ -316,7 +316,7 @@ class GuillotineApp {
   initializeFromParams() {
     // Read all parameter values from C++ and update UI
     // Bypass
-    this.bypass = getBypass();
+    this.bypass = getBypassClipper();
     this.updateBypassVisual();
 
     // Ceiling -> threshold (inverted: 0dB = 0 threshold, -60dB = 1 threshold)
@@ -475,7 +475,7 @@ class GuillotineApp {
   toggleBypass() {
     this.bypass = !this.bypass;
     this.updateBypassVisual();
-    setBypass(this.bypass);
+    setBypassClipper(this.bypass);
   }
 
   setBypass(value) {

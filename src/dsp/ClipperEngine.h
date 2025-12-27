@@ -29,6 +29,7 @@ public:
     void setStereoLink(bool enabled);
     void setDeltaMonitor(bool enabled);
     void setEnforceCeiling(bool enabled);
+    void setBypass(bool enabled);
 
     int getLatencyInSamples() const;
 
@@ -49,6 +50,9 @@ private:
     // Enforce ceiling (final hard limiter after downsampling)
     bool enforceCeilingEnabled = true;
     float ceilingLinear = 1.0f;
+
+    // Bypass clipper (still applies input/output gain)
+    bool bypassed = false;
 
     // State
     double currentSampleRate = 44100.0;

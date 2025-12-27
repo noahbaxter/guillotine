@@ -94,6 +94,11 @@ void ClipperEngine::setEnforceCeiling(bool enabled)
     enforceCeilingEnabled = enabled;
 }
 
+void ClipperEngine::setBypass(bool enabled)
+{
+    bypassed = enabled;
+}
+
 int ClipperEngine::getLatencyInSamples() const
 {
     return oversampler.getLatencyInSamples();
@@ -104,22 +109,20 @@ void ClipperEngine::process(juce::AudioBuffer<float>& buffer)
     int numSamples = buffer.getNumSamples();
     int numChannels = buffer.getNumChannels();
 
-    // Store dry signal for delta monitoring (before any processing)
+    // 1. Input gain (always applied, even when bypassed)
+    juce::dsp::AudioBlock<float> block(buffer);
+    inputGain.process(juce::dsp::ProcessContextReplacing<float>(block));
+
+    // Skip clipping and makeup gain when bypassed
+    // Input gain still applies so users can hear pre-clip level
+    if (bypassed)
+        return;
+
+    // Store dry signal for delta monitoring (after input gain)
     if (deltaMonitorEnabled)
     {
         for (int ch = 0; ch < numChannels; ++ch)
             dryBuffer.copyFrom(ch, 0, buffer, ch, 0, numSamples);
-    }
-
-    // 1. Input gain
-    juce::dsp::AudioBlock<float> block(buffer);
-    inputGain.process(juce::dsp::ProcessContextReplacing<float>(block));
-
-    // Apply input gain to dry buffer too (for delta calculation)
-    if (deltaMonitorEnabled)
-    {
-        juce::dsp::AudioBlock<float> dryBlock(dryBuffer);
-        inputGain.process(juce::dsp::ProcessContextReplacing<float>(dryBlock));
     }
 
     // 2. M/S encode (if enabled)

@@ -37,7 +37,7 @@ class TestRoundTrip:
     def test_sine_amplitude_preserved(self, plugin_path, oversampling):
         """Sine wave amplitude preserved through plugin at various OS rates."""
         plugin = load_plugin(plugin_path)
-        plugin.bypass = False
+        plugin.bypass_clipper = False
         plugin.oversampling = oversampling
         plugin.ceiling_db = 0.0
         plugin.sharpness = 1.0
@@ -65,7 +65,7 @@ class TestRoundTrip:
     def test_dc_preserved(self, plugin_path, oversampling):
         """DC signal preserved through plugin."""
         plugin = load_plugin(plugin_path)
-        plugin.bypass = False
+        plugin.bypass_clipper = False
         plugin.oversampling = oversampling
         plugin.ceiling_db = 0.0
         plugin.sharpness = 1.0
@@ -92,7 +92,7 @@ class TestLatency:
     def test_1x_has_zero_latency(self, plugin_path):
         """1x oversampling reports zero latency."""
         plugin = load_plugin(plugin_path)
-        plugin.bypass = False
+        plugin.bypass_clipper = False
         plugin.oversampling = "1x"
 
         latency = measure_latency(plugin)
@@ -102,7 +102,7 @@ class TestLatency:
     def test_linphase_has_higher_latency_than_minphase(self, plugin_path, oversampling):
         """Linear phase filter has >= latency than minimum phase."""
         plugin = load_plugin(plugin_path)
-        plugin.bypass = False
+        plugin.bypass_clipper = False
         plugin.oversampling = oversampling
 
         plugin.filter_type = "Minimum Phase"
@@ -119,7 +119,7 @@ class TestLatency:
     def test_latency_updates_after_param_change(self, plugin_path):
         """Latency updates when oversampling/filter params change."""
         plugin = load_plugin(plugin_path)
-        plugin.bypass = False
+        plugin.bypass_clipper = False
 
         plugin.oversampling = "1x"
         plugin.filter_type = "Minimum Phase"
@@ -154,7 +154,7 @@ class TestInstanceIndependence:
     def test_delta_reconstruction_proves_independence(self, plugin_path, oversampling):
         """Perfect reconstruction: input = clipped + delta."""
         plugin = load_plugin(plugin_path)
-        plugin.bypass = False
+        plugin.bypass_clipper = False
         plugin.oversampling = oversampling
         plugin.filter_type = "Linear Phase"  # Required for delta
         plugin.ceiling_db = -6.0
