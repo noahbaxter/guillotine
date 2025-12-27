@@ -68,20 +68,8 @@ void ClipperEngine::setFilterType(bool isLinearPhase)
 {
     auto filterType = isLinearPhase ? Oversampler::FilterType::LinearPhase
                                     : Oversampler::FilterType::MinimumPhase;
-    
-    // Always save user's preference (unless delta is already overriding it)
-    if (!filterTypeWasOverriddenByDelta)
-    {
-        userFilterTypePreference = filterType;
-    }
-    
-    // If delta is enabled, keep linear-phase (ignore user's filter change)
-    if (deltaMonitorEnabled)
-    {
-        return;
-    }
-    
-    // Apply filter type to both oversamplers
+
+    // Both oversamplers use the same filter type for phase-matched delta monitoring
     oversampler.setFilterType(filterType);
     dryOversampler.setFilterType(filterType);
 }
@@ -98,24 +86,6 @@ void ClipperEngine::setStereoLink(bool enabled)
 
 void ClipperEngine::setDeltaMonitor(bool enabled)
 {
-    if (enabled == deltaMonitorEnabled)
-        return;  // Already in desired state
-    
-    if (enabled)
-    {
-        // Force both oversamplers to linear phase for perfect delta alignment
-        oversampler.setFilterType(Oversampler::FilterType::LinearPhase);
-        dryOversampler.setFilterType(Oversampler::FilterType::LinearPhase);
-        filterTypeWasOverriddenByDelta = true;
-    }
-    else
-    {
-        // Restore user's filter type preference
-        oversampler.setFilterType(userFilterTypePreference);
-        dryOversampler.setFilterType(userFilterTypePreference);
-        filterTypeWasOverriddenByDelta = false;
-    }
-    
     deltaMonitorEnabled = enabled;
 }
 
