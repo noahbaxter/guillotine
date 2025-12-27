@@ -243,6 +243,7 @@ void GuillotineProcessor::processBlock(juce::AudioBuffer<float>& buffer, juce::M
     if (currentLatency != lastReportedLatency)
     {
         setLatencySamples(currentLatency);
+        updateHostDisplay(juce::AudioProcessorListener::ChangeDetails().withLatencyChanged(true));
         lastReportedLatency = currentLatency;
     }
 

@@ -42,11 +42,7 @@ void Oversampler::prepare(double /*sampleRate*/, int maxBlock, int channels)
 void Oversampler::reset()
 {
     if (oversampler)
-    {
-        // Note: oversimple's reset() has a bug - it resets wrong samplers for each mode.
-        // Workaround: rebuild the oversampler entirely to ensure clean state.
-        rebuildOversampler();
-    }
+        oversampler->reset();
 }
 
 void Oversampler::setOversamplingFactor(int factorIndex)
@@ -57,9 +53,8 @@ void Oversampler::setOversamplingFactor(int factorIndex)
         currentFactorIndex = newIndex;
         if (isPrepared && oversampler && newIndex > 0)
         {
-            // Just change order, don't call reset() - it's buggy and resets wrong filters
-            // Filter state discontinuity is acceptable; NaNs are not
             oversampler->setOrder(static_cast<uint32_t>(newIndex));
+            oversampler->reset();
         }
     }
 }
@@ -71,8 +66,8 @@ void Oversampler::setFilterType(FilterType type)
         currentFilterType = type;
         if (isPrepared && oversampler)
         {
-            // Just change type, don't call reset() - it's buggy and resets wrong filters
             oversampler->setUseLinearPhase(type == FilterType::LinearPhase);
+            // Note: setUseLinearPhase calls reset() internally
         }
     }
 }

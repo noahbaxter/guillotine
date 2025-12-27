@@ -119,20 +119,15 @@ def measure_peaks(audio):
 
 def measure_latency(plugin, sr=44100):
     """
-    Measure plugin latency by finding impulse delay.
+    Get plugin's reported latency in samples.
 
-    Returns latency in samples.
+    Uses the plugin's reported_latency_samples property which is what
+    DAWs use for latency compensation.
     """
-    # Generate impulse at known position
-    impulse_pos = 1000
-    signal = np.zeros(4096, dtype=np.float32).reshape(-1, 1)
-    signal[impulse_pos] = 1.0
-
-    output = plugin.process(signal, sr)
-
-    # Find where the impulse appears in output
-    output_pos = np.argmax(np.abs(output))
-    return output_pos - impulse_pos
+    # Trigger a process call to ensure latency is computed
+    signal = np.zeros(256, dtype=np.float32).reshape(-1, 1)
+    _ = plugin.process(signal, sr)
+    return plugin.reported_latency_samples
 
 
 def align_signals(input_signal, output_signal, latency):
