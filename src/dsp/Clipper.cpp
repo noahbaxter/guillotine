@@ -59,13 +59,15 @@ float Clipper::processSample(float sample) const
     // In knee region or above - apply soft compression
     float x = absVal - kneeStart;
 
-    // Quadratic curve: starts linear at kneeStart, flattens to ceiling
-    // f(x) = kneeStart + knee * (1 - (1 - x/knee)^2) for x in [0, knee]
-    // f(x) = ceiling for x > knee
+    // Quadratic compression curve: t² gives compression (output < input)
+    // f(x) = kneeStart + knee * t² for x in [0, knee], where t = x/knee
+    // - At t=0: output = kneeStart (continuous with passthrough)
+    // - At t=1: output = ceiling (reaches limit exactly)
+    // - For 0<t<1: t² < t, so output < input (compression)
     if (x <= knee)
     {
         float t = x / knee;  // 0 to 1 within knee
-        float compressed = kneeStart + knee * (2.0f * t - t * t);
+        float compressed = kneeStart + knee * t * t;
         return sign * compressed;
     }
 

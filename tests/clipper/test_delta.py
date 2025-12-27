@@ -403,7 +403,7 @@ class TestDeltaEdgeCases:
         )
 
     def test_soft_clip_has_gradual_delta(self, plugin_path):
-        """Soft clipping (sharpness < 1.0) produces smaller delta than hard clip."""
+        """Soft clipping produces delta in the knee region where hard clip doesn't."""
         plugin = load_plugin(plugin_path)
         plugin.bypass = False
         plugin.ceiling_db = -6.0
@@ -411,25 +411,23 @@ class TestDeltaEdgeCases:
         plugin.delta_monitor = True
 
         ceiling_linear = db_to_linear(-6.0)
-        # Use signal only slightly above ceiling (1.3x) so soft clip doesn't fully saturate
-        input_audio = generate_sine(amplitude=ceiling_linear * 1.3, duration=0.3)
+        # Use signal in the knee region (below ceiling but above knee start)
+        # At sharpness=0.5: knee = 0.25*ceiling, kneeStart = 0.75*ceiling
+        # Signal at 0.9*ceiling is in the knee region for soft clip
+        input_audio = generate_sine(amplitude=ceiling_linear * 0.9, duration=0.3)
 
-        # Get soft-clip delta (sharpness=0.5)
-        plugin.sharpness = 0.5
-        output_soft = plugin.process(input_audio.copy(), 44100)
-        soft_delta_peak = peak(output_soft)
-
-        # Get hard-clip delta (sharpness=1.0)
+        # Hard clip (sharpness=1.0) - signal is below ceiling, no clipping, no delta
         plugin.sharpness = 1.0
         output_hard = plugin.process(input_audio.copy(), 44100)
         hard_delta_peak = peak(output_hard)
 
-        # Both should have nonzero delta
-        assert soft_delta_peak > 0.001, f"Soft clip should have delta: {soft_delta_peak:.4f}"
-        assert hard_delta_peak > 0.001, f"Hard clip should have delta: {hard_delta_peak:.4f}"
+        # Soft clip (sharpness=0.5) - signal is in knee region, gets compressed, has delta
+        plugin.sharpness = 0.5
+        output_soft = plugin.process(input_audio.copy(), 44100)
+        soft_delta_peak = peak(output_soft)
 
-        # Soft clip delta should be LESS than hard clip delta
-        # (soft saturation in the knee region removes less than hard clipping)
-        assert soft_delta_peak < hard_delta_peak, (
-            f"Soft delta ({soft_delta_peak:.4f}) should be < hard delta ({hard_delta_peak:.4f})"
-        )
+        # Hard clip should have near-zero delta (signal below ceiling)
+        assert hard_delta_peak < 0.001, f"Hard clip should have no delta: {hard_delta_peak:.4f}"
+
+        # Soft clip should have nonzero delta (knee compression)
+        assert soft_delta_peak > 0.01, f"Soft clip should have delta from knee compression: {soft_delta_peak:.4f}"
