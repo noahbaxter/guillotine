@@ -40,10 +40,17 @@ private:
     Oversampler oversampler;
     Clipper clipper;
 
-    // Delta monitoring with latency compensation
+    // Delta monitoring - requires separate oversampler for dry path
+    // to match filter phase response (especially for minimum phase filters)
     juce::AudioBuffer<float> dryBuffer;
-    juce::dsp::DelayLine<float> dryDelayLine{8192};  // Max delay for highest oversampling
+    Oversampler dryOversampler;  // Dry path filter matching
     bool deltaMonitorEnabled = false;
+
+    // Filter type preference management for delta monitoring
+    // When delta is enabled, both oversamplers use linear-phase for perfect alignment.
+    // User's filter type preference is saved and restored when delta is disabled.
+    Oversampler::FilterType userFilterTypePreference = Oversampler::FilterType::MinimumPhase;
+    bool filterTypeWasOverriddenByDelta = false;
 
     // Enforce ceiling (final hard limiter after downsampling)
     bool enforceCeilingEnabled = true;
