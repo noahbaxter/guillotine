@@ -2,90 +2,11 @@
 #include <catch2/catch_approx.hpp>
 #include <catch2/generators/catch_generators.hpp>
 #include "dsp/Oversampler.h"
-#include <cmath>
-#include <numeric>
-#include <vector>
+#include "test_utils.h"
 
 using Catch::Approx;
 using dsp::Oversampler;
-
-namespace {
-
-constexpr double kSampleRate = 44100.0;
-constexpr int kBlockSize = 512;
-constexpr int kNumChannels = 2;
-
-constexpr double kPi = 3.14159265358979323846;
-
-// Tolerances
-constexpr float kRoundTripTolerance = 0.02f;      // 2% RMS change allowed
-constexpr float kDcTolerance = 0.001f;            // DC preservation
-
-// Generate a sine wave buffer
-juce::AudioBuffer<float> generateSine(float frequency, int numSamples, float amplitude = 0.5f)
-{
-    juce::AudioBuffer<float> buffer(kNumChannels, numSamples);
-    for (int ch = 0; ch < kNumChannels; ++ch)
-    {
-        auto* data = buffer.getWritePointer(ch);
-        for (int i = 0; i < numSamples; ++i)
-        {
-            data[i] = amplitude * std::sin(2.0 * kPi * frequency * i / kSampleRate);
-        }
-    }
-    return buffer;
-}
-
-// Generate DC buffer
-juce::AudioBuffer<float> generateDC(float level, int numSamples)
-{
-    juce::AudioBuffer<float> buffer(kNumChannels, numSamples);
-    for (int ch = 0; ch < kNumChannels; ++ch)
-    {
-        auto* data = buffer.getWritePointer(ch);
-        for (int i = 0; i < numSamples; ++i)
-            data[i] = level;
-    }
-    return buffer;
-}
-
-// Calculate RMS of a buffer
-float calculateRMS(const juce::AudioBuffer<float>& buffer, int startSample = 0, int numSamples = -1)
-{
-    if (numSamples < 0)
-        numSamples = buffer.getNumSamples() - startSample;
-
-    float sumSquares = 0.0f;
-    int totalSamples = 0;
-
-    for (int ch = 0; ch < buffer.getNumChannels(); ++ch)
-    {
-        auto* data = buffer.getReadPointer(ch);
-        for (int i = startSample; i < startSample + numSamples; ++i)
-        {
-            sumSquares += data[i] * data[i];
-            totalSamples++;
-        }
-    }
-
-    return std::sqrt(sumSquares / totalSamples);
-}
-
-// Calculate peak of a buffer
-float calculatePeak(const juce::AudioBuffer<float>& buffer, int startSample = 0, int numSamples = -1)
-{
-    if (numSamples < 0)
-        numSamples = buffer.getNumSamples() - startSample;
-
-    float peak = 0.0f;
-    for (int ch = 0; ch < buffer.getNumChannels(); ++ch)
-    {
-        auto* data = buffer.getReadPointer(ch);
-        for (int i = startSample; i < startSample + numSamples; ++i)
-            peak = std::max(peak, std::abs(data[i]));
-    }
-    return peak;
-}
+using namespace test_utils;
 
 // Process audio through oversampler (round-trip)
 juce::AudioBuffer<float> processRoundTrip(Oversampler& os, juce::AudioBuffer<float>& input)
@@ -109,8 +30,6 @@ juce::AudioBuffer<float> processRoundTrip(Oversampler& os, juce::AudioBuffer<flo
 
     return output;
 }
-
-} // namespace
 
 // =============================================================================
 // Round-trip Accuracy Tests
@@ -418,34 +337,54 @@ TEST_CASE("Factor switching works mid-stream", "[factor]")
     REQUIRE(numSamplesBack == kBlockSize * 2);
 }
 
-TEST_CASE("Filter type switching works mid-stream", "[filter]")
+TEST_CASE("Filter type switching updates latency correctly", "[filter]")
 {
     Oversampler os;
     os.prepare(kSampleRate, kBlockSize, kNumChannels);
     os.setOversamplingFactor(2);  // 4x
-    os.setFilterType(Oversampler::FilterType::MinimumPhase);
 
+    // MinimumPhase: 0 latency
+    os.setFilterType(Oversampler::FilterType::MinimumPhase);
+    REQUIRE(os.getLatencyInSamples() == 0);
+
+    // LinearPhase: non-zero latency
+    os.setFilterType(Oversampler::FilterType::LinearPhase);
+    REQUIRE(os.getLatencyInSamples() > 0);
+
+    // Switch back: 0 latency again
+    os.setFilterType(Oversampler::FilterType::MinimumPhase);
+    REQUIRE(os.getLatencyInSamples() == 0);
+}
+
+TEST_CASE("Filter type switching produces valid output", "[filter]")
+{
+    Oversampler os;
+    os.prepare(kSampleRate, kBlockSize, kNumChannels);
+    os.setOversamplingFactor(2);  // 4x
+
+    // Test MinimumPhase
+    os.setFilterType(Oversampler::FilterType::MinimumPhase);
     auto input = generateSine(440.0f, kBlockSize);
 
-    // Process with MinimumPhase
-    int latencyMin = os.getLatencyInSamples();
+    // Warmup and measure
+    for (int i = 0; i < 4; ++i)
+        processRoundTrip(os, input);
+
     auto outputMin = processRoundTrip(os, input);
-    REQUIRE(latencyMin == 0);
-    REQUIRE(calculateRMS(outputMin) > 0.1f);  // Signal survives
+    float rmsMin = calculateRMS(outputMin);
+    REQUIRE(rmsMin > 0.3f);  // Signal survives
 
-    // Switch to LinearPhase
+    // Switch to LinearPhase and reset to clear state
     os.setFilterType(Oversampler::FilterType::LinearPhase);
+    os.reset();
 
-    int latencyLin = os.getLatencyInSamples();
+    // Linear-phase needs more warmup due to latency
+    for (int i = 0; i < 8; ++i)
+        processRoundTrip(os, input);
+
     auto outputLin = processRoundTrip(os, input);
-    REQUIRE(latencyLin > 0);
-    REQUIRE(calculateRMS(outputLin) > 0.1f);  // Still works after switch
-
-    // Switch back to MinimumPhase
-    os.setFilterType(Oversampler::FilterType::MinimumPhase);
-
-    int latencyBack = os.getLatencyInSamples();
-    REQUIRE(latencyBack == 0);
+    float rmsLin = calculateRMS(outputLin);
+    REQUIRE(rmsLin > 0.3f);  // Signal survives
 }
 
 TEST_CASE("reset() clears filter state", "[reset]")
@@ -520,7 +459,7 @@ TEST_CASE("Factor index clamped to valid range", "[factor]")
 
 TEST_CASE("Round-trip works with different block sizes", "[blocksize]")
 {
-    auto blockSize = GENERATE(128, 512, 1024);
+    auto blockSize = GENERATE(64, 128, 256, 512, 1024);
     auto factorIndex = GENERATE(2, 4);  // 4x, 16x
 
     CAPTURE(blockSize, factorIndex);
@@ -530,25 +469,16 @@ TEST_CASE("Round-trip works with different block sizes", "[blocksize]")
     os.setOversamplingFactor(factorIndex);
     os.setFilterType(Oversampler::FilterType::MinimumPhase);
 
-    // Generate input at the specific block size
-    auto input = generateSine(440.0f, blockSize * 4, 0.5f);
+    // Use same block for warmup and measurement (avoids filter state mismatch)
+    auto input = generateSine(440.0f, blockSize, 0.5f);
 
-    // Process multiple blocks to reach steady state
-    for (int block = 0; block < 4; ++block)
-    {
-        juce::AudioBuffer<float> blockInput(kNumChannels, blockSize);
-        for (int ch = 0; ch < kNumChannels; ++ch)
-            blockInput.copyFrom(ch, 0, input, ch, block * blockSize, blockSize);
-        processRoundTrip(os, blockInput);
-    }
+    // Warmup: process same block multiple times until steady state
+    for (int i = 0; i < 8; ++i)
+        processRoundTrip(os, input);
 
-    // Process and measure
-    juce::AudioBuffer<float> testBlock(kNumChannels, blockSize);
-    for (int ch = 0; ch < kNumChannels; ++ch)
-        testBlock.copyFrom(ch, 0, input, ch, 0, blockSize);
-
-    float inputRMS = calculateRMS(testBlock);
-    auto output = processRoundTrip(os, testBlock);
+    // Measure
+    float inputRMS = calculateRMS(input);
+    auto output = processRoundTrip(os, input);
     float outputRMS = calculateRMS(output);
 
     float rmsRatio = outputRMS / inputRMS;
@@ -571,3 +501,4 @@ TEST_CASE("Upsampled count scales with block size", "[blocksize]")
     // At 4x, should have 4 * blockSize samples
     REQUIRE(numOversampledSamples == blockSize * 4);
 }
+

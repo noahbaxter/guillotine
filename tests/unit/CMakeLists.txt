@@ -26,8 +26,17 @@ set(PROJECT_SRC_DIR ${CMAKE_CURRENT_SOURCE_DIR}/../../src)
 
 # Create test executable
 add_executable(unit_tests
+    test_utils.cpp
     test_oversampler.cpp
+    test_clipper.cpp
+    test_stereo_processor.cpp
+    test_delta_monitor.cpp
+    test_clipper_engine.cpp
+    test_transient.cpp
     ${PROJECT_SRC_DIR}/dsp/Oversampler.cpp
+    ${PROJECT_SRC_DIR}/dsp/Clipper.cpp
+    ${PROJECT_SRC_DIR}/dsp/StereoProcessor.cpp
+    ${PROJECT_SRC_DIR}/dsp/ClipperEngine.cpp
 )
 
 target_include_directories(unit_tests PRIVATE
@@ -37,6 +46,7 @@ target_include_directories(unit_tests PRIVATE
 target_link_libraries(unit_tests PRIVATE
     juce_audio_basics
     juce_core
+    juce_dsp
     oversimple
     Catch2::Catch2WithMain
 )
