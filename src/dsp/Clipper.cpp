@@ -6,7 +6,6 @@ namespace dsp {
 
 void Clipper::prepare(const juce::dsp::ProcessSpec& /*spec*/)
 {
-    updateK();
 }
 
 void Clipper::reset()
@@ -17,12 +16,19 @@ void Clipper::reset()
 void Clipper::setCeiling(float linearAmplitude)
 {
     ceiling = linearAmplitude;
+    updateKneeCache();
 }
 
 void Clipper::setSharpness(float newSharpness)
 {
     sharpness = juce::jlimit(0.0f, 1.0f, newSharpness);
-    updateK();
+    updateKneeCache();
+}
+
+void Clipper::updateKneeCache()
+{
+    knee = (1.0f - sharpness) * ceiling * 0.5f;
+    kneeStart = ceiling - knee;
 }
 
 void Clipper::setStereoLink(bool enabled)
@@ -30,34 +36,46 @@ void Clipper::setStereoLink(bool enabled)
     stereoLinkEnabled = enabled;
 }
 
-void Clipper::updateK()
-{
-    // k controls tanh steepness: higher k = harder knee
-    // sharpness 0.0 -> k=1 (gentle), sharpness 1.0 -> k=10 (near-hard)
-    k = 1.0f + sharpness * sharpness * 9.0f;
-}
-
 float Clipper::processSample(float sample) const
 {
     if (ceiling <= 0.0f)
         return 0.0f;
 
-    float normalized = sample / ceiling;
+    float absVal = std::abs(sample);
+    float sign = (sample >= 0.0f) ? 1.0f : -1.0f;
 
-    // Pure hard clip at max sharpness
+    // Hard clip mode (sharpness 100%)
     if (sharpness >= 0.999f)
-        return std::clamp(normalized, -1.0f, 1.0f) * ceiling;
+    {
+        if (absVal <= ceiling)
+            return sample;
+        return sign * ceiling;
+    }
 
-    // Tanh soft clip with gain compensation
-    float tanhK = std::tanh(k);
-    float clipped = std::tanh(normalized * k) / tanhK;
+    // Below knee - pass through unchanged
+    if (absVal <= kneeStart)
+        return sample;
 
-    return clipped * ceiling;
+    // In knee region or above - apply soft compression
+    float x = absVal - kneeStart;
+
+    // Quadratic curve: starts linear at kneeStart, flattens to ceiling
+    // f(x) = kneeStart + knee * (1 - (1 - x/knee)^2) for x in [0, knee]
+    // f(x) = ceiling for x > knee
+    if (x <= knee)
+    {
+        float t = x / knee;  // 0 to 1 within knee
+        float compressed = kneeStart + knee * (2.0f * t - t * t);
+        return sign * compressed;
+    }
+
+    // Above ceiling - hard limit
+    return sign * ceiling;
 }
 
 float Clipper::calculateGainReduction(float peakLevel) const
 {
-    if (peakLevel <= ceiling)
+    if (peakLevel <= kneeStart)
         return 1.0f;
 
     float targetPeak = std::abs(processSample(peakLevel));
@@ -75,7 +93,7 @@ void Clipper::processInternal(float* const* channelData, int numChannels, int nu
             for (int ch = 0; ch < numChannels; ++ch)
                 maxPeak = std::max(maxPeak, std::abs(channelData[ch][i]));
 
-            if (maxPeak > ceiling)
+            if (maxPeak > kneeStart)
             {
                 float gainReduction = calculateGainReduction(maxPeak);
                 for (int ch = 0; ch < numChannels; ++ch)

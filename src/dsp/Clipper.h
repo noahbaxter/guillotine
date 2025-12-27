@@ -17,19 +17,19 @@ public:
     void processInternal(float* const* channelData, int numChannels, int numSamples);
 
     void setCeiling(float linearAmplitude);
-    void setSharpness(float sharpness);  // 0.0 = soft tanh, 1.0 = hard clip
+    void setSharpness(float sharpness);  // 0.0 = soft knee, 1.0 = hard clip
     void setStereoLink(bool enabled);
 
 private:
     float processSample(float sample) const;
     float calculateGainReduction(float peakLevel) const;
+    void updateKneeCache();
 
     float ceiling = 1.0f;
     float sharpness = 0.5f;
-    float k = 1.0f;  // tanh scaling factor, derived from sharpness
+    float knee = 0.25f;       // cached: (1 - sharpness) * ceiling * 0.5
+    float kneeStart = 0.75f;  // cached: ceiling - knee
     bool stereoLinkEnabled = false;
-
-    void updateK();
 };
 
 } // namespace dsp
