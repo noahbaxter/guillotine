@@ -493,6 +493,7 @@ class GuillotineApp {
     if (!active && this.deltaMode) {
       this.deltaMode = false;
       setDeltaMode(false);
+      setDeltaMonitor(false);
     }
 
     this.guillotine.setActive(active);
