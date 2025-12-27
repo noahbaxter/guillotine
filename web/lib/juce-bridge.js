@@ -11,7 +11,8 @@ const sliderStates = {
     filterType: Juce.getSliderState("filterType"),
     channelMode: Juce.getSliderState("channelMode"),
     stereoLink: Juce.getSliderState("stereoLink"),
-    deltaMonitor: Juce.getSliderState("deltaMonitor")
+    deltaMonitor: Juce.getSliderState("deltaMonitor"),
+    bypass: Juce.getSliderState("bypass")
 };
 
 // Set a parameter value (normalized 0-1)
@@ -82,6 +83,28 @@ export function getDeltaMonitor() {
 
 export function onDeltaMonitorChange(callback) {
     const state = sliderStates.deltaMonitor;
+    if (state) {
+        state.valueChangedEvent.addListener(() => {
+            callback(state.getNormalisedValue() > 0.5);
+        });
+    }
+}
+
+// Bypass helpers - syncs UI bypass state with C++ param
+export function setBypass(enabled) {
+    const state = sliderStates.bypass;
+    if (state) {
+        state.setNormalisedValue(enabled ? 1.0 : 0.0);
+    }
+}
+
+export function getBypass() {
+    const state = sliderStates.bypass;
+    return state ? state.getNormalisedValue() > 0.5 : true;
+}
+
+export function onBypassChange(callback) {
+    const state = sliderStates.bypass;
     if (state) {
         state.valueChangedEvent.addListener(() => {
             callback(state.getNormalisedValue() > 0.5);

@@ -24,14 +24,6 @@ juce::AudioProcessorValueTreeState::ParameterLayout GuillotineProcessor::createP
 {
     std::vector<std::unique_ptr<juce::RangedAudioParameter>> params;
 
-    // Legacy gain param (kept for compatibility)
-    params.push_back(std::make_unique<juce::AudioParameterFloat>(
-        juce::ParameterID{"gain", 1},
-        "Gain",
-        juce::NormalisableRange<float>(-60.0f, 12.0f, 0.1f),
-        0.0f,
-        juce::AudioParameterFloatAttributes().withLabel("dB")));
-
     params.push_back(std::make_unique<juce::AudioParameterFloat>(
         juce::ParameterID{"sharpness", 1},
         "Sharpness",
@@ -48,14 +40,14 @@ juce::AudioProcessorValueTreeState::ParameterLayout GuillotineProcessor::createP
     params.push_back(std::make_unique<juce::AudioParameterFloat>(
         juce::ParameterID{"inputGain", 1},
         "Input Gain",
-        juce::NormalisableRange<float>(-24.0f, 24.0f, 0.1f),
+        juce::NormalisableRange<float>(-24.0f, 24.0f),
         0.0f,
         juce::AudioParameterFloatAttributes().withLabel("dB")));
 
     params.push_back(std::make_unique<juce::AudioParameterFloat>(
         juce::ParameterID{"outputGain", 1},
         "Output Gain",
-        juce::NormalisableRange<float>(-24.0f, 24.0f, 0.1f),
+        juce::NormalisableRange<float>(-24.0f, 24.0f),
         0.0f,
         juce::AudioParameterFloatAttributes().withLabel("dB")));
 
@@ -63,7 +55,7 @@ juce::AudioProcessorValueTreeState::ParameterLayout GuillotineProcessor::createP
     params.push_back(std::make_unique<juce::AudioParameterFloat>(
         juce::ParameterID{"ceiling", 1},
         "Ceiling",
-        juce::NormalisableRange<float>(-60.0f, 0.0f, 0.1f),
+        juce::NormalisableRange<float>(-60.0f, 0.0f),
         0.0f,
         juce::AudioParameterFloatAttributes().withLabel("dB")));
 
@@ -92,6 +84,12 @@ juce::AudioProcessorValueTreeState::ParameterLayout GuillotineProcessor::createP
         juce::ParameterID{"deltaMonitor", 1},
         "Delta Monitor",
         false));
+
+    // Bypass (blade up = bypassed, blade down = active)
+    params.push_back(std::make_unique<juce::AudioParameterBool>(
+        juce::ParameterID{"bypass", 1},
+        "Bypass",
+        true));  // Default to bypassed (blade up)
 
     return {params.begin(), params.end()};
 }
@@ -215,6 +213,7 @@ void GuillotineProcessor::processBlock(juce::AudioBuffer<float>& buffer, juce::M
     int channelMode = static_cast<int>(apvts.getRawParameterValue("channelMode")->load());
     bool stereoLink = apvts.getRawParameterValue("stereoLink")->load() > 0.5f;
     bool deltaMonitor = apvts.getRawParameterValue("deltaMonitor")->load() > 0.5f;
+    bool bypass = apvts.getRawParameterValue("bypass")->load() > 0.5f;
 
     // Map choice index to oversampler factor index: 0=1x, 1=4x, 2=16x, 3=32x → 0, 2, 4, 5
     static constexpr int oversamplingFactorMap[] = {0, 2, 4, 5};
@@ -261,13 +260,15 @@ void GuillotineProcessor::processBlock(juce::AudioBuffer<float>& buffer, juce::M
         }
     }
 
-    // Extract envelope PRE-clip for visualization
+    // Extract envelope PRE-clip for visualization (scaled by input gain to match DSP)
+    float inputGainLinear = juce::Decibels::decibelsToGain(inputGainDb);
     for (int sample = 0; sample < buffer.getNumSamples(); ++sample)
     {
         float monoSample = 0.0f;
         for (int channel = 0; channel < totalNumInputChannels; ++channel)
             monoSample += std::abs(buffer.getSample(channel, sample));
         monoSample /= static_cast<float>(std::max(1, totalNumInputChannels));
+        monoSample *= inputGainLinear;  // Apply input gain so visualization matches DSP
 
         if (monoSample > currentPeak)
             currentPeak = monoSample;
@@ -287,8 +288,9 @@ void GuillotineProcessor::processBlock(juce::AudioBuffer<float>& buffer, juce::M
         }
     }
 
-    // Process through clipper engine
-    clipperEngine.process(buffer);
+    // Process through clipper engine (skip if bypassed)
+    if (!bypass)
+        clipperEngine.process(buffer);
 }
 
 bool GuillotineProcessor::hasEditor() const

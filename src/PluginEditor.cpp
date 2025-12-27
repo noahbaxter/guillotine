@@ -15,6 +15,7 @@ GuillotineEditor::GuillotineEditor(GuillotineProcessor& p)
       channelModeRelay{"channelMode"},
       stereoLinkRelay{"stereoLink"},
       deltaMonitorRelay{"deltaMonitor"},
+      bypassRelay{"bypass"},
       // Initialize WebView with relays
       webView{
           juce::WebBrowserComponent::Options{}
@@ -31,6 +32,7 @@ GuillotineEditor::GuillotineEditor(GuillotineProcessor& p)
               .withOptionsFrom(channelModeRelay)
               .withOptionsFrom(stereoLinkRelay)
               .withOptionsFrom(deltaMonitorRelay)
+              .withOptionsFrom(bypassRelay)
       },
       // Initialize parameter attachments (connect relays to APVTS)
       inputGainAttachment{
@@ -59,7 +61,10 @@ GuillotineEditor::GuillotineEditor(GuillotineProcessor& p)
           stereoLinkRelay, nullptr},
       deltaMonitorAttachment{
           *audioProcessor.getAPVTS().getParameter("deltaMonitor"),
-          deltaMonitorRelay, nullptr}
+          deltaMonitorRelay, nullptr},
+      bypassAttachment{
+          *audioProcessor.getAPVTS().getParameter("bypass"),
+          bypassRelay, nullptr}
 {
     addAndMakeVisible(webView);
 

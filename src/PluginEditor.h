@@ -29,6 +29,7 @@ private:
     juce::WebSliderRelay channelModeRelay;
     juce::WebSliderRelay stereoLinkRelay;
     juce::WebSliderRelay deltaMonitorRelay;
+    juce::WebSliderRelay bypassRelay;
 
     // WebView component (must be declared after relays)
     juce::WebBrowserComponent webView;
@@ -43,6 +44,7 @@ private:
     juce::WebSliderParameterAttachment channelModeAttachment;
     juce::WebSliderParameterAttachment stereoLinkAttachment;
     juce::WebSliderParameterAttachment deltaMonitorAttachment;
+    juce::WebSliderParameterAttachment bypassAttachment;
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(GuillotineEditor)
 };
