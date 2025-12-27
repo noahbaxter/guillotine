@@ -91,16 +91,6 @@
             file="src/PluginEditor.cpp"/>
       <FILE id="Mxww5q" name="PluginEditor.h" compile="0" resource="0" file="src/PluginEditor.h"/>
     </GROUP>
-    <GROUP id="{GUI00001-2345-6789-ABCD-EF0123456789}" name="gui">
-      <FILE id="Gui11tN" name="GuillotineComponent.cpp" compile="1" resource="0"
-            file="src/gui/GuillotineComponent.cpp"/>
-      <FILE id="Gui11tH" name="GuillotineComponent.h" compile="0" resource="0"
-            file="src/gui/GuillotineComponent.h"/>
-      <FILE id="WaveformC" name="WaveformComponent.cpp" compile="1" resource="0"
-            file="src/gui/WaveformComponent.cpp"/>
-      <FILE id="WaveformH" name="WaveformComponent.h" compile="0" resource="0"
-            file="src/gui/WaveformComponent.h"/>
-    </GROUP>
     <GROUP id="{DSP00001-2345-6789-ABCD-EF0123456789}" name="dsp">
       <FILE id="DspClipperEngineH" name="ClipperEngine.h" compile="0" resource="0"
             file="src/dsp/ClipperEngine.h"/>
