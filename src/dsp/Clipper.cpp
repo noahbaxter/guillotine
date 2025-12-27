@@ -6,11 +6,12 @@ namespace dsp {
 
 void Clipper::prepare(const juce::dsp::ProcessSpec& /*spec*/)
 {
+    // Stateless - nothing to prepare
 }
 
 void Clipper::reset()
 {
-    // stateless
+    // Stateless - nothing to reset
 }
 
 void Clipper::setCeiling(float linearAmplitude)
@@ -56,14 +57,11 @@ float Clipper::processSample(float sample) const
     if (absVal <= kneeStart)
         return sample;
 
-    // In knee region or above - apply soft compression
+    // In knee region - apply soft compression
     float x = absVal - kneeStart;
 
     // Quadratic compression curve: t² gives compression (output < input)
     // f(x) = kneeStart + knee * t² for x in [0, knee], where t = x/knee
-    // - At t=0: output = kneeStart (continuous with passthrough)
-    // - At t=1: output = ceiling (reaches limit exactly)
-    // - For 0<t<1: t² < t, so output < input (compression)
     if (x <= knee)
     {
         float t = x / knee;  // 0 to 1 within knee
@@ -124,7 +122,6 @@ void Clipper::process(juce::AudioBuffer<float>& buffer)
 
 void Clipper::process(juce::dsp::AudioBlock<float>& block)
 {
-    // Build array of channel pointers from AudioBlock
     const int numChannels = static_cast<int>(block.getNumChannels());
     const int numSamples = static_cast<int>(block.getNumSamples());
 
