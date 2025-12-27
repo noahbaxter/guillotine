@@ -107,10 +107,6 @@
             file="src/dsp/Oversampler.h"/>
       <FILE id="DspOversamplerCpp" name="Oversampler.cpp" compile="1" resource="0"
             file="src/dsp/Oversampler.cpp"/>
-      <FILE id="DspDCBlockerH" name="DCBlocker.h" compile="0" resource="0"
-            file="src/dsp/DCBlocker.h"/>
-      <FILE id="DspDCBlockerCpp" name="DCBlocker.cpp" compile="1" resource="0"
-            file="src/dsp/DCBlocker.cpp"/>
     </GROUP>
     <GROUP id="{OVERSIMPLE-0001-0000-0000-000000000000}" name="oversimple">
       <FILE id="OversimpleFirCpp" name="FirOversampling.cpp" compile="1" resource="0"
