@@ -73,3 +73,20 @@
   font-size: 25px;
   margin-bottom: -10px;
 }
+
+.knob__input {
+  width: 60px;
+  padding: 2px 4px;
+  font-size: 11px;
+  font-family: monospace;
+  text-align: center;
+  background: var(--color-surface-panel, #141414);
+  border: 1px solid var(--color-white-50, rgba(255, 255, 255, 0.5));
+  border-radius: 3px;
+  color: var(--color-text-primary, #fff);
+  outline: none;
+}
+
+.knob__input:focus {
+  border-color: var(--color-white-70, rgba(255, 255, 255, 0.7));
+}

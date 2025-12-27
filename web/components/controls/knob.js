@@ -13,6 +13,8 @@ const DEFAULTS = {
   label: '',
   unit: '',
   formatValue: null,
+  parseValue: null,  // Optional: parse typed input back to value (e.g., "50%" -> 0.5)
+  snapValue: null,   // Optional: snap dragged values to nice increments (e.g., clean dB values)
   size: 60,
   useSprites: false,
   spriteScale: 0.4,
@@ -31,6 +33,7 @@ export class Knob {
     this.onDragStart = null;
     this.onDragEnd = null;
     this.dragging = false;
+    this.editing = false;
     this.startY = 0;
     this.startValue = 0;
     this.element = null;
@@ -123,11 +126,16 @@ export class Knob {
     const onMouseMove = (e) => {
       if (!this.dragging) return;
 
-      const { min, max, sensitivity, step } = this.options;
+      const { min, max, sensitivity, step, snapValue } = this.options;
       const delta = (this.startY - e.clientY) * sensitivity;
       let newValue = this.startValue + delta * (max - min);
 
-      newValue = Math.round(newValue / step) * step;
+      // Snap to nice values if snapValue function provided, otherwise use step
+      if (snapValue) {
+        newValue = snapValue(newValue);
+      } else {
+        newValue = Math.round(newValue / step) * step;
+      }
       newValue = Math.max(min, Math.min(max, newValue));
 
       if (newValue !== this.value) {
@@ -149,17 +157,137 @@ export class Knob {
       if (this.onChange) this.onChange(this.value);
     };
 
+    const onValueDoubleClick = (e) => {
+      e.stopPropagation();
+      this.startEditing();
+    };
+
     this.knobEl.addEventListener('mousedown', onMouseDown);
     this.knobEl.addEventListener('dblclick', onDoubleClick);
+    this.valueDisplayEl.addEventListener('dblclick', onValueDoubleClick);
     document.addEventListener('mousemove', onMouseMove);
     document.addEventListener('mouseup', onMouseUp);
 
     this.cleanup = () => {
       this.knobEl.removeEventListener('mousedown', onMouseDown);
       this.knobEl.removeEventListener('dblclick', onDoubleClick);
+      this.valueDisplayEl.removeEventListener('dblclick', onValueDoubleClick);
       document.removeEventListener('mousemove', onMouseMove);
       document.removeEventListener('mouseup', onMouseUp);
     };
+  }
+
+  startEditing() {
+    if (this.editing) return;
+    this.editing = true;
+
+    // Get current display text for the input
+    const { formatValue } = this.options;
+    let displayText = formatValue ? formatValue(this.value) : this.value.toFixed(2);
+
+    // Create input element
+    this.inputEl = document.createElement('input');
+    this.inputEl.type = 'text';
+    this.inputEl.className = 'knob__input';
+    this.inputEl.value = displayText;
+
+    // Hide current display, show input
+    if (this.digits) {
+      this.digits.hide();
+    }
+    if (this.suffixEl) {
+      this.suffixEl.style.display = 'none';
+    }
+    this.valueDisplayEl.insertBefore(this.inputEl, this.valueDisplayEl.firstChild);
+
+    // Focus and select all
+    this.inputEl.focus();
+    this.inputEl.select();
+
+    // Start drag for undo/redo
+    if (this.onDragStart) this.onDragStart();
+
+    // Handle input events
+    const commitEdit = () => {
+      if (!this.editing) return;
+      const inputValue = this.inputEl.value.trim();
+      this.finishEditing(inputValue);
+    };
+
+    const cancelEdit = () => {
+      if (!this.editing) return;
+      this.finishEditing(null);
+    };
+
+    this.inputEl.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        commitEdit();
+      } else if (e.key === 'Escape') {
+        e.preventDefault();
+        cancelEdit();
+      }
+    });
+
+    this.inputEl.addEventListener('blur', commitEdit);
+  }
+
+  finishEditing(inputValue) {
+    if (!this.editing) return;
+    this.editing = false;
+
+    // Remove input
+    if (this.inputEl) {
+      this.inputEl.remove();
+      this.inputEl = null;
+    }
+
+    // Show display again
+    if (this.digits) {
+      this.digits.show();
+    }
+    if (this.suffixEl) {
+      this.suffixEl.style.display = '';
+    }
+
+    // Parse and apply value if not cancelled
+    if (inputValue !== null) {
+      const newValue = this.parseInputValue(inputValue);
+      if (newValue !== null && newValue !== this.value) {
+        this.value = newValue;
+        this.render();
+        if (this.onChange) this.onChange(this.value);
+      }
+    }
+
+    // End drag for undo/redo (delayed to let JUCE callback fire first)
+    setTimeout(() => {
+      if (this.onDragEnd) this.onDragEnd();
+    }, 50);
+  }
+
+  parseInputValue(input) {
+    const { min, max, parseValue } = this.options;
+
+    // Use custom parser if provided
+    if (parseValue) {
+      const parsed = parseValue(input);
+      if (parsed !== null && !isNaN(parsed)) {
+        // Don't snap to step - allow any value within range
+        return Math.max(min, Math.min(max, parsed));
+      }
+      return null;
+    }
+
+    // Default: extract number from input
+    const match = input.match(/-?\d+\.?\d*/);
+    if (!match) return null;
+
+    const num = parseFloat(match[0]);
+    if (isNaN(num)) return null;
+
+    // Don't snap to step - allow any value within range
+    return Math.max(min, Math.min(max, num));
   }
 
   render() {

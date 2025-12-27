@@ -89,6 +89,14 @@ export class Digits {
     }
   }
 
+  hide() {
+    if (this.element) this.element.style.display = 'none';
+  }
+
+  show() {
+    if (this.element) this.element.style.display = '';
+  }
+
   destroy() {
     if (this.element) this.element.remove();
   }
