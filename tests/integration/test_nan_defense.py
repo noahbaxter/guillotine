@@ -166,12 +166,8 @@ class TestMixedBadValues:
 class TestBypassWithBadValues:
     """Test bypass mode handles bad values."""
 
-    @pytest.mark.xfail(
-        reason="Bypass mode skips NaN sanitization - input passes through raw",
-        strict=True
-    )
     def test_bypass_sanitizes_nan(self, plugin_path):
-        """Bypass mode should still sanitize NaN (currently doesn't)."""
+        """Bypass mode still sanitizes NaN values."""
         plugin = load_plugin(plugin_path)
         plugin.bypass_clipper = True
 

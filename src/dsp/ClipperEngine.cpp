@@ -116,7 +116,19 @@ void ClipperEngine::process(juce::AudioBuffer<float>& buffer)
     // Skip clipping and makeup gain when bypassed
     // Input gain still applies so users can hear pre-clip level
     if (bypassed)
+    {
+        // Still sanitize NaN/Inf even when bypassed
+        for (int ch = 0; ch < numChannels; ++ch)
+        {
+            float* data = buffer.getWritePointer(ch);
+            for (int i = 0; i < numSamples; ++i)
+            {
+                if (!std::isfinite(data[i]))
+                    data[i] = 0.0f;
+            }
+        }
         return;
+    }
 
     // Store dry signal for delta monitoring (after input gain)
     if (deltaMonitorEnabled)
