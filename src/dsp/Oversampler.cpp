@@ -1,4 +1,5 @@
 #include "Oversampler.h"
+#include <oversimple/Oversampling.hpp>
 
 namespace dsp {
 
@@ -6,6 +7,8 @@ Oversampler::Oversampler()
 {
     // Oversampler created in prepare()
 }
+
+Oversampler::~Oversampler() = default;
 
 void Oversampler::rebuildOversampler()
 {
@@ -102,8 +105,7 @@ float* const* Oversampler::processSamplesUp(juce::AudioBuffer<float>& inputBuffe
     numOversampledSamples = static_cast<int>(numSamples);
 
     auto& output = oversampler->getUpSampleOutput();
-    // Build array of channel pointers
-    static thread_local std::vector<float*> channelPtrs;
+    // Build array of channel pointers (using instance member, not shared static)
     channelPtrs.resize(static_cast<size_t>(numChannels));
     for (int ch = 0; ch < numChannels; ++ch)
         channelPtrs[static_cast<size_t>(ch)] = output[ch].data();
@@ -118,16 +120,15 @@ void Oversampler::processSamplesDown(juce::AudioBuffer<float>& outputBuffer, int
 
     auto& upSampledOutput = oversampler->getUpSampleOutput();
 
-    // Build non-const array of pointers for downSample
-    static thread_local std::vector<float*> outputPtrs;
-    outputPtrs.resize(static_cast<size_t>(numChannels));
+    // Reuse channelPtrs for output (no longer needed for upsampled input at this point)
+    channelPtrs.resize(static_cast<size_t>(numChannels));
     for (int ch = 0; ch < numChannels; ++ch)
-        outputPtrs[static_cast<size_t>(ch)] = outputBuffer.getWritePointer(ch);
+        channelPtrs[static_cast<size_t>(ch)] = outputBuffer.getWritePointer(ch);
 
     oversampler->downSample(
         upSampledOutput.get(),
         static_cast<uint32_t>(upSampledOutput.getNumSamples()),
-        outputPtrs.data(),
+        channelPtrs.data(),
         static_cast<uint32_t>(numOriginalSamples));
 }
 

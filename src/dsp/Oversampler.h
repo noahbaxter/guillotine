@@ -1,8 +1,13 @@
 #pragma once
 
 #include <juce_audio_basics/juce_audio_basics.h>
-#include <oversimple/Oversampling.hpp>
 #include <memory>
+#include <vector>
+
+// Forward declaration - heavy template header only included in .cpp
+namespace oversimple {
+template<typename T> class TOversampling;
+}
 
 namespace dsp {
 
@@ -15,6 +20,7 @@ public:
     static constexpr int NumFactors = 6;
 
     Oversampler();
+    ~Oversampler();  // Defined in .cpp where full type is visible
 
     void prepare(double sampleRate, int maxBlockSize, int numChannels);
     void reset();
@@ -40,6 +46,9 @@ private:
     int numChannels = 2;
     int maxBlockSize = 512;
     bool isPrepared = false;
+
+    // Per-instance buffer for channel pointers (NOT shared between instances)
+    std::vector<float*> channelPtrs;
 
     void rebuildOversampler();
 };
