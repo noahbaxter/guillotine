@@ -30,6 +30,8 @@ public:
 
     int getOversamplingFactor() const;
     int getLatencyInSamples() const;
+    int getCurrentFactorIndex() const { return currentFactorIndex; }
+    FilterType getCurrentFilterType() const { return currentFilterType; }
 
     // Process up: returns pointer to oversampled data and sets numOversampledSamples
     // Returns nullptr if 1x (no oversampling)

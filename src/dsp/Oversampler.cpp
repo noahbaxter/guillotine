@@ -42,7 +42,11 @@ void Oversampler::prepare(double /*sampleRate*/, int maxBlock, int channels)
 void Oversampler::reset()
 {
     if (oversampler)
-        oversampler->reset();
+    {
+        // Note: oversimple's reset() has a bug - it resets wrong samplers for each mode.
+        // Workaround: rebuild the oversampler entirely to ensure clean state.
+        rebuildOversampler();
+    }
 }
 
 void Oversampler::setOversamplingFactor(int factorIndex)
