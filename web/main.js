@@ -14,7 +14,10 @@ import {
   parameterDragEnded,
   registerCallback,
   setDeltaMonitor,
-  onDeltaMonitorChange
+  onDeltaMonitorChange,
+  setBypass,
+  getBypass,
+  onBypassChange
 } from './lib/juce-bridge.js';
 import { setDeltaMode } from './lib/theme.js';
 
@@ -27,15 +30,31 @@ fontStyles.textContent = `
 `;
 document.head.appendChild(fontStyles);
 
+// Utility for binding drag tracking to knobs (avoids repetition)
+function bindDragTracking(knob, paramName, app, extraStart, extraEnd) {
+  knob.onDragStart = () => {
+    app.draggingParam = paramName;
+    parameterDragStarted(paramName);
+    if (extraStart) extraStart();
+  };
+  knob.onDragEnd = () => {
+    parameterDragEnded(paramName);
+    app.draggingParam = null;
+    if (extraEnd) extraEnd();
+  };
+}
+
 // Utility for creating sprite-based knobs
 function createSpriteKnob(config) {
-  const { label, suffix, formatter, spriteScale = 0.4, suffixVariant, sizeVariant, ...rest } = config;
+  const { label, suffix, formatter, parser, snap, spriteScale = 0.4, suffixVariant, sizeVariant, ...rest } = config;
   return {
     label,
     useSprites: true,
     spriteScale,
     spriteSuffix: suffix,
     formatValue: (v) => String(formatter(v)),
+    parseValue: parser || null,
+    snapValue: snap || null,
     suffixVariant,
     sizeVariant,
     ...rest
@@ -88,7 +107,12 @@ class GuillotineApp {
       size: 50,
       spriteScale: 0.35,
       suffix: '%',
-      formatter: (v) => Math.round(v * 100)
+      formatter: (v) => Math.round(v * 100),
+      parser: (input) => {
+        const match = input.match(/-?\d+\.?\d*/);
+        return match ? parseFloat(match[0]) / 100 : null;
+      },
+      snap: (v) => Math.round(v * 100) / 100  // 1% steps
     }));
 
     // Threshold knob (0-1 maps to 0dB to currentMinDb dynamically) - CENTER, larger
@@ -99,40 +123,61 @@ class GuillotineApp {
       spriteScale: 0.4,
       suffix: 'dB',
       formatter: (v) => this.thresholdToDb(v).toFixed(1),
+      parser: (input) => {
+        const match = input.match(/-?\d+\.?\d*/);
+        if (!match) return null;
+        const db = parseFloat(match[0]);
+        return this.dbToThreshold(db);  // Convert dB to 0-1 threshold
+      },
+      snap: (v) => {
+        // Snap to 0.5dB steps in dB domain
+        const db = this.thresholdToDb(v);
+        const snappedDb = Math.round(db * 2) / 2;
+        return this.dbToThreshold(snappedDb);
+      },
       suffixVariant: 'large',
       sizeVariant: 'large',
       wrapperClass: 'knob-wrapper--threshold'
     }));
 
-    // Oversampling knob (stepped: 1x, 2x, 4x, 8x) - RIGHT
+    // Oversampling knob (stepped: 1x, 4x, 16x, 32x) - RIGHT
     this.oversamplingKnob = new Knob(this.mainKnobsContainer, createSpriteKnob({
       label: 'Oversample',
       min: 0, max: 3, value: 0, step: 1,
       size: 50,
       spriteScale: 0.35,
       suffix: 'x',
-      formatter: (v) => [1, 2, 4, 8][Math.round(v)]
+      formatter: (v) => [1, 4, 16, 32][Math.round(v)],
+      parser: (input) => {
+        const match = input.match(/\d+/);
+        if (!match) return null;
+        const displayVal = parseInt(match[0]);
+        const mapping = { 1: 0, 4: 1, 16: 2, 32: 3 };
+        return mapping[displayVal] ?? null;
+      }
     }));
 
     // Input Gain knob
     this.inputGainKnob = new Knob(this.gainKnobsContainer, createSpriteKnob({
       label: 'Input',
-      min: -24, max: 24, value: 0, step: 0.1,
+      min: -24, max: 24, value: 0,
       size: 32,
       spriteScale: 0.25,
       suffix: 'dB',
       formatter: (v) => v.toFixed(1),
+      snap: (v) => Math.round(v * 10) / 10,  // 0.1dB steps
       wrapperClass: 'knob-wrapper--side'
     }));
 
     // Output Gain knob
     this.outputGainKnob = new Knob(this.gainKnobsContainer, createSpriteKnob({
       label: 'Output',
-      min: -24, max: 24, value: 0, step: 0.1,
+      min: -24, max: 24, value: 0,
       size: 32,
       spriteScale: 0.25,
       suffix: 'dB',
       formatter: (v) => v.toFixed(1),
+      snap: (v) => Math.round(v * 10) / 10,  // 0.1dB steps
       wrapperClass: 'knob-wrapper--side'
     }));
 
@@ -153,44 +198,24 @@ class GuillotineApp {
     this.thresholdKnob.onChange = (value) => {
       this.setThreshold(value, 'knob');
     };
-    this.thresholdKnob.onDragStart = () => {
-      this.draggingParam = 'ceiling';
-      parameterDragStarted('ceiling');
-      this.microscope.showThresholdLabel();
-    };
-    this.thresholdKnob.onDragEnd = () => {
-      parameterDragEnded('ceiling');
-      this.draggingParam = null;
-      this.microscope.hideThresholdLabel();
-    };
+    bindDragTracking(this.thresholdKnob, 'ceiling', this,
+      () => this.microscope.showThresholdLabel(),
+      () => this.microscope.hideThresholdLabel()
+    );
 
     // Wire up other knob changes
-    this.sharpnessKnob.onChange = (v) => {
-      this.setSharpness(v);
-    };
+    this.sharpnessKnob.onChange = (v) => this.setSharpness(v);
+    bindDragTracking(this.sharpnessKnob, 'sharpness', this);
+
     this.oversamplingKnob.onChange = (v) => this.setOversampling(v);
+    bindDragTracking(this.oversamplingKnob, 'oversampling', this);
 
-    // Input gain knob with drag tracking
+    // Gain knobs
     this.inputGainKnob.onChange = (v) => this.setInputGain(v);
-    this.inputGainKnob.onDragStart = () => {
-      this.draggingParam = 'inputGain';
-      parameterDragStarted('inputGain');
-    };
-    this.inputGainKnob.onDragEnd = () => {
-      parameterDragEnded('inputGain');
-      this.draggingParam = null;
-    };
+    bindDragTracking(this.inputGainKnob, 'inputGain', this);
 
-    // Output gain knob with drag tracking
     this.outputGainKnob.onChange = (v) => this.setOutputGain(v);
-    this.outputGainKnob.onDragStart = () => {
-      this.draggingParam = 'outputGain';
-      parameterDragStarted('outputGain');
-    };
-    this.outputGainKnob.onDragEnd = () => {
-      parameterDragEnded('outputGain');
-      this.draggingParam = null;
-    };
+    bindDragTracking(this.outputGainKnob, 'outputGain', this);
 
     // Set initial sharpness on microscope and guillotine (use knob's default value)
     this.microscope.setSharpness(this.sharpnessKnob.getValue());
@@ -241,8 +266,26 @@ class GuillotineApp {
       }
     });
 
-    registerCallback('setBypass', (value) => {
-      this.setBypass(value);
+    onParameterChange('sharpness', () => {
+      if (this.draggingParam !== 'sharpness') {
+        const value = getParameterNormalized('sharpness');
+        this.sharpnessKnob.setValue(value);
+        this.microscope.setSharpness(value);
+        this.guillotine.setSharpness(value);
+      }
+    });
+
+    onParameterChange('oversampling', () => {
+      if (this.draggingParam !== 'oversampling') {
+        const normalized = getParameterNormalized('oversampling');
+        const index = Math.round(normalized * 3);  // 0-3
+        this.oversamplingKnob.setValue(index);
+      }
+    });
+
+    // Listen for bypass changes from C++ (DAW automation)
+    onBypassChange((bypassed) => {
+      this.setBypass(bypassed);
     });
 
     // Register envelope data callback (from C++ timer)
@@ -250,9 +293,8 @@ class GuillotineApp {
       this.microscope.updateData(data);
     });
 
-    // Initial state
-    this.updateBypassVisual();
-    this.setThreshold(this.threshold, 'init');
+    // Initialize all UI state from C++ parameter values
+    this.initializeFromParams();
 
     // Font cycling with F key
     document.addEventListener('keydown', (e) => {
@@ -269,6 +311,35 @@ class GuillotineApp {
     this.fontIndex = (this.fontIndex + 1) % this.fonts.length;
     const font = this.fonts[this.fontIndex];
     document.documentElement.style.setProperty('--cursive-font', `'${font}', cursive`);
+  }
+
+  initializeFromParams() {
+    // Read all parameter values from C++ and update UI
+    // Bypass
+    this.bypass = getBypass();
+    this.updateBypassVisual();
+
+    // Ceiling -> threshold (inverted: 0dB = 0 threshold, -60dB = 1 threshold)
+    const ceilingNorm = getParameterNormalized('ceiling');
+    this.setThreshold(1 - ceilingNorm, 'init');
+
+    // Sharpness (0-1)
+    const sharpness = getParameterNormalized('sharpness');
+    this.sharpnessKnob.setValue(sharpness);
+    this.microscope.setSharpness(sharpness);
+    this.guillotine.setSharpness(sharpness);
+
+    // Oversampling (0-3 choice)
+    const oversamplingNorm = getParameterNormalized('oversampling');
+    const oversamplingIndex = Math.round(oversamplingNorm * 3);
+    this.oversamplingKnob.setValue(oversamplingIndex);
+
+    // Input/Output gains (-24 to 24 dB)
+    const inputGainNorm = getParameterNormalized('inputGain');
+    this.inputGainKnob.setValue(this.normalizedToDb(inputGainNorm));
+
+    const outputGainNorm = getParameterNormalized('outputGain');
+    this.outputGainKnob.setValue(this.normalizedToDb(outputGainNorm));
   }
 
   setupDeltaModeHandlers() {
@@ -404,7 +475,7 @@ class GuillotineApp {
   toggleBypass() {
     this.bypass = !this.bypass;
     this.updateBypassVisual();
-    // TODO: Add bypass relay to JUCE when needed
+    setBypass(this.bypass);
   }
 
   setBypass(value) {
