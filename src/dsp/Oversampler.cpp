@@ -1,5 +1,4 @@
 #include "Oversampler.h"
-#include <oversimple/Oversampling.hpp>
 
 namespace dsp {
 
@@ -8,32 +7,53 @@ Oversampler::Oversampler()
     // Oversampler created in prepare()
 }
 
-Oversampler::~Oversampler() = default;
-
 void Oversampler::rebuildOversampler()
 {
-    oversimple::OversamplingSettings settings;
-    settings.maxOrder = 5;  // Up to 32x
-    settings.numUpSampledChannels = static_cast<uint32_t>(numChannels);
-    settings.numDownSampledChannels = static_cast<uint32_t>(numChannels);
-    settings.maxNumInputSamples = static_cast<uint32_t>(maxBlockSize);
-    settings.upSampleOutputBufferType = oversimple::BufferType::plain;
-    settings.upSampleInputBufferType = oversimple::BufferType::plain;
-    settings.downSampleOutputBufferType = oversimple::BufferType::plain;
-    settings.downSampleInputBufferType = oversimple::BufferType::plain;
-    settings.order = (currentFactorIndex > 0) ? static_cast<uint32_t>(currentFactorIndex) : 1;
-    settings.isUsingLinearPhase = (currentFilterType == FilterType::LinearPhase);
-    settings.firTransitionBand = 4.0;
-    settings.fftBlockSize = 1024;
+    if (currentFactorIndex == 0)
+    {
+        // 1x = no oversampling needed
+        oversampler.reset();
+        return;
+    }
 
-    oversampler = std::make_unique<oversimple::TOversampling<float>>(settings);
-    oversampler->reset();  // Zero-initialize filter buffers
+    // Create oversampler with manual stage configuration for 32x support
+    // JUCE's constructor only supports up to 16x (factor=4), so we build manually
+    oversampler = std::make_unique<juce::dsp::Oversampling<float>>(
+        static_cast<size_t>(numChannels_));
+
+    oversampler->clearOversamplingStages();
+
+    auto juceFilterType = (currentFilterType == FilterType::LinearPhase)
+        ? juce::dsp::Oversampling<float>::filterHalfBandFIREquiripple
+        : juce::dsp::Oversampling<float>::filterHalfBandPolyphaseIIR;
+
+    // Add stages based on factor index (1=2x, 2=4x, 3=8x, 4=16x, 5=32x)
+    int numStages = currentFactorIndex;
+
+    for (int n = 0; n < numStages; ++n)
+    {
+        // Filter parameters tuned for good intersample peak control
+        // Stage 0 needs tighter transition width, later stages can be wider
+        // Using JUCE's max quality as baseline with some adjustments
+        float twUp   = (n == 0) ? 0.05f : 0.10f;
+        float twDown = (n == 0) ? 0.06f : 0.12f;
+
+        // High attenuation for better stopband rejection
+        // Consistent across stages (unlike JUCE's decreasing approach)
+        float gaindBUp   = -90.0f;
+        float gaindBDown = -80.0f;
+
+        oversampler->addOversamplingStage(juceFilterType, twUp, gaindBUp, twDown, gaindBDown);
+    }
+
+    oversampler->initProcessing(static_cast<size_t>(maxBlockSize_));
+    oversampler->reset();
 }
 
 void Oversampler::prepare(double /*sampleRate*/, int maxBlock, int channels)
 {
-    numChannels = channels;
-    maxBlockSize = maxBlock;
+    numChannels_ = channels;
+    maxBlockSize_ = maxBlock;
 
     rebuildOversampler();
     isPrepared = true;
@@ -51,11 +71,8 @@ void Oversampler::setOversamplingFactor(int factorIndex)
     if (currentFactorIndex != newIndex)
     {
         currentFactorIndex = newIndex;
-        if (isPrepared && oversampler && newIndex > 0)
-        {
-            oversampler->setOrder(static_cast<uint32_t>(newIndex));
-            oversampler->reset();
-        }
+        if (isPrepared)
+            rebuildOversampler();
     }
 }
 
@@ -64,11 +81,8 @@ void Oversampler::setFilterType(FilterType type)
     if (currentFilterType != type)
     {
         currentFilterType = type;
-        if (isPrepared && oversampler)
-        {
-            oversampler->setUseLinearPhase(type == FilterType::LinearPhase);
-            // Note: setUseLinearPhase calls reset() internally
-        }
+        if (isPrepared)
+            rebuildOversampler();
     }
 }
 
@@ -84,10 +98,7 @@ int Oversampler::getLatencyInSamples() const
     if (currentFactorIndex == 0 || !oversampler)
         return 0;
 
-    bool isLinearPhase = (currentFilterType == FilterType::LinearPhase);
-    return static_cast<int>(oversampler->getLatency(
-        static_cast<uint32_t>(currentFactorIndex),
-        isLinearPhase));
+    return static_cast<int>(std::round(oversampler->getLatencyInSamples()));
 }
 
 float* const* Oversampler::processSamplesUp(juce::AudioBuffer<float>& inputBuffer, int& numOversampledSamples)
@@ -98,17 +109,18 @@ float* const* Oversampler::processSamplesUp(juce::AudioBuffer<float>& inputBuffe
         return nullptr;  // Signal to use original buffer
     }
 
-    uint32_t numSamples = oversampler->upSample(
-        inputBuffer.getArrayOfWritePointers(),
-        static_cast<uint32_t>(inputBuffer.getNumSamples()));
+    // Create AudioBlock from input buffer
+    juce::dsp::AudioBlock<float> inputBlock(inputBuffer);
 
-    numOversampledSamples = static_cast<int>(numSamples);
+    // Upsample - returns AudioBlock pointing to internal storage
+    oversampledBlock = oversampler->processSamplesUp(inputBlock);
 
-    auto& output = oversampler->getUpSampleOutput();
-    // Build array of channel pointers (using instance member, not shared static)
-    channelPtrs.resize(static_cast<size_t>(numChannels));
-    for (int ch = 0; ch < numChannels; ++ch)
-        channelPtrs[static_cast<size_t>(ch)] = output[ch].data();
+    numOversampledSamples = static_cast<int>(oversampledBlock.getNumSamples());
+
+    // Build array of channel pointers for compatibility with existing API
+    channelPtrs.resize(static_cast<size_t>(numChannels_));
+    for (int ch = 0; ch < numChannels_; ++ch)
+        channelPtrs[static_cast<size_t>(ch)] = oversampledBlock.getChannelPointer(static_cast<size_t>(ch));
 
     return channelPtrs.data();
 }
@@ -118,18 +130,12 @@ void Oversampler::processSamplesDown(juce::AudioBuffer<float>& outputBuffer, int
     if (currentFactorIndex == 0 || !oversampler || !isPrepared)
         return;
 
-    auto& upSampledOutput = oversampler->getUpSampleOutput();
+    // Create AudioBlock from output buffer (only the portion we need)
+    juce::dsp::AudioBlock<float> outputBlock(outputBuffer);
+    auto subBlock = outputBlock.getSubBlock(0, static_cast<size_t>(numOriginalSamples));
 
-    // Reuse channelPtrs for output (no longer needed for upsampled input at this point)
-    channelPtrs.resize(static_cast<size_t>(numChannels));
-    for (int ch = 0; ch < numChannels; ++ch)
-        channelPtrs[static_cast<size_t>(ch)] = outputBuffer.getWritePointer(ch);
-
-    oversampler->downSample(
-        upSampledOutput.get(),
-        static_cast<uint32_t>(upSampledOutput.getNumSamples()),
-        channelPtrs.data(),
-        static_cast<uint32_t>(numOriginalSamples));
+    // Downsample from internal storage back to output buffer
+    oversampler->processSamplesDown(subBlock);
 }
 
 } // namespace dsp

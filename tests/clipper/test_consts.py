@@ -6,7 +6,7 @@ Shared constants for clipper tests.
 # Plugin Configuration Options
 # =============================================================================
 
-OVERSAMPLING_MODES = ["1x", "4x", "16x", "32x"]
+OVERSAMPLING_MODES = ["1x", "2x", "4x", "8x", "16x", "32x"]
 FILTER_TYPES = ["Minimum Phase", "Linear Phase"]
 
 

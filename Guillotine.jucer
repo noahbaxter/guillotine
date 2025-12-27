@@ -108,14 +108,6 @@
       <FILE id="DspOversamplerCpp" name="Oversampler.cpp" compile="1" resource="0"
             file="src/dsp/Oversampler.cpp"/>
     </GROUP>
-    <GROUP id="{OVERSIMPLE-0001-0000-0000-000000000000}" name="oversimple">
-      <FILE id="OversimpleFirCpp" name="FirOversampling.cpp" compile="1" resource="0"
-            file="third_party/oversimple/oversimple/FirOversampling.cpp"/>
-      <FILE id="R8brainBaseCpp" name="r8bbase.cpp" compile="1" resource="0"
-            file="third_party/oversimple/r8brain/r8bbase.cpp"/>
-      <FILE id="R8brainPffftCpp" name="pffft.cpp" compile="1" resource="0"
-            file="third_party/oversimple/r8brain/pffft.cpp"/>
-    </GROUP>
   </MAINGROUP>
   <MODULES>
     <MODULE id="juce_audio_basics" showAllCode="1" useLocalCopy="1" useGlobalPath="0"/>
@@ -138,12 +130,12 @@
   <JUCEOPTIONS JUCE_STRICT_REFCOUNTEDPOINTER="1" JUCE_VST3_CAN_REPLACE_VST2="0"/>
   <EXPORTFORMATS>
     <XCODE_MAC targetFolder="Builds/MacOSX" extraCompilerFlags="-Wno-deprecated-declarations -Wno-comma -Wno-vla-cxx-extension"
-               headerPath="../../third_party;../../third_party/oversimple;../../third_party/oversimple/avec;../../third_party/oversimple/hiir;../../third_party/oversimple/r8brain;../../third_party/oversimple/avec/vectorclass">
+               headerPath="../../third_party">
       <CONFIGURATIONS>
         <CONFIGURATION isDebug="1" name="Debug" targetName="Guillotine"
-                       headerPath="../../third_party&#10;../../third_party/oversimple&#10;../../third_party/oversimple/avec&#10;../../third_party/oversimple/hiir&#10;../../third_party/oversimple/r8brain&#10;../../third_party/oversimple/avec/vectorclass"/>
+                       headerPath="../../third_party"/>
         <CONFIGURATION isDebug="0" name="Release" targetName="Guillotine"
-                       headerPath="../../third_party&#10;../../third_party/oversimple&#10;../../third_party/oversimple/avec&#10;../../third_party/oversimple/hiir&#10;../../third_party/oversimple/r8brain&#10;../../third_party/oversimple/avec/vectorclass"/>
+                       headerPath="../../third_party"/>
       </CONFIGURATIONS>
       <MODULEPATHS>
         <MODULEPATH id="juce_audio_basics" path="third_party/JUCE/modules"/>

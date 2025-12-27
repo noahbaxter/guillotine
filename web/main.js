@@ -140,19 +140,19 @@ class GuillotineApp {
       wrapperClass: 'knob-wrapper--threshold'
     }));
 
-    // Oversampling knob (stepped: 1x, 4x, 16x, 32x) - RIGHT
+    // Oversampling knob (stepped: 1x, 2x, 4x, 8x, 16x, 32x) - RIGHT
     this.oversamplingKnob = new Knob(this.mainKnobsContainer, createSpriteKnob({
       label: 'Oversample',
-      min: 0, max: 3, value: 0, step: 1,
+      min: 0, max: 5, value: 0, step: 1,
       size: 50,
       spriteScale: 0.35,
       suffix: 'x',
-      formatter: (v) => [1, 4, 16, 32][Math.round(v)],
+      formatter: (v) => [1, 2, 4, 8, 16, 32][Math.round(v)],
       parser: (input) => {
         const match = input.match(/\d+/);
         if (!match) return null;
         const displayVal = parseInt(match[0]);
-        const mapping = { 1: 0, 4: 1, 16: 2, 32: 3 };
+        const mapping = { 1: 0, 2: 1, 4: 2, 8: 3, 16: 4, 32: 5 };
         return mapping[displayVal] ?? null;
       }
     }));
@@ -278,7 +278,7 @@ class GuillotineApp {
     onParameterChange('oversampling', () => {
       if (this.draggingParam !== 'oversampling') {
         const normalized = getParameterNormalized('oversampling');
-        const index = Math.round(normalized * 3);  // 0-3
+        const index = Math.round(normalized * 5);  // 0-5
         this.oversamplingKnob.setValue(index);
       }
     });
@@ -329,9 +329,9 @@ class GuillotineApp {
     this.microscope.setSharpness(sharpness);
     this.guillotine.setSharpness(sharpness);
 
-    // Oversampling (0-3 choice)
+    // Oversampling (0-5 choice)
     const oversamplingNorm = getParameterNormalized('oversampling');
-    const oversamplingIndex = Math.round(oversamplingNorm * 3);
+    const oversamplingIndex = Math.round(oversamplingNorm * 5);
     this.oversamplingKnob.setValue(oversamplingIndex);
 
     // Input/Output gains (-24 to 24 dB)
@@ -456,10 +456,10 @@ class GuillotineApp {
   }
 
   setOversampling(value) {
-    // Oversampling is a choice param (0-3), value comes in as 0-1 from knob
-    // Map to 0-3 range: 0=1x, 1=4x, 2=16x, 3=32x
-    const index = Math.round(value * 3);
-    setParameterNormalized('oversampling', index / 3);
+    // Oversampling is a choice param (0-5), value comes in as 0-5 from knob
+    // Map to 0-5 range: 0=1x, 1=2x, 2=4x, 3=8x, 4=16x, 5=32x
+    const index = Math.round(value);
+    setParameterNormalized('oversampling', index / 5);
   }
 
   setInputGain(dbValue) {

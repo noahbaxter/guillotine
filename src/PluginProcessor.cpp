@@ -30,11 +30,11 @@ juce::AudioProcessorValueTreeState::ParameterLayout GuillotineProcessor::createP
         juce::NormalisableRange<float>(0.0f, 1.0f, 0.01f),
         1.0f));  // Default to hard clip
 
-    // Oversampling: 0=1x, 1=4x, 2=16x, 3=32x
+    // Oversampling: 0=1x, 1=2x, 2=4x, 3=8x, 4=16x, 5=32x
     params.push_back(std::make_unique<juce::AudioParameterChoice>(
         juce::ParameterID{"oversampling", 1},
         "Oversampling",
-        juce::StringArray{"1x", "4x", "16x", "32x"},
+        juce::StringArray{"1x", "2x", "4x", "8x", "16x", "32x"},
         0));
 
     params.push_back(std::make_unique<juce::AudioParameterFloat>(
@@ -222,9 +222,8 @@ void GuillotineProcessor::processBlock(juce::AudioBuffer<float>& buffer, juce::M
     bool bypassClipper = apvts.getRawParameterValue("bypassClipper")->load() > 0.5f;
     bool enforceCeiling = apvts.getRawParameterValue("enforceCeiling")->load() > 0.5f;
 
-    // Map choice index to oversampler factor index: 0=1x, 1=4x, 2=16x, 3=32x → 0, 2, 4, 5
-    static constexpr int oversamplingFactorMap[] = {0, 2, 4, 5};
-    int oversamplingFactor = oversamplingFactorMap[oversamplingChoice];
+    // Choice index now directly maps to factor index: 0=1x, 1=2x, 2=4x, 3=8x, 4=16x, 5=32x
+    int oversamplingFactor = oversamplingChoice;
 
     // Update clipper engine parameters
     clipperEngine.setInputGain(inputGainDb);

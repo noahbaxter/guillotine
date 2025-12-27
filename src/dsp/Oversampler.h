@@ -1,15 +1,14 @@
 #pragma once
 
-#include <juce_audio_basics/juce_audio_basics.h>
+#include <juce_dsp/juce_dsp.h>
 #include <memory>
 #include <vector>
 
-// Forward declaration - heavy template header only included in .cpp
-namespace oversimple {
-template<typename T> class TOversampling;
-}
-
 namespace dsp {
+
+// NOTE: Currently using JUCE's built-in oversampling. Consider investigating
+// alternative filter implementations (e.g., direct HIIR integration) for
+// potentially better performance in the future.
 
 class Oversampler
 {
@@ -20,7 +19,7 @@ public:
     static constexpr int NumFactors = 6;
 
     Oversampler();
-    ~Oversampler();  // Defined in .cpp where full type is visible
+    ~Oversampler() = default;
 
     void prepare(double sampleRate, int maxBlockSize, int numChannels);
     void reset();
@@ -41,16 +40,19 @@ public:
     void processSamplesDown(juce::AudioBuffer<float>& outputBuffer, int numOriginalSamples);
 
 private:
-    std::unique_ptr<oversimple::TOversampling<float>> oversampler;
+    std::unique_ptr<juce::dsp::Oversampling<float>> oversampler;
 
     int currentFactorIndex = 0;  // 0=1x (bypass), 1=2x, etc.
     FilterType currentFilterType = FilterType::MinimumPhase;
-    int numChannels = 2;
-    int maxBlockSize = 512;
+    int numChannels_ = 2;
+    int maxBlockSize_ = 512;
     bool isPrepared = false;
 
-    // Per-instance buffer for channel pointers (NOT shared between instances)
+    // Per-instance buffer for channel pointers
     std::vector<float*> channelPtrs;
+
+    // Store the AudioBlock returned by processSamplesUp for later use
+    juce::dsp::AudioBlock<float> oversampledBlock;
 
     void rebuildOversampler();
 };
