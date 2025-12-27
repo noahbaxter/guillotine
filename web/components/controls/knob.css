@@ -90,3 +90,12 @@
 .knob__input:focus {
   border-color: var(--color-white-70, rgba(255, 255, 255, 0.7));
 }
+
+.knob-wrapper--disabled {
+  opacity: 0.4;
+  filter: grayscale(100%);
+}
+
+.knob-wrapper--disabled .knob__dial {
+  cursor: grab;
+}

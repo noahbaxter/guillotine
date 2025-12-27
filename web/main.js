@@ -498,6 +498,9 @@ class GuillotineApp {
     this.guillotine.setActive(active);
     this.lever.setActive(active);
     this.bloodPool.setActive(active);
+
+    // Grey out output gain when bypassed (still functional)
+    this.outputGainKnob.setDisabled(this.bypass);
     this.microscope.setActive(active);
 
     // Update hover affordance for delta mode triggers

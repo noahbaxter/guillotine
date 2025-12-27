@@ -38,6 +38,9 @@ for arg in "$@"; do
         release|Release|RELEASE)
             MODE="Release"
             ;;
+        uninstall|Uninstall|UNINSTALL)
+            MODE="Uninstall"
+            ;;
         --install)
             INSTALL=true
             ;;
@@ -52,6 +55,7 @@ for arg in "$@"; do
             echo "  release   Build Release configuration (default)"
             echo "  clean     Clean build artifacts"
             echo "  regen     Regenerate Xcode project from .jucer"
+            echo "  uninstall Remove installed plugins"
             echo ""
             echo "Options:"
             echo "  --install      Install plugins to user library (default)"
@@ -86,17 +90,47 @@ install_plugins() {
     echo -e "\n${YELLOW}Installing plugins to user library...${NC}"
     mkdir -p "$vst3_dest" "$au_dest"
 
+    # Install VST3
     if [ -d "$src_dir/$PLUGIN_NAME.vst3" ]; then
         rm -rf "$vst3_dest/$PLUGIN_NAME.vst3"
-        cp -R "$src_dir/$PLUGIN_NAME.vst3" "$vst3_dest/"
-        echo -e "${GREEN}✓ Installed VST3 to $vst3_dest${NC}"
+        ditto "$src_dir/$PLUGIN_NAME.vst3" "$vst3_dest/$PLUGIN_NAME.vst3"
+
+        # Verify installation
+        if [ -f "$vst3_dest/$PLUGIN_NAME.vst3/Contents/MacOS/$PLUGIN_NAME" ]; then
+            echo -e "${GREEN}✓ Installed VST3 to $vst3_dest${NC}"
+        else
+            echo -e "${RED}✗ VST3 installation failed${NC}"
+            exit 1
+        fi
+    else
+        echo -e "${RED}✗ VST3 not found at $src_dir/$PLUGIN_NAME.vst3${NC}"
+        exit 1
     fi
 
+    # Install AU
     if [ -d "$src_dir/$PLUGIN_NAME.component" ]; then
         rm -rf "$au_dest/$PLUGIN_NAME.component"
-        cp -R "$src_dir/$PLUGIN_NAME.component" "$au_dest/"
-        echo -e "${GREEN}✓ Installed AU to $au_dest${NC}"
+        ditto "$src_dir/$PLUGIN_NAME.component" "$au_dest/$PLUGIN_NAME.component"
+
+        # Verify installation
+        if [ -f "$au_dest/$PLUGIN_NAME.component/Contents/MacOS/$PLUGIN_NAME" ]; then
+            echo -e "${GREEN}✓ Installed AU to $au_dest${NC}"
+        else
+            echo -e "${RED}✗ AU installation failed${NC}"
+            exit 1
+        fi
+    else
+        echo -e "${RED}✗ AU not found at $src_dir/$PLUGIN_NAME.component${NC}"
+        exit 1
     fi
+
+    # Touch bundles to update modification time (triggers DAW rescan)
+    touch "$vst3_dest/$PLUGIN_NAME.vst3"
+    touch "$au_dest/$PLUGIN_NAME.component"
+
+    echo -e "${YELLOW}NOTE: If Ableton shows the old version, try:${NC}"
+    echo -e "  ${YELLOW}1. File > Plug-In Manager > Rescan${NC}"
+    echo -e "  ${YELLOW}2. Or delete ~/Library/Audio/Cache/Ableton folder and restart Ableton${NC}"
 }
 
 # Main logic
@@ -112,6 +146,35 @@ case "$MODE" in
     Regen)
         regen_project
         ;;
+
+    Uninstall)
+        echo -e "\n${YELLOW}Uninstalling plugins...${NC}"
+        local vst3_dest="$HOME/Library/Audio/Plug-Ins/VST3"
+        local au_dest="$HOME/Library/Audio/Plug-Ins/Components"
+        local cache_dir="$HOME/Library/Audio/Cache/Ableton"
+
+        if [ -d "$vst3_dest/$PLUGIN_NAME.vst3" ]; then
+            rm -rf "$vst3_dest/$PLUGIN_NAME.vst3"
+            echo -e "${GREEN}✓ Removed VST3${NC}"
+        fi
+
+        if [ -d "$au_dest/$PLUGIN_NAME.component" ]; then
+            rm -rf "$au_dest/$PLUGIN_NAME.component"
+            echo -e "${GREEN}✓ Removed AU${NC}"
+        fi
+
+        if [ -d "$cache_dir" ]; then
+            echo -e "${YELLOW}Would you like to clear Ableton cache? (y/n)${NC}"
+            read -r response
+            if [[ "$response" =~ ^[Yy]$ ]]; then
+                rm -rf "$cache_dir"
+                echo -e "${GREEN}✓ Cleared Ableton cache${NC}"
+            fi
+        fi
+
+        echo -e "${YELLOW}Please restart your DAW${NC}"
+        ;;
+
 
     Debug)
         # Regenerate if .jucer is newer than xcodeproj

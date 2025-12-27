@@ -331,6 +331,15 @@ export class Knob {
     return this.value;
   }
 
+  setDisabled(disabled) {
+    if (!this.element) return;
+    if (disabled) {
+      this.element.classList.add('knob-wrapper--disabled');
+    } else {
+      this.element.classList.remove('knob-wrapper--disabled');
+    }
+  }
+
   destroy() {
     if (this.cleanup) this.cleanup();
     if (this.digits) this.digits.destroy();
