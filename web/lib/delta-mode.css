@@ -112,8 +112,10 @@ body.delta-mode #plugin-logo {
   opacity: 0.8;
 }
 
-body.delta-mode #microscope-labels {
+body.delta-mode #microscope-labels,
+body.delta-mode #microscope-labels span {
   color: var(--color-delta-text) !important;
   opacity: 1 !important;
+  filter: none !important;
   transition: color 0.2s ease;
 }

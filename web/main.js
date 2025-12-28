@@ -1,7 +1,7 @@
 // Guillotine Plugin - Main Entry Point
 // Phase 2: Microscope view with waveform and draggable threshold
 
-import { DISPLAY_DB_RANGE } from './lib/config.js';
+import { DISPLAY_DB_RANGE, DEFAULT_MIN_DB } from './lib/config.js';
 import { Guillotine } from './components/views/guillotine.js';
 import { Microscope } from './components/views/microscope.js';
 import { BloodPool } from './components/display/blood-pool.js';
@@ -74,7 +74,7 @@ class GuillotineApp {
     this.bypass = true;         // Start bypassed (blade up) - click to activate
     this.deltaMode = false;     // DELTA mode - intensifies red, dulls everything else
     this.threshold = 0;         // Display threshold (0-1 in current scale, 0 = 0dB)
-    this.currentMinDb = -DISPLAY_DB_RANGE;  // Current microscope scale
+    this.currentMinDb = DEFAULT_MIN_DB;  // Current microscope scale (matches default preset)
     this.currentCurve = 0;      // Current curve type (0=Hard, 1=Quintic, etc.)
     this.currentExponent = 2.0; // Curve exponent (for T² and Knee)
     this.fonts = ['Zeyada', 'Cedarville Cursive', 'Dawning of a New Day'];
@@ -103,19 +103,17 @@ class GuillotineApp {
     this.bloodPool = new BloodPool(this.guillotineContainer);
     this.microscope = new Microscope(this.microscopeContainer);
 
-    // Curve knob (stepped: Hard, Quintic, Cubic, Tanh, Arctan, T², Knee) - LEFT
-    this.curveKnob = new Knob(this.mainKnobsContainer, createSpriteKnob({
-      label: 'Curve',
+    // Blade knob (stepped: Hard, Quintic, Cubic, Tanh, Arctan, T², Knee) - LEFT
+    this.curveKnob = new Knob(this.mainKnobsContainer, {
+      label: 'Blade',
       min: 0, max: 6, value: 0, step: 1,
       size: 50,
-      spriteScale: 0.35,
-      suffix: '',
-      formatter: (v) => ['Hard', 'Quint', 'Cubic', 'Tanh', 'Atan', 'T²', 'Knee'][Math.round(v)],
-      parser: (input) => {
+      formatValue: (v) => ['Hard', 'Quint', 'Cubic', 'Tanh', 'Atan', 'T²', 'Knee'][Math.round(v)],
+      parseValue: (input) => {
         const mapping = { 'hard': 0, 'quint': 1, 'quintic': 1, 'cubic': 2, 'tanh': 3, 'atan': 4, 'arctan': 4, 't2': 5, 't^2': 5, 'tsquared': 5, 'knee': 6 };
         return mapping[input.toLowerCase()] ?? null;
       }
-    }));
+    });
 
     // Curve exponent knob (tiny, no label, only enabled for T²)
     this.curveExponentKnob = new Knob(this.mainKnobsContainer, createSpriteKnob({
@@ -525,13 +523,13 @@ class GuillotineApp {
   updateSharpnessFromCurve() {
     // Map curve type to blade sharpness (1.0 = sharp/flat, 0 = jittery/dull)
     // Hard clips = sharp blade, soft saturation = dull blade
-    const curveSharpness = [1.0, 0.85, 0.7, 0.5, 0.3, null, null];
+    const curveSharpness = [1.0, 0.85, 0.7, 0.35, 0.15, null, null];
     let sharpness = curveSharpness[this.currentCurve];
 
     // T² (5) and Knee (6): exponent controls sharpness
-    // Exponent 4 = sharp (1.0), exponent 1 = soft (0.2)
+    // Exponent 4 = sharp (0.9), exponent 1 = very soft (0.05)
     if (sharpness === null) {
-      sharpness = 0.2 + (this.currentExponent - 1) / 3 * 0.8;
+      sharpness = 0.05 + (this.currentExponent - 1) / 3 * 0.85;
     }
 
     this.microscope.setSharpness(sharpness);

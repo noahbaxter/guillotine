@@ -50,9 +50,9 @@
 }
 
 .knob__value {
-  font-size: 11px;
-  color: var(--color-text-secondary);
-  font-family: monospace;
+  font-size: 16px;
+  color: var(--color-text-primary);
+  font-family: var(--cursive-font);
   min-height: 20px;
   width: 80px;
   display: flex;
@@ -64,7 +64,7 @@
   font-family: var(--cursive-font);
   font-size: 19px;
   margin-bottom: -5px;
-  color: var(--color-text-tertiary);
+  color: var(--color-text-primary);
   margin-left: 2px;
 }
 
