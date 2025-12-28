@@ -237,10 +237,22 @@ jobs:
       - name: Install plugin to expected location
         shell: pwsh
         run: |
-          $vst3Dir = "C:\Program Files\Common Files\VST3\Guillotine.vst3"
-          New-Item -ItemType Directory -Path $vst3Dir -Force
-          Copy-Item -Recurse -Force "./plugin/*" "$vst3Dir/"
-          Get-ChildItem "$vst3Dir" -Recurse | Select-Object FullName
+          $destDir = "C:\Program Files\Common Files\VST3"
+          Write-Host "=== Downloaded artifact structure ==="
+          Get-ChildItem "./plugin" -Recurse | Select-Object FullName
+
+          # Artifact downloads as Guillotine.vst3/Contents/... - copy the whole bundle
+          if (Test-Path "./plugin/Guillotine.vst3") {
+            Write-Host "Found Guillotine.vst3 folder in artifact"
+            Copy-Item -Recurse -Force "./plugin/Guillotine.vst3" "$destDir/"
+          } else {
+            Write-Host "Artifact contains raw Contents - wrapping in bundle folder"
+            New-Item -ItemType Directory -Path "$destDir/Guillotine.vst3" -Force
+            Copy-Item -Recurse -Force "./plugin/*" "$destDir/Guillotine.vst3/"
+          }
+
+          Write-Host "=== Installed plugin structure ==="
+          Get-ChildItem "$destDir/Guillotine.vst3" -Recurse | Select-Object FullName
 
       - name: Setup Python
         uses: actions/setup-python@v5
@@ -260,13 +272,23 @@ jobs:
       - name: Verify plugin binary
         shell: pwsh
         run: |
-          $vst3 = "C:\Program Files\Common Files\VST3\Guillotine.vst3\Contents\x86_64-win\Guillotine.vst3"
-          if (Test-Path $vst3) {
-            Write-Host "[OK] VST3 binary exists: $vst3"
-            Get-Item $vst3 | Select-Object Length, LastWriteTime
+          $bundlePath = "C:\Program Files\Common Files\VST3\Guillotine.vst3"
+          $binaryPath = "$bundlePath\Contents\x86_64-win\Guillotine.vst3"
+
+          Write-Host "=== Bundle structure ==="
+          Get-ChildItem $bundlePath -Recurse | ForEach-Object {
+            $size = if ($_.PSIsContainer) { "[DIR]" } else { "$([math]::Round($_.Length/1KB, 1)) KB" }
+            Write-Host "$size  $($_.FullName)"
+          }
+
+          if (Test-Path $binaryPath) {
+            Write-Host ""
+            Write-Host "[OK] VST3 binary exists: $binaryPath"
+            $info = Get-Item $binaryPath
+            Write-Host "Size: $([math]::Round($info.Length/1MB, 2)) MB"
+            Write-Host "Modified: $($info.LastWriteTime)"
           } else {
-            Write-Error "VST3 binary not found!"
-            Get-ChildItem "C:\Program Files\Common Files\VST3" -Recurse
+            Write-Error "VST3 binary not found at expected path: $binaryPath"
             exit 1
           }
 
@@ -275,8 +297,8 @@ jobs:
         run: |
           $pluginval = Get-ChildItem C:\pluginval -Filter "pluginval.exe" -Recurse | Select-Object -First 1
           $vst3 = "C:\Program Files\Common Files\VST3\Guillotine.vst3"
-          & $pluginval.FullName --validate "$vst3" --strictness-level 5
-        continue-on-error: true
+          Write-Host "Running pluginval on: $vst3"
+          & $pluginval.FullName --validate "$vst3" --strictness-level 5 --verbose
 
       - name: Build C++ unit tests
         run: |
@@ -286,7 +308,6 @@ jobs:
 
       - name: Run all tests
         run: pytest tests/ -v
-        continue-on-error: true
 
   check-release:
     needs: [build-windows, build-macos, build-linux, test-macos, test-windows]
