@@ -5,21 +5,27 @@ Builds and runs the Catch2-based C++ unit tests, integrating results with pytest
 """
 import subprocess
 import pytest
+import platform
 from pathlib import Path
 import xml.etree.ElementTree as ET
 
 
 UNIT_DIR = Path(__file__).parent
-BINARY_PATH = UNIT_DIR / "build" / "unit_tests_artefacts" / "Release" / "unit_tests"
-BUILD_SCRIPT = UNIT_DIR / "build.sh"
+SYSTEM = platform.system()
+BINARY_NAME = "unit_tests.exe" if SYSTEM == "Windows" else "unit_tests"
+BINARY_PATH = UNIT_DIR / "build" / "unit_tests_artefacts" / "Release" / BINARY_NAME
 JUNIT_OUTPUT = UNIT_DIR / "build" / "test_results.xml"
 
 
 def build_unit_tests():
-    """Build the C++ unit tests if needed."""
+    """Build the C++ unit tests if needed (Unix only)."""
+    build_script = UNIT_DIR / "build.sh"
+    if not build_script.exists():
+        pytest.skip("build.sh not found - build unit tests manually with cmake")
+
     print(f"\nBuilding C++ unit tests...")
     result = subprocess.run(
-        [str(BUILD_SCRIPT)],
+        [str(build_script)],
         cwd=UNIT_DIR,
         capture_output=True,
         text=True
@@ -37,9 +43,10 @@ class TestCppUnitTests:
     def ensure_binary(self):
         """Ensure the unit test binary is built."""
         if not BINARY_PATH.exists():
-            build_unit_tests()
+            if SYSTEM != "Windows":
+                build_unit_tests()
         if not BINARY_PATH.exists():
-            pytest.skip(f"Unit tests binary not found at {BINARY_PATH}")
+            pytest.skip(f"Unit tests binary not found at {BINARY_PATH}. Build with cmake first.")
 
     def test_cpp_unit_tests(self):
         """Run all C++ unit tests and report results."""

@@ -173,7 +173,7 @@ jobs:
           path: build/Guillotine_artefacts/Release/VST3/Guillotine.vst3
           retention-days: 30
 
-  test:
+  test-macos:
     needs: [build-macos]
     runs-on: macos-14
 
@@ -218,8 +218,56 @@ jobs:
       - name: Run all tests
         run: pytest tests/ -v
 
+  test-windows:
+    needs: [build-windows]
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Download Windows artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: Guillotine-VST3-Windows-x64
+          path: ./plugin/
+
+      - name: Install plugin to expected location
+        shell: pwsh
+        run: |
+          $vst3Dir = "C:\Program Files\Common Files\VST3"
+          if (-not (Test-Path $vst3Dir)) { New-Item -ItemType Directory -Path $vst3Dir -Force }
+          Copy-Item -Recurse -Force "./plugin/*" "$vst3Dir/"
+          Get-ChildItem "$vst3Dir" -Recurse | Select-Object FullName
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install Python dependencies
+        run: pip install -r requirements.txt
+
+      - name: Download pluginval
+        shell: pwsh
+        run: |
+          Invoke-WebRequest -Uri "https://github.com/Tracktion/pluginval/releases/latest/download/pluginval_Windows.zip" -OutFile pluginval.zip
+          Expand-Archive -Path pluginval.zip -DestinationPath C:\pluginval -Force
+          Get-ChildItem C:\pluginval
+
+      - name: Build C++ unit tests
+        run: |
+          cd tests/unit
+          cmake -B build -G "Visual Studio 17 2022" -A x64
+          cmake --build build --config Release
+
+      - name: Run all tests
+        run: pytest tests/ -v
+
   check-release:
-    needs: [build-windows, build-macos, build-linux, test]
+    needs: [build-windows, build-macos, build-linux, test-macos, test-windows]
     runs-on: ubuntu-latest
     if: github.ref == 'refs/heads/main' && github.event_name == 'push'
     outputs:

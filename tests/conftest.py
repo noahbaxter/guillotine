@@ -1,5 +1,6 @@
 import pytest
 import sys
+import platform
 from pathlib import Path
 from pedalboard import load_plugin
 
@@ -25,12 +26,25 @@ TEST_DEFAULTS = {
 }
 
 
+def get_vst3_path():
+    """Get platform-specific VST3 install path."""
+    system = platform.system()
+    if system == "Darwin":
+        return Path.home() / "Library/Audio/Plug-Ins/VST3/Guillotine.vst3"
+    elif system == "Windows":
+        return Path("C:/Program Files/Common Files/VST3/Guillotine.vst3")
+    elif system == "Linux":
+        return Path.home() / ".vst3/Guillotine.vst3"
+    else:
+        raise RuntimeError(f"Unsupported platform: {system}")
+
+
 @pytest.fixture
 def plugin_path():
     """Path to the installed VST3 plugin."""
-    path = Path.home() / "Library/Audio/Plug-Ins/VST3/Guillotine.vst3"
+    path = get_vst3_path()
     if not path.exists():
-        pytest.skip(f"Plugin not found at {path}. Run ./scripts/build.sh first.")
+        pytest.skip(f"Plugin not found at {path}. Build and install the plugin first.")
     return str(path)
 
 
@@ -80,7 +94,11 @@ def make_plugin(plugin_path):
 @pytest.fixture
 def unit_tests_binary():
     """Path to the C++ unit tests binary."""
-    path = TESTS_DIR / "unit/build/unit_tests_artefacts/Release/unit_tests"
+    system = platform.system()
+    if system == "Windows":
+        path = TESTS_DIR / "unit/build/unit_tests_artefacts/Release/unit_tests.exe"
+    else:
+        path = TESTS_DIR / "unit/build/unit_tests_artefacts/Release/unit_tests"
     if not path.exists():
         pytest.skip(f"Unit tests binary not found at {path}. Build with cmake first.")
     return str(path)
@@ -96,12 +114,25 @@ def pluginval_path():
     if pluginval:
         return pluginval
 
-    # Check common locations
-    paths = [
-        "/Applications/pluginval.app/Contents/MacOS/pluginval",
-        "/usr/local/bin/pluginval",
-        Path.home() / "bin/pluginval",
-    ]
+    # Check common locations per platform
+    system = platform.system()
+    if system == "Darwin":
+        paths = [
+            "/Applications/pluginval.app/Contents/MacOS/pluginval",
+            "/usr/local/bin/pluginval",
+            Path.home() / "bin/pluginval",
+        ]
+    elif system == "Windows":
+        paths = [
+            Path("C:/pluginval/pluginval.exe"),
+            Path.home() / "pluginval/pluginval.exe",
+        ]
+    else:
+        paths = [
+            Path.home() / "bin/pluginval",
+            "/usr/local/bin/pluginval",
+        ]
+
     for p in paths:
         if Path(p).exists():
             return str(p)
