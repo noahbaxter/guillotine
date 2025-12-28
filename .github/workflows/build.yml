@@ -46,13 +46,9 @@ jobs:
             third_party\JUCE\extras\Projucer\Builds\VisualStudio2022\x64\Release\App\Projucer.exe --resave Guillotine.jucer --fix-missing-dependencies
           )
 
-      - name: Build SharedCode
-        shell: cmd
-        run: msbuild "Builds/VisualStudio2022/Guillotine_SharedCode.vcxproj" /p:Configuration=Release /p:Platform=x64 /m
-
       - name: Build VST3
         shell: cmd
-        run: msbuild "Builds/VisualStudio2022/Guillotine_VST3.vcxproj" /p:Configuration=Release /p:Platform=x64 /m
+        run: msbuild "Builds/VisualStudio2022/Guillotine.sln" /p:Configuration=Release /p:Platform=x64 /m /restore /t:Guillotine_VST3
 
       - name: Verify VST3 bundle structure
         shell: cmd
