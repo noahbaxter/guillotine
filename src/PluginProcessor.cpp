@@ -90,7 +90,7 @@ juce::AudioProcessorValueTreeState::ParameterLayout GuillotineProcessor::createP
     // Delta monitor
     params.push_back(std::make_unique<juce::AudioParameterBool>(
         juce::ParameterID{"deltaMonitor", 1},
-        "Delta Monitor",
+        "Delta",
         false));
 
     // Bypass clipper (blade up = bypassed, blade down = active)
@@ -99,10 +99,10 @@ juce::AudioProcessorValueTreeState::ParameterLayout GuillotineProcessor::createP
         "Bypass Clipper",
         true));  // Default to bypassed (blade up)
 
-    // Enforce ceiling - hard limit output to ceiling after downsampling
+    // True Clip - hard limit output to ceiling after downsampling
     params.push_back(std::make_unique<juce::AudioParameterBool>(
         juce::ParameterID{"enforceCeiling", 1},
-        "Enforce Ceiling",
+        "True Clip",
         true));  // Default to enforced (true peak safe)
 
     return {params.begin(), params.end()};
