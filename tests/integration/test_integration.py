@@ -2,7 +2,7 @@ import pytest
 import numpy as np
 from pathlib import Path
 from pedalboard import load_plugin
-from utils import load_audio, generate_sine, rms, peak, db_to_linear, samples_equal
+from utils import load_audio, generate_sine, rms, peak, db_to_linear, samples_equal, settle_params
 
 
 # =============================================================================
@@ -14,7 +14,6 @@ def test_clipper_signal_below_ceiling_unchanged(plugin_path):
     plugin = load_plugin(plugin_path)
     plugin.bypass_clipper = False
     plugin.ceiling_db = 0.0  # 0dB = 1.0 linear
-    plugin.sharpness = 1.0   # Hard clip
     plugin.input_gain_db = 0.0
     plugin.output_gain_db = 0.0
 
@@ -30,7 +29,6 @@ def test_clipper_hard_clip_limits_peak(plugin_path):
     plugin = load_plugin(plugin_path)
     plugin.bypass_clipper = False
     plugin.ceiling_db = -6.0  # ~0.5 linear
-    plugin.sharpness = 1.0    # Hard clip
     plugin.input_gain_db = 0.0
     plugin.output_gain_db = 0.0
 
@@ -41,29 +39,6 @@ def test_clipper_hard_clip_limits_peak(plugin_path):
     output_peak = peak(output)
     assert output_peak <= ceiling_linear + 0.01, \
         f"Peak {output_peak:.3f} exceeds ceiling {ceiling_linear:.3f}"
-
-
-def test_clipper_soft_knee_reduces_more(plugin_path):
-    """Soft knee (sharpness=0) should compress more than hard clip for same input."""
-    plugin = load_plugin(plugin_path)
-    plugin.bypass_clipper = False
-    plugin.ceiling_db = -6.0
-    plugin.input_gain_db = 0.0
-    plugin.output_gain_db = 0.0
-
-    input_audio = generate_sine(amplitude=0.7)
-
-    # Hard clip
-    plugin.sharpness = 1.0
-    hard_output = plugin.process(input_audio.copy(), 44100)
-
-    # Soft knee
-    plugin.sharpness = 0.0
-    soft_output = plugin.process(input_audio.copy(), 44100)
-
-    # Soft should have lower RMS (more compression in knee region)
-    assert rms(soft_output) < rms(hard_output), \
-        f"Soft knee RMS {rms(soft_output):.3f} should be < hard clip RMS {rms(hard_output):.3f}"
 
 
 def test_clipper_bypass_passes_unchanged(plugin_path):
@@ -85,7 +60,6 @@ def test_clipper_ceiling_sweep(plugin_path):
     """Lower ceiling should produce lower output peak."""
     plugin = load_plugin(plugin_path)
     plugin.bypass_clipper = False
-    plugin.sharpness = 1.0
     plugin.input_gain_db = 0.0
     plugin.output_gain_db = 0.0
 
@@ -95,6 +69,7 @@ def test_clipper_ceiling_sweep(plugin_path):
 
     for ceiling_db in ceilings_db:
         plugin.ceiling_db = ceiling_db
+        settle_params(plugin)
         output = plugin.process(input_audio.copy(), 44100)
         peaks.append(peak(output))
 
@@ -109,10 +84,10 @@ def test_clipper_stereo_link_same_reduction(plugin_path):
     plugin = load_plugin(plugin_path)
     plugin.bypass_clipper = False
     plugin.ceiling_db = -6.0
-    plugin.sharpness = 1.0
     plugin.stereo_link = True
     plugin.input_gain_db = 0.0
     plugin.output_gain_db = 0.0
+    settle_params(plugin)
 
     # Create stereo with different amplitudes
     t = np.linspace(0, 1.0, 44100, endpoint=False)

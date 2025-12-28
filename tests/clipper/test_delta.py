@@ -8,7 +8,7 @@ import pytest
 import numpy as np
 from pedalboard import load_plugin
 from utils import (
-    generate_sine, generate_dc, peak, db_to_linear, measure_latency
+    generate_sine, generate_dc, peak, db_to_linear, measure_latency, settle_params
 )
 from clipper.test_consts import (
     OVERSAMPLING_MODES,
@@ -56,7 +56,6 @@ def delta_plugin(plugin_path, request):
 
     plugin = load_plugin(plugin_path)
     plugin.bypass_clipper = False
-    plugin.sharpness = 1.0
     plugin.input_gain_db = 0.0
     plugin.output_gain_db = 0.0
     plugin.ceiling_db = 0.0
@@ -123,7 +122,6 @@ class TestDeltaOutputsClippedPortion:
         """Clipped signal → delta is nonzero."""
         plugin = load_plugin(plugin_path)
         plugin.bypass_clipper = False
-        plugin.sharpness = 1.0
         plugin.ceiling_db = -6.0
         plugin.oversampling = "1x"
         plugin.delta_monitor = True
@@ -142,7 +140,6 @@ class TestDeltaOutputsClippedPortion:
         """DC above ceiling → delta = input - ceiling (positive value)."""
         plugin = load_plugin(plugin_path)
         plugin.bypass_clipper = False
-        plugin.sharpness = 1.0
         plugin.ceiling_db = -6.0
         plugin.oversampling = "1x"
         plugin.delta_monitor = True
@@ -170,7 +167,6 @@ class TestDeltaOutputsClippedPortion:
         """Delta scales correctly with input/output gain applied."""
         plugin = load_plugin(plugin_path)
         plugin.bypass_clipper = False
-        plugin.sharpness = 1.0
         plugin.ceiling_db = -6.0
         plugin.oversampling = "1x"
         plugin.delta_monitor = True
@@ -207,7 +203,6 @@ class TestSignalReconstruction:
         """At 1x oversampling, wet + delta should equal dry input."""
         plugin = load_plugin(plugin_path)
         plugin.bypass_clipper = False
-        plugin.sharpness = 1.0
         plugin.ceiling_db = -6.0
         plugin.oversampling = "1x"
         plugin.enforce_ceiling = True
@@ -250,7 +245,6 @@ class TestDeltaOff:
         """With delta off, output is the clipped signal."""
         plugin = load_plugin(plugin_path)
         plugin.bypass_clipper = False
-        plugin.sharpness = 1.0
         plugin.ceiling_db = -6.0
         plugin.oversampling = "1x"
         plugin.delta_monitor = False
@@ -270,7 +264,6 @@ class TestDeltaOff:
         """Toggling delta should change the output."""
         plugin = load_plugin(plugin_path)
         plugin.bypass_clipper = False
-        plugin.sharpness = 1.0
         plugin.ceiling_db = -6.0
         plugin.oversampling = "1x"
         plugin.enforce_ceiling = True
@@ -300,7 +293,6 @@ class TestDeltaStereo:
         """Each channel should have independent delta calculation."""
         plugin = load_plugin(plugin_path)
         plugin.bypass_clipper = False
-        plugin.sharpness = 1.0
         plugin.ceiling_db = -6.0
         plugin.oversampling = "1x"
         plugin.stereo_link = False
@@ -331,7 +323,6 @@ class TestDeltaStereo:
         """Delta works correctly in M/S processing mode."""
         plugin = load_plugin(plugin_path)
         plugin.bypass_clipper = False
-        plugin.sharpness = 1.0
         plugin.ceiling_db = -6.0
         plugin.oversampling = "1x"
         plugin.channel_mode = "M/S"
@@ -387,7 +378,6 @@ class TestDeltaEdgeCases:
         """Signal exactly at ceiling → near-zero delta."""
         plugin = load_plugin(plugin_path)
         plugin.bypass_clipper = False
-        plugin.sharpness = 1.0
         plugin.ceiling_db = -6.0
         plugin.oversampling = "1x"
         plugin.delta_monitor = True
@@ -402,32 +392,3 @@ class TestDeltaEdgeCases:
             f"Signal at ceiling should have minimal delta: peak={peak(output):.6f}"
         )
 
-    def test_soft_clip_has_gradual_delta(self, plugin_path):
-        """Soft clipping produces delta in the knee region where hard clip doesn't."""
-        plugin = load_plugin(plugin_path)
-        plugin.bypass_clipper = False
-        plugin.ceiling_db = -6.0
-        plugin.oversampling = "1x"
-        plugin.delta_monitor = True
-
-        ceiling_linear = db_to_linear(-6.0)
-        # Use signal in the knee region (below ceiling but above knee start)
-        # At sharpness=0.5: knee = 0.25*ceiling, kneeStart = 0.75*ceiling
-        # Signal at 0.9*ceiling is in the knee region for soft clip
-        input_audio = generate_sine(amplitude=ceiling_linear * 0.9, duration=0.3)
-
-        # Hard clip (sharpness=1.0) - signal is below ceiling, no clipping, no delta
-        plugin.sharpness = 1.0
-        output_hard = plugin.process(input_audio.copy(), 44100)
-        hard_delta_peak = peak(output_hard)
-
-        # Soft clip (sharpness=0.5) - signal is in knee region, gets compressed, has delta
-        plugin.sharpness = 0.5
-        output_soft = plugin.process(input_audio.copy(), 44100)
-        soft_delta_peak = peak(output_soft)
-
-        # Hard clip should have near-zero delta (signal below ceiling)
-        assert hard_delta_peak < 0.001, f"Hard clip should have no delta: {hard_delta_peak:.4f}"
-
-        # Soft clip should have nonzero delta (knee compression)
-        assert soft_delta_peak > 0.01, f"Soft clip should have delta from knee compression: {soft_delta_peak:.4f}"

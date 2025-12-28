@@ -509,7 +509,6 @@ def run_comparison():
             try:
                 plugin = load_plugin(plugin_path)
                 plugin.bypass_clipper = False
-                plugin.sharpness = 1.0  # Hard clip
                 plugin.oversampling = os_mode
                 plugin.filter_type = filter_type
                 plugin.input_gain_db = 0.0

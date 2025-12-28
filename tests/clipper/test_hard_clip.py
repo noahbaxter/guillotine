@@ -37,7 +37,6 @@ class TestHardClipParameterBinding:
         """Signal above ceiling is clipped (smoke test for parameter binding)."""
         plugin = load_plugin(plugin_path)
         plugin.bypass_clipper = False
-        plugin.sharpness = 1.0
         plugin.ceiling_db = -6.0
         plugin.enforce_ceiling = True
 
@@ -52,7 +51,6 @@ class TestHardClipParameterBinding:
         """Signal below ceiling passes through unchanged."""
         plugin = load_plugin(plugin_path)
         plugin.bypass_clipper = False
-        plugin.sharpness = 1.0
         plugin.ceiling_db = 0.0
         plugin.oversampling = "1x"
 
@@ -74,7 +72,6 @@ class TestEnforceCeiling:
         """enforce_ceiling=True guarantees output <= ceiling."""
         plugin = load_plugin(plugin_path)
         plugin.bypass_clipper = False
-        plugin.sharpness = 1.0
         plugin.ceiling_db = -12.0
         plugin.oversampling = "4x"
         plugin.enforce_ceiling = True
@@ -90,7 +87,6 @@ class TestEnforceCeiling:
         """enforce_ceiling=False allows filter overshoot."""
         plugin = load_plugin(plugin_path)
         plugin.bypass_clipper = False
-        plugin.sharpness = 1.0
         plugin.ceiling_db = -12.0
         plugin.oversampling = "4x"
         plugin.enforce_ceiling = False
@@ -117,7 +113,6 @@ class TestOversampling:
         """Clipping works correctly at all oversampling rates."""
         plugin = load_plugin(plugin_path)
         plugin.bypass_clipper = False
-        plugin.sharpness = 1.0
         plugin.ceiling_db = -6.0
         plugin.oversampling = os_mode
         plugin.enforce_ceiling = True
@@ -135,7 +130,6 @@ class TestOversampling:
         """Both filter types clip correctly."""
         plugin = load_plugin(plugin_path)
         plugin.bypass_clipper = False
-        plugin.sharpness = 1.0
         plugin.ceiling_db = -6.0
         plugin.oversampling = os_mode
         plugin.filter_type = filter_type
@@ -161,7 +155,6 @@ class TestFilterOvershoot:
         """Min-phase filter overshoot should be reasonable."""
         plugin = load_plugin(plugin_path)
         plugin.bypass_clipper = False
-        plugin.sharpness = 1.0
         plugin.ceiling_db = -6.0
         plugin.oversampling = os_mode
         plugin.filter_type = "Minimum Phase"
@@ -181,7 +174,6 @@ class TestFilterOvershoot:
         """Linear-phase filter overshoot should be reasonable."""
         plugin = load_plugin(plugin_path)
         plugin.bypass_clipper = False
-        plugin.sharpness = 1.0
         plugin.ceiling_db = -6.0
         plugin.oversampling = os_mode
         plugin.filter_type = "Linear Phase"
@@ -209,7 +201,6 @@ class TestCeilingRange:
         """Ceiling is respected at various dB values."""
         plugin = load_plugin(plugin_path)
         plugin.bypass_clipper = False
-        plugin.sharpness = 1.0
         plugin.ceiling_db = ceiling_db
         plugin.enforce_ceiling = True
 
@@ -234,7 +225,6 @@ class TestGainInteraction:
         """Input gain can push a quiet signal into clipping."""
         plugin = load_plugin(plugin_path)
         plugin.bypass_clipper = False
-        plugin.sharpness = 1.0
         plugin.ceiling_db = -6.0
         plugin.output_gain_db = 0.0
         plugin.enforce_ceiling = True
@@ -267,7 +257,6 @@ class TestStereo:
         """Clipping one channel doesn't affect the other when stereo_link=False."""
         plugin = load_plugin(plugin_path)
         plugin.bypass_clipper = False
-        plugin.sharpness = 1.0
         plugin.ceiling_db = -6.0
         plugin.oversampling = "1x"
         plugin.stereo_link = False
@@ -291,7 +280,6 @@ class TestStereo:
         """With stereo link, both channels are affected by the louder one."""
         plugin = load_plugin(plugin_path)
         plugin.bypass_clipper = False
-        plugin.sharpness = 1.0
         plugin.ceiling_db = -6.0
         plugin.oversampling = "1x"
         plugin.stereo_link = True

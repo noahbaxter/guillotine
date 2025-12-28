@@ -22,7 +22,6 @@ class TestSampleRateInvariance:
         """Hard clipping produces identical peak at all sample rates."""
         plugin = load_plugin(plugin_path)
         plugin.bypass_clipper = False
-        plugin.sharpness = 1.0
         plugin.ceiling_db = -6.0
         plugin.oversampling = "1x"  # No filter influence
         plugin.enforce_ceiling = True
@@ -45,15 +44,14 @@ class TestSampleRateInvariance:
             f"At {sample_rate}Hz: peak={output_peak:.8f}, expected={ceiling_linear:.8f}"
         )
 
-    def test_soft_clip_consistent_across_sample_rates(self, plugin_path):
-        """Soft clipping produces identical peaks across sample rates."""
+    def test_clipping_consistent_across_sample_rates(self, plugin_path):
+        """Clipping produces identical peaks across sample rates."""
         ceiling_linear = db_to_linear(-6.0)
         peaks = []
 
         for sample_rate in SAMPLE_RATES:
             plugin = load_plugin(plugin_path)
             plugin.bypass_clipper = False
-            plugin.sharpness = 0.5  # Mid soft knee
             plugin.ceiling_db = -6.0
             plugin.oversampling = "1x"
             plugin.enforce_ceiling = True
@@ -69,7 +67,7 @@ class TestSampleRateInvariance:
             output = plugin.process(input_audio, sample_rate)
             peaks.append((sample_rate, peak(output)))
 
-        # All peaks should be identical (soft clip math is sample-rate independent)
+        # All peaks should be identical (clipping math is sample-rate independent)
         reference_peak = peaks[0][1]
         for sample_rate, output_peak in peaks[1:]:
             assert abs(output_peak - reference_peak) < TOLERANCE, (
@@ -84,7 +82,6 @@ class TestBlockSizeInvariance:
         """Processing in one block vs many small blocks gives identical output."""
         plugin = load_plugin(plugin_path)
         plugin.bypass_clipper = False
-        plugin.sharpness = 1.0
         plugin.ceiling_db = -6.0
         plugin.oversampling = "1x"
         plugin.enforce_ceiling = True
@@ -120,7 +117,6 @@ class TestBlockSizeInvariance:
         """Output peak is identical regardless of block size."""
         plugin = load_plugin(plugin_path)
         plugin.bypass_clipper = False
-        plugin.sharpness = 1.0
         plugin.ceiling_db = -12.0
         plugin.oversampling = "1x"
         plugin.enforce_ceiling = True
@@ -148,7 +144,6 @@ class TestBlockSizeInvariance:
         """Non-power-of-2 block sizes work correctly (DAWs do this)."""
         plugin = load_plugin(plugin_path)
         plugin.bypass_clipper = False
-        plugin.sharpness = 1.0
         plugin.ceiling_db = -6.0
         plugin.oversampling = "1x"
         plugin.enforce_ceiling = True
@@ -173,7 +168,6 @@ class TestBlockSizeInvariance:
         """Very small blocks (1-16 samples) work correctly."""
         plugin = load_plugin(plugin_path)
         plugin.bypass_clipper = False
-        plugin.sharpness = 1.0
         plugin.ceiling_db = -6.0
         plugin.oversampling = "1x"
         plugin.enforce_ceiling = True

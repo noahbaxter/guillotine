@@ -32,7 +32,6 @@ def clipper(plugin_path):
     """Return a plugin configured for standard clipping tests."""
     plugin = load_plugin(plugin_path)
     plugin.bypass_clipper = False
-    plugin.sharpness = 1.0
     plugin.ceiling_db = -6.0
     plugin.oversampling = "4x"
     plugin.filter_type = "Minimum Phase"
@@ -60,7 +59,6 @@ class TestIntersamplePeakDetection:
         """At 1x oversampling, intersample peaks pass through ceiling."""
         plugin = load_plugin(plugin_path)
         plugin.bypass_clipper = False
-        plugin.sharpness = 1.0
         plugin.ceiling_db = -6.0
         plugin.oversampling = "1x"
         plugin.enforce_ceiling = True
@@ -122,7 +120,6 @@ class TestIntersampleControl:
         """Min-phase provides consistent intersample control across all rates."""
         plugin = load_plugin(plugin_path)
         plugin.bypass_clipper = False
-        plugin.sharpness = 1.0
         plugin.ceiling_db = -6.0
         plugin.oversampling = os_mode
         plugin.filter_type = "Minimum Phase"
@@ -149,7 +146,6 @@ class TestIntersampleControl:
         """Linear phase provides consistent intersample control across all rates."""
         plugin = load_plugin(plugin_path)
         plugin.bypass_clipper = False
-        plugin.sharpness = 1.0
         plugin.ceiling_db = -6.0
         plugin.oversampling = os_mode
         plugin.filter_type = "Linear Phase"

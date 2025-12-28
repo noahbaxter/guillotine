@@ -39,7 +39,6 @@ class TestRoundTrip:
         plugin.bypass_clipper = False
         plugin.oversampling = oversampling
         plugin.ceiling_db = 0.0
-        plugin.sharpness = 1.0
         plugin.input_gain_db = 0.0
         plugin.output_gain_db = 0.0
 
@@ -67,7 +66,6 @@ class TestRoundTrip:
         plugin.bypass_clipper = False
         plugin.oversampling = oversampling
         plugin.ceiling_db = 0.0
-        plugin.sharpness = 1.0
 
         input_level = 0.25
         input_audio = generate_dc(level=input_level, duration=0.3)
@@ -161,7 +159,6 @@ class TestInstanceIndependence:
         plugin.oversampling = oversampling
         plugin.filter_type = "Linear Phase"
         plugin.ceiling_db = -6.0
-        plugin.sharpness = 1.0
         plugin.input_gain_db = 0.0
         plugin.output_gain_db = 0.0
         plugin.delta_monitor = True

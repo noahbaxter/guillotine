@@ -25,7 +25,6 @@ class TestNaNDefense:
         """NaN in input buffer results in finite output."""
         plugin = load_plugin(plugin_path)
         plugin.bypass_clipper = False
-        plugin.sharpness = 1.0
         plugin.ceiling_db = 0.0
         plugin.oversampling = "1x"
 
@@ -43,7 +42,6 @@ class TestNaNDefense:
         """Inf in input buffer results in finite output."""
         plugin = load_plugin(plugin_path)
         plugin.bypass_clipper = False
-        plugin.sharpness = 1.0
         plugin.ceiling_db = 0.0
         plugin.oversampling = "1x"
 
@@ -75,7 +73,6 @@ class TestNaNDefense:
         """NaN sanitization works at all oversampling rates."""
         plugin = load_plugin(plugin_path)
         plugin.bypass_clipper = False
-        plugin.sharpness = 1.0
         plugin.ceiling_db = -6.0
         plugin.oversampling = os_mode
         plugin.enforce_ceiling = True

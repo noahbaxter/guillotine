@@ -15,6 +15,17 @@ def load_audio(filepath):
     return audio, sr
 
 
+def settle_params(plugin, sr=44100):
+    """
+    Process silence to let parameter smoothing ramps settle.
+
+    Parameters use 2ms smoothing (~88 samples at 44.1kHz).
+    Process 256 samples to ensure full convergence.
+    """
+    silence = np.zeros(256, dtype=np.float32).reshape(-1, 1)
+    plugin.process(silence, sr)
+
+
 def generate_sine(freq=440.0, duration=1.0, sr=44100, amplitude=0.5, stereo=False):
     """Generate a sine wave for testing."""
     t = np.linspace(0, duration, int(sr * duration), endpoint=False)
