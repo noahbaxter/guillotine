@@ -127,14 +127,19 @@ export class Knob {
       if (!this.dragging) return;
 
       const { min, max, sensitivity, step, snapValue } = this.options;
-      const delta = (this.startY - e.clientY) * sensitivity;
+      // Hold shift for fine control (0.1 sensitivity)
+      const fineMode = e.shiftKey;
+      const effectiveSensitivity = fineMode ? sensitivity * 0.1 : sensitivity;
+      const delta = (this.startY - e.clientY) * effectiveSensitivity;
       let newValue = this.startValue + delta * (max - min);
 
       // Snap to nice values if snapValue function provided, otherwise use step
+      // Pass fineMode to allow finer snapping when shift is held
       if (snapValue) {
-        newValue = snapValue(newValue);
+        newValue = snapValue(newValue, fineMode);
       } else {
-        newValue = Math.round(newValue / step) * step;
+        const effectiveStep = fineMode ? step * 0.1 : step;
+        newValue = Math.round(newValue / effectiveStep) * effectiveStep;
       }
       newValue = Math.max(min, Math.min(max, newValue));
 
