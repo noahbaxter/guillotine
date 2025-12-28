@@ -362,9 +362,12 @@ jobs:
 
       - name: Create release archives
         run: |
-          cd windows-vst3 && zip -r ../Guillotine-VST3-Windows-x64.zip . && cd ..
-          cd macos-artifacts && zip -r ../Guillotine-macOS.zip . && cd ..
-          cd linux-artifacts && zip -r ../Guillotine-VST3-Linux-x64.zip . && cd ..
+          VERSION="${{ needs.check-release.outputs.version }}"
+          TIMESTAMP=$(date -u +%Y%m%d-%H%M)
+          cd windows-vst3 && zip -r "../Guillotine-${VERSION}-${TIMESTAMP}-Windows-x64.zip" . && cd ..
+          cd macos-artifacts && zip -r "../Guillotine-${VERSION}-${TIMESTAMP}-macOS.zip" . && cd ..
+          cd linux-artifacts && zip -r "../Guillotine-${VERSION}-${TIMESTAMP}-Linux-x64.zip" . && cd ..
+          echo "TIMESTAMP=${TIMESTAMP}" >> $GITHUB_ENV
 
       - name: Generate release notes
         run: |
@@ -383,8 +386,8 @@ jobs:
           name: Guillotine v${{ needs.check-release.outputs.version }}
           body_path: release_notes.md
           files: |
-            Guillotine-VST3-Windows-x64.zip
-            Guillotine-macOS.zip
-            Guillotine-VST3-Linux-x64.zip
+            Guillotine-${{ needs.check-release.outputs.version }}-${{ env.TIMESTAMP }}-Windows-x64.zip
+            Guillotine-${{ needs.check-release.outputs.version }}-${{ env.TIMESTAMP }}-macOS.zip
+            Guillotine-${{ needs.check-release.outputs.version }}-${{ env.TIMESTAMP }}-Linux-x64.zip
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
