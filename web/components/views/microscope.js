@@ -5,18 +5,13 @@ import { animateValue } from '../../lib/guillotine-utils.js';
 import { Waveform } from '../display/waveform.js';
 import { Digits } from '../display/digits.js';
 import { getThresholdColor, onDeltaModeChange } from '../../lib/theme.js';
-
-const SCALE_PRESETS = [
-  { label: '-24', minDb: -24 },
-  { label: '-48', minDb: -48 },
-  { label: '-60', minDb: -60 }
-];
+import { SCALE_PRESETS, DISPLAY_CONFIG, DISPLAY_DB_RANGE } from '../../lib/config.js';
 
 const MAX_JITTER = 20;
 
 const DEFAULTS = {
-  displayMinDb: -60,
-  displayMaxDb: 0
+  displayMinDb: SCALE_PRESETS[DISPLAY_CONFIG.defaultScalePresetIndex].minDb,
+  displayMaxDb: DISPLAY_CONFIG.maxCeilingDb
 };
 
 export class Microscope {
@@ -35,7 +30,7 @@ export class Microscope {
     this.onThresholdChange = null;
     this.onScaleChange = null;
     this.dragging = false;
-    this.currentPresetIndex = 2;
+    this.currentPresetIndex = DISPLAY_CONFIG.defaultScalePresetIndex;
 
     this.ready = this.init();
   }
@@ -128,11 +123,11 @@ export class Microscope {
   }
 
   thresholdToDb(threshold) {
-    return -threshold * 60;
+    return -threshold * DISPLAY_DB_RANGE;
   }
 
   dbToThreshold(db) {
-    return Math.max(0, Math.min(1, -db / 60));
+    return Math.max(0, Math.min(1, -db / DISPLAY_DB_RANGE));
   }
 
   updateFromThreshold() {
