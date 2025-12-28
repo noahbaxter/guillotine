@@ -53,9 +53,14 @@ void ClipperEngine::setCeiling(float dB)
     clipper.setCeiling(ceilingLinear);
 }
 
-void ClipperEngine::setSharpness(float sharpness)
+void ClipperEngine::setCurve(int curveIndex)
 {
-    clipper.setSharpness(sharpness);
+    clipper.setCurve(static_cast<CurveType>(curveIndex));
+}
+
+void ClipperEngine::setCurveExponent(float exponent)
+{
+    clipper.setCurveExponent(exponent);
 }
 
 void ClipperEngine::setOversamplingFactor(int factorIndex)
@@ -113,10 +118,26 @@ void ClipperEngine::process(juce::AudioBuffer<float>& buffer)
     juce::dsp::AudioBlock<float> block(buffer);
     inputGain.process(juce::dsp::ProcessContextReplacing<float>(block));
 
+    // Capture pre-clip peak (after input gain, before clipping)
+    lastPreClipPeak = 0.0f;
+    for (int ch = 0; ch < numChannels; ++ch)
+    {
+        const float* data = buffer.getReadPointer(ch);
+        for (int i = 0; i < numSamples; ++i)
+        {
+            float absVal = std::abs(data[i]);
+            if (absVal > lastPreClipPeak)
+                lastPreClipPeak = absVal;
+        }
+    }
+
     // Skip clipping and makeup gain when bypassed
     // Input gain still applies so users can hear pre-clip level
     if (bypassed)
     {
+        // When bypassed, post-clip = pre-clip (no clipping)
+        lastPostClipPeak = lastPreClipPeak;
+
         // Still sanitize NaN/Inf even when bypassed
         for (int ch = 0; ch < numChannels; ++ch)
         {
@@ -183,7 +204,20 @@ void ClipperEngine::process(juce::AudioBuffer<float>& buffer)
         }
     }
 
-    // 8. Output gain
+    // 8. Capture post-clip peak (after clipping, before output gain)
+    lastPostClipPeak = 0.0f;
+    for (int ch = 0; ch < numChannels; ++ch)
+    {
+        const float* data = buffer.getReadPointer(ch);
+        for (int i = 0; i < numSamples; ++i)
+        {
+            float absVal = std::abs(data[i]);
+            if (absVal > lastPostClipPeak)
+                lastPostClipPeak = absVal;
+        }
+    }
+
+    // 9. Output gain
     juce::dsp::AudioBlock<float> outputBlock(buffer);
     outputGain.process(juce::dsp::ProcessContextReplacing<float>(outputBlock));
 
@@ -193,7 +227,7 @@ void ClipperEngine::process(juce::AudioBuffer<float>& buffer)
         outputGain.process(juce::dsp::ProcessContextReplacing<float>(dryOutputBlock));
     }
 
-    // 9. Delta monitor: output = dry - wet (what was clipped off)
+    // 10. Delta monitor: output = dry - wet (what was clipped off)
     // Both signals have been through the same filter chain, so they're phase-aligned
     if (deltaMonitorEnabled)
     {
@@ -206,7 +240,7 @@ void ClipperEngine::process(juce::AudioBuffer<float>& buffer)
         }
     }
 
-    // 10. Sanitize output - replace NaN/Inf with 0 (defensive against oversimple bugs)
+    // 11. Sanitize output - replace NaN/Inf with 0 (defensive against oversimple bugs)
     for (int ch = 0; ch < numChannels; ++ch)
     {
         float* data = buffer.getWritePointer(ch);

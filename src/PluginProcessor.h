@@ -8,6 +8,9 @@
 class GuillotineProcessor : public juce::AudioProcessor
 {
 public:
+    // Display dB range for threshold visualization (-60 to 0 dB)
+    static constexpr float displayDbRange = 60.0f;
+
     // Envelope buffer for waveform display
     // ~400 points at 5ms intervals = 2 seconds of history
     static constexpr int envelopeBufferSize = 400;
@@ -45,7 +48,10 @@ public:
     juce::AudioProcessorValueTreeState& getAPVTS() { return apvts; }
 
     // Envelope buffer access for GUI
-    const std::array<float, envelopeBufferSize>& getEnvelopeBuffer() const { return envelopeBuffer; }
+    // PreClip = after input gain, before clipping (RED in display - what gets clipped off)
+    // PostClip = after input gain AND clipping, before output gain (WHITE in display - what you hear)
+    const std::array<float, envelopeBufferSize>& getEnvelopePreClip() const { return envelopePreClip; }
+    const std::array<float, envelopeBufferSize>& getEnvelopePostClip() const { return envelopePostClip; }
     const std::array<float, envelopeBufferSize>& getEnvelopeClipThresholds() const { return envelopeClipThresholds; }
     const std::atomic<int>& getEnvelopeWritePosition() const { return envelopeWritePos; }
 
@@ -57,10 +63,12 @@ private:
     juce::AudioProcessorValueTreeState apvts;
 
     // Ring buffer for envelope visualization (peak detection)
-    std::array<float, envelopeBufferSize> envelopeBuffer{};
+    std::array<float, envelopeBufferSize> envelopePreClip{};     // After input gain, before clipping (RED)
+    std::array<float, envelopeBufferSize> envelopePostClip{};    // After clipping, before output gain (WHITE)
     std::array<float, envelopeBufferSize> envelopeClipThresholds{};  // Store threshold used for each envelope point
     std::atomic<int> envelopeWritePos{0};
-    float currentPeak = 0.0f;
+    float preClipPeak = 0.0f;
+    float postClipPeak = 0.0f;
     int samplesSincePeak = 0;
 
     // Test oscillator (1Hz ramp for UI development)

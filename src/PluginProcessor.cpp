@@ -24,11 +24,19 @@ juce::AudioProcessorValueTreeState::ParameterLayout GuillotineProcessor::createP
 {
     std::vector<std::unique_ptr<juce::RangedAudioParameter>> params;
 
+    // Curve type: 0=Hard, 1=Quintic, 2=Cubic, 3=Tanh, 4=Arctan, 5=T², 6=Knee
+    params.push_back(std::make_unique<juce::AudioParameterChoice>(
+        juce::ParameterID{"curve", 1},
+        "Curve",
+        juce::StringArray{"Hard", "Quintic", "Cubic", "Tanh", "Arctan", "T^2", "Knee"},
+        0));  // Default to hard clip
+
+    // Curve exponent (for T² mode: 1.0=linear, 2.0=squared, up to 4.0)
     params.push_back(std::make_unique<juce::AudioParameterFloat>(
-        juce::ParameterID{"sharpness", 1},
-        "Sharpness",
-        juce::NormalisableRange<float>(0.0f, 1.0f, 0.01f),
-        1.0f));  // Default to hard clip
+        juce::ParameterID{"curveExponent", 1},
+        "Curve Exponent",
+        juce::NormalisableRange<float>(1.0f, 4.0f),
+        2.0f));
 
     // Oversampling: 0=1x, 1=2x, 2=4x, 3=8x, 4=16x, 5=32x
     params.push_back(std::make_unique<juce::AudioParameterChoice>(
@@ -212,7 +220,8 @@ void GuillotineProcessor::processBlock(juce::AudioBuffer<float>& buffer, juce::M
     // Get parameter values from APVTS
     float inputGainDb = apvts.getRawParameterValue("inputGain")->load();
     float outputGainDb = apvts.getRawParameterValue("outputGain")->load();
-    float sharpness = apvts.getRawParameterValue("sharpness")->load();
+    int curveType = static_cast<int>(apvts.getRawParameterValue("curve")->load());
+    float curveExponent = apvts.getRawParameterValue("curveExponent")->load();
     float ceilingDb = apvts.getRawParameterValue("ceiling")->load();
     int oversamplingChoice = static_cast<int>(apvts.getRawParameterValue("oversampling")->load());
     int filterType = static_cast<int>(apvts.getRawParameterValue("filterType")->load());
@@ -228,7 +237,8 @@ void GuillotineProcessor::processBlock(juce::AudioBuffer<float>& buffer, juce::M
     // Update clipper engine parameters
     clipperEngine.setInputGain(inputGainDb);
     clipperEngine.setOutputGain(outputGainDb);
-    clipperEngine.setSharpness(sharpness);
+    clipperEngine.setCurve(curveType);
+    clipperEngine.setCurveExponent(curveExponent);
     clipperEngine.setCeiling(ceilingDb);
     clipperEngine.setOversamplingFactor(oversamplingFactor);
     clipperEngine.setFilterType(filterType == 1);  // 1 = linear phase
@@ -268,37 +278,41 @@ void GuillotineProcessor::processBlock(juce::AudioBuffer<float>& buffer, juce::M
         }
     }
 
-    // Extract envelope PRE-clip for visualization (scaled by input gain to match DSP)
-    float inputGainLinear = juce::Decibels::decibelsToGain(inputGainDb);
-    for (int sample = 0; sample < buffer.getNumSamples(); ++sample)
-    {
-        float monoSample = 0.0f;
-        for (int channel = 0; channel < totalNumInputChannels; ++channel)
-            monoSample += std::abs(buffer.getSample(channel, sample));
-        monoSample /= static_cast<float>(std::max(1, totalNumInputChannels));
-        monoSample *= inputGainLinear;  // Apply input gain so visualization matches DSP
-
-        if (monoSample > currentPeak)
-            currentPeak = monoSample;
-
-        samplesSincePeak++;
-
-        if (samplesSincePeak >= samplesPerEnvelopePoint)
-        {
-            int writePos = envelopeWritePos.load();
-            envelopeBuffer[writePos] = currentPeak;
-            envelopeClipThresholds[writePos] = -ceilingDb / 60.0f;  // Convert dB to 0-1 range
-            writePos = (writePos + 1) % envelopeBufferSize;
-            envelopeWritePos.store(writePos);
-
-            currentPeak = 0.0f;
-            samplesSincePeak = 0;
-        }
-    }
-
-    // Process through clipper engine
+    // Process through clipper engine (applies inputGain, clip, outputGain)
+    // Engine captures synchronized peaks internally:
+    // - preClipPeak: after input gain, before clipping (RED - what gets clipped off)
+    // - postClipPeak: after clipping, before output gain (WHITE - what you hear)
     clipperEngine.setBypass(bypassClipper);
     clipperEngine.process(buffer);
+
+    // Get peaks from engine (both captured in the same process() call, synchronized)
+    float enginePreClipPeak = clipperEngine.getLastPreClipPeak();
+    float enginePostClipPeak = clipperEngine.getLastPostClipPeak();
+
+    // Accumulate peaks across blocks
+    if (enginePreClipPeak > preClipPeak)
+        preClipPeak = enginePreClipPeak;
+    if (enginePostClipPeak > postClipPeak)
+        postClipPeak = enginePostClipPeak;
+
+    // Track samples and write to ring buffer at intervals
+    // Use 'if' not 'while' - only write one point per block to avoid writing
+    // zeros when multiple envelope points would be written from one block
+    samplesSincePeak += buffer.getNumSamples();
+
+    if (samplesSincePeak >= samplesPerEnvelopePoint)
+    {
+        int writePos = envelopeWritePos.load();
+        envelopePreClip[writePos] = preClipPeak;
+        envelopePostClip[writePos] = postClipPeak;
+        envelopeClipThresholds[writePos] = -ceilingDb / displayDbRange;
+        writePos = (writePos + 1) % envelopeBufferSize;
+        envelopeWritePos.store(writePos);
+
+        preClipPeak = 0.0f;
+        postClipPeak = 0.0f;
+        samplesSincePeak = 0;  // Reset fully instead of subtracting
+    }
 }
 
 bool GuillotineProcessor::hasEditor() const

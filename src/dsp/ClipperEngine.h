@@ -22,7 +22,8 @@ public:
     void setInputGain(float dB);
     void setOutputGain(float dB);
     void setCeiling(float dB);
-    void setSharpness(float sharpness);           // 0-1
+    void setCurve(int curveIndex);                // 0=Hard, 1=Quintic, 2=Cubic, 3=Tanh, 4=Arctan, 5=T², 6=Knee
+    void setCurveExponent(float exponent);        // For T² mode: 1.0=linear, 2.0=squared, up to 4.0
     void setOversamplingFactor(int factorIndex);  // 0=1x, 1=2x, 2=4x, 3=8x, 4=16x, 5=32x
     void setFilterType(bool isLinearPhase);
     void setChannelMode(bool isMidSide);
@@ -32,6 +33,12 @@ public:
     void setBypass(bool enabled);
 
     int getLatencyInSamples() const;
+
+    // Envelope peaks for display (captured during processing)
+    // PreClip = after input gain, before clipping (RED)
+    // PostClip = after clipping, before output gain (WHITE)
+    float getLastPreClipPeak() const { return lastPreClipPeak; }
+    float getLastPostClipPeak() const { return lastPostClipPeak; }
 
 private:
     // DSP blocks
@@ -46,6 +53,10 @@ private:
     juce::AudioBuffer<float> dryBuffer;
     Oversampler dryOversampler;
     bool deltaMonitorEnabled = false;
+
+    // Envelope peaks for display (updated each process call)
+    float lastPreClipPeak = 0.0f;
+    float lastPostClipPeak = 0.0f;
 
     // Enforce ceiling (final hard limiter after downsampling)
     bool enforceCeilingEnabled = true;
