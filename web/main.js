@@ -1,6 +1,9 @@
 // Guillotine Plugin - Main Entry Point
 // Phase 2: Microscope view with waveform and draggable threshold
 
+// Display dB range for threshold visualization (-60 to 0 dB)
+const DISPLAY_DB_RANGE = 60;
+
 import { Guillotine } from './components/views/guillotine.js';
 import { Microscope } from './components/views/microscope.js';
 import { BloodPool } from './components/display/blood-pool.js';
@@ -73,7 +76,9 @@ class GuillotineApp {
     this.bypass = true;         // Start bypassed (blade up) - click to activate
     this.deltaMode = false;     // DELTA mode - intensifies red, dulls everything else
     this.threshold = 0;         // Display threshold (0-1 in current scale, 0 = 0dB)
-    this.currentMinDb = -60;    // Current microscope scale
+    this.currentMinDb = -DISPLAY_DB_RANGE;  // Current microscope scale
+    this.currentCurve = 0;      // Current curve type (0=Hard, 1=Quintic, etc.)
+    this.currentExponent = 2.0; // Curve exponent (for T² and Knee)
     this.fonts = ['Zeyada', 'Cedarville Cursive', 'Dawning of a New Day'];
     this.fontIndex = 0;
 
@@ -100,19 +105,30 @@ class GuillotineApp {
     this.bloodPool = new BloodPool(this.guillotineContainer);
     this.microscope = new Microscope(this.microscopeContainer);
 
-    // Sharpness knob (0-1, continuous) - LEFT
-    this.sharpnessKnob = new Knob(this.mainKnobsContainer, createSpriteKnob({
-      label: 'Sharpness',
-      min: 0, max: 1, value: 1.0,
+    // Curve knob (stepped: Hard, Quintic, Cubic, Tanh, Arctan, T², Knee) - LEFT
+    this.curveKnob = new Knob(this.mainKnobsContainer, createSpriteKnob({
+      label: 'Curve',
+      min: 0, max: 6, value: 0, step: 1,
       size: 50,
       spriteScale: 0.35,
-      suffix: '%',
-      formatter: (v) => Math.round(v * 100),
+      suffix: '',
+      formatter: (v) => ['Hard', 'Quint', 'Cubic', 'Tanh', 'Atan', 'T²', 'Knee'][Math.round(v)],
       parser: (input) => {
-        const match = input.match(/-?\d+\.?\d*/);
-        return match ? parseFloat(match[0]) / 100 : null;
-      },
-      snap: (v) => Math.round(v * 100) / 100  // 1% steps
+        const mapping = { 'hard': 0, 'quint': 1, 'quintic': 1, 'cubic': 2, 'tanh': 3, 'atan': 4, 'arctan': 4, 't2': 5, 't^2': 5, 'tsquared': 5, 'knee': 6 };
+        return mapping[input.toLowerCase()] ?? null;
+      }
+    }));
+
+    // Curve exponent knob (tiny, no label, only enabled for T²)
+    this.curveExponentKnob = new Knob(this.mainKnobsContainer, createSpriteKnob({
+      label: '',
+      min: 1, max: 4, value: 2,
+      size: 24,
+      spriteScale: 0.2,
+      suffix: '',
+      formatter: (v) => v.toFixed(1),
+      snap: (v) => Math.round(v * 10) / 10,  // 0.1 steps
+      wrapperClass: 'knob-wrapper--exponent'
     }));
 
     // Threshold knob (0-1 maps to 0dB to currentMinDb dynamically) - CENTER, larger
@@ -188,11 +204,15 @@ class GuillotineApp {
       this.bloodPool.ready,
       this.microscope.ready,
       this.thresholdKnob.ready,
-      this.sharpnessKnob.ready,
+      this.curveKnob.ready,
+      this.curveExponentKnob.ready,
       this.oversamplingKnob.ready,
       this.inputGainKnob.ready,
       this.outputGainKnob.ready
     ]);
+
+    // Start with exponent knob disabled (only enable for T²)
+    this.curveExponentKnob.setDisabled(true);
 
     // Wire up threshold changes from knob
     this.thresholdKnob.onChange = (value) => {
@@ -204,8 +224,11 @@ class GuillotineApp {
     );
 
     // Wire up other knob changes
-    this.sharpnessKnob.onChange = (v) => this.setSharpness(v);
-    bindDragTracking(this.sharpnessKnob, 'sharpness', this);
+    this.curveKnob.onChange = (v) => this.setCurve(v);
+    bindDragTracking(this.curveKnob, 'curve', this);
+
+    this.curveExponentKnob.onChange = (v) => this.setCurveExponent(v);
+    bindDragTracking(this.curveExponentKnob, 'curveExponent', this);
 
     this.oversamplingKnob.onChange = (v) => this.setOversampling(v);
     bindDragTracking(this.oversamplingKnob, 'oversampling', this);
@@ -216,10 +239,6 @@ class GuillotineApp {
 
     this.outputGainKnob.onChange = (v) => this.setOutputGain(v);
     bindDragTracking(this.outputGainKnob, 'outputGain', this);
-
-    // Set initial sharpness on microscope and guillotine (use knob's default value)
-    this.microscope.setSharpness(this.sharpnessKnob.getValue());
-    this.guillotine.setSharpness(this.sharpnessKnob.getValue());
 
     // Wire up threshold changes from microscope drag
     this.microscope.onThresholdChange = (value) => {
@@ -266,12 +285,27 @@ class GuillotineApp {
       }
     });
 
-    onParameterChange('sharpness', () => {
-      if (this.draggingParam !== 'sharpness') {
-        const value = getParameterNormalized('sharpness');
-        this.sharpnessKnob.setValue(value);
-        this.microscope.setSharpness(value);
-        this.guillotine.setSharpness(value);
+    onParameterChange('curve', () => {
+      if (this.draggingParam !== 'curve') {
+        const normalized = getParameterNormalized('curve');
+        const curveIndex = Math.round(normalized * 6);  // 7 curves: 0-6
+        this.currentCurve = curveIndex;
+        this.curveKnob.setValue(curveIndex);
+        this.microscope.setCurveMode(curveIndex);
+        // Enable exponent knob for T² (5) and Knee (6)
+        this.curveExponentKnob.setDisabled(curveIndex < 5);
+        this.updateSharpnessFromCurve();
+      }
+    });
+
+    onParameterChange('curveExponent', () => {
+      if (this.draggingParam !== 'curveExponent') {
+        const normalized = getParameterNormalized('curveExponent');
+        const exponent = 1.0 + normalized * 3.0;  // 1.0-4.0 range
+        this.currentExponent = exponent;
+        this.curveExponentKnob.setValue(exponent);
+        this.microscope.setCurveExponent(exponent);
+        this.updateSharpnessFromCurve();
       }
     });
 
@@ -323,11 +357,24 @@ class GuillotineApp {
     const ceilingNorm = getParameterNormalized('ceiling');
     this.setThreshold(1 - ceilingNorm, 'init');
 
-    // Sharpness (0-1)
-    const sharpness = getParameterNormalized('sharpness');
-    this.sharpnessKnob.setValue(sharpness);
-    this.microscope.setSharpness(sharpness);
-    this.guillotine.setSharpness(sharpness);
+    // Curve (0-6 choice)
+    const curveNorm = getParameterNormalized('curve');
+    const curveIndex = Math.round(curveNorm * 6);  // 7 curves: 0-6
+    this.currentCurve = curveIndex;
+    this.curveKnob.setValue(curveIndex);
+    this.microscope.setCurveMode(curveIndex);
+    // Enable exponent knob for T² (5) and Knee (6)
+    this.curveExponentKnob.setDisabled(curveIndex < 5);
+
+    // Curve exponent (1.0-4.0)
+    const expNorm = getParameterNormalized('curveExponent');
+    const exponent = 1.0 + expNorm * 3.0;
+    this.currentExponent = exponent;
+    this.curveExponentKnob.setValue(exponent);
+    this.microscope.setCurveExponent(exponent);
+
+    // Update blade sharpness based on curve
+    this.updateSharpnessFromCurve();
 
     // Oversampling (0-5 choice)
     const oversamplingNorm = getParameterNormalized('oversampling');
@@ -389,14 +436,14 @@ class GuillotineApp {
     bloodPoolEl.classList.toggle('delta-clickable', active);
   }
 
-  // Convert threshold (0-1) to dB (always uses full -60dB range internally)
+  // Convert threshold (0-1) to dB (always uses full range internally)
   thresholdToDb(threshold) {
-    return -threshold * 60;
+    return -threshold * DISPLAY_DB_RANGE;
   }
 
   // Convert dB to threshold (0-1)
   dbToThreshold(db) {
-    return Math.max(0, Math.min(1, -db / 60));
+    return Math.max(0, Math.min(1, -db / DISPLAY_DB_RANGE));
   }
 
   // Clamp threshold to current visible range
@@ -442,6 +489,12 @@ class GuillotineApp {
     if (source !== 'microscope') this.microscope.setThreshold(clampedValue);
     // Note: guillotine blade position is now controlled by bypass/lever, not threshold
 
+    // Update waveform's ceiling for soft clipping simulation
+    // threshold 0→1 maps to ceiling 0dB→-60dB → linear 1.0→0.001
+    const ceilingDb = -clampedValue * DISPLAY_DB_RANGE;
+    const ceilingLinear = Math.pow(10, ceilingDb / 20);
+    this.microscope.setCeilingLinear(ceilingLinear);
+
     // Notify JUCE (except when change came from JUCE)
     // UI threshold 0→1 maps to ceiling 0dB→-60dB (normalized 1→0)
     if (source !== 'juce' && source !== 'init') {
@@ -449,10 +502,41 @@ class GuillotineApp {
     }
   }
 
-  setSharpness(value) {
-    this.microscope.setSharpness(value);
-    this.guillotine.setSharpness(value);
-    setParameterNormalized('sharpness', value);
+  setCurve(value) {
+    // Curve is a choice param (0-6), value comes in as 0-6 from knob
+    const index = Math.round(value);
+    this.currentCurve = index;
+    setParameterNormalized('curve', index / 6);  // 7 curves: 0-6
+    // Update waveform display to simulate the same curve
+    this.microscope.setCurveMode(index);
+    // Enable exponent knob for T² (5) and Knee (6)
+    this.curveExponentKnob.setDisabled(index < 5);
+    this.updateSharpnessFromCurve();
+  }
+
+  setCurveExponent(value) {
+    // Exponent is 1.0-4.0, normalize to 0-1
+    this.currentExponent = value;
+    const normalized = (value - 1.0) / 3.0;
+    setParameterNormalized('curveExponent', normalized);
+    this.microscope.setCurveExponent(value);
+    this.updateSharpnessFromCurve();
+  }
+
+  updateSharpnessFromCurve() {
+    // Map curve type to blade sharpness (1.0 = sharp/flat, 0 = jittery/dull)
+    // Hard clips = sharp blade, soft saturation = dull blade
+    const curveSharpness = [1.0, 0.85, 0.7, 0.5, 0.3, null, null];
+    let sharpness = curveSharpness[this.currentCurve];
+
+    // T² (5) and Knee (6): exponent controls sharpness
+    // Exponent 4 = sharp (1.0), exponent 1 = soft (0.2)
+    if (sharpness === null) {
+      sharpness = 0.2 + (this.currentExponent - 1) / 3 * 0.8;
+    }
+
+    this.microscope.setSharpness(sharpness);
+    this.guillotine.setSharpness(sharpness);
   }
 
   setOversampling(value) {

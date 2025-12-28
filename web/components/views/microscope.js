@@ -353,6 +353,18 @@ export class Microscope {
     this.waveform.updateData(data);
   }
 
+  setCurveMode(mode) {
+    this.waveform.setCurveMode(mode);
+  }
+
+  setCeilingLinear(value) {
+    this.waveform.setCeilingLinear(value);
+  }
+
+  setCurveExponent(value) {
+    this.waveform.setCurveExponent(value);
+  }
+
   start() {
     this.handleResize();
     this.waveform.start();
