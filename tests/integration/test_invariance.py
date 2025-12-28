@@ -24,7 +24,7 @@ class TestSampleRateInvariance:
         plugin.bypass_clipper = False
         plugin.ceiling_db = -6.0
         plugin.oversampling = "1x"  # No filter influence
-        plugin.enforce_ceiling = True
+        plugin.true_clip = True
 
         # Generate signal at this sample rate (same relative frequency)
         ceiling_linear = db_to_linear(-6.0)
@@ -54,7 +54,7 @@ class TestSampleRateInvariance:
             plugin.bypass_clipper = False
             plugin.ceiling_db = -6.0
             plugin.oversampling = "1x"
-            plugin.enforce_ceiling = True
+            plugin.true_clip = True
 
             input_audio = generate_sine(
                 freq=1000.0,
@@ -84,7 +84,7 @@ class TestBlockSizeInvariance:
         plugin.bypass_clipper = False
         plugin.ceiling_db = -6.0
         plugin.oversampling = "1x"
-        plugin.enforce_ceiling = True
+        plugin.true_clip = True
 
         ceiling_linear = db_to_linear(-6.0)
         total_samples = 4096
@@ -119,7 +119,7 @@ class TestBlockSizeInvariance:
         plugin.bypass_clipper = False
         plugin.ceiling_db = -12.0
         plugin.oversampling = "1x"
-        plugin.enforce_ceiling = True
+        plugin.true_clip = True
 
         ceiling_linear = db_to_linear(-12.0)
 
@@ -146,7 +146,7 @@ class TestBlockSizeInvariance:
         plugin.bypass_clipper = False
         plugin.ceiling_db = -6.0
         plugin.oversampling = "1x"
-        plugin.enforce_ceiling = True
+        plugin.true_clip = True
 
         ceiling_linear = db_to_linear(-6.0)
         input_audio = generate_sine(
@@ -170,7 +170,7 @@ class TestBlockSizeInvariance:
         plugin.bypass_clipper = False
         plugin.ceiling_db = -6.0
         plugin.oversampling = "1x"
-        plugin.enforce_ceiling = True
+        plugin.true_clip = True
 
         ceiling_linear = db_to_linear(-6.0)
 

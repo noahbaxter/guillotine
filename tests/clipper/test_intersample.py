@@ -35,7 +35,7 @@ def clipper(plugin_path):
     plugin.ceiling_db = -6.0
     plugin.oversampling = "4x"
     plugin.filter_type = "Minimum Phase"
-    plugin.enforce_ceiling = True
+    plugin.true_clip = True
     return plugin
 
 
@@ -61,7 +61,7 @@ class TestIntersamplePeakDetection:
         plugin.bypass_clipper = False
         plugin.ceiling_db = -6.0
         plugin.oversampling = "1x"
-        plugin.enforce_ceiling = True
+        plugin.true_clip = True
 
         ceiling_linear = db_to_linear(-6.0)
 
@@ -123,7 +123,7 @@ class TestIntersampleControl:
         plugin.ceiling_db = -6.0
         plugin.oversampling = os_mode
         plugin.filter_type = "Minimum Phase"
-        plugin.enforce_ceiling = True
+        plugin.true_clip = True
 
         ceiling_linear = db_to_linear(-6.0)
 
@@ -149,7 +149,7 @@ class TestIntersampleControl:
         plugin.ceiling_db = -6.0
         plugin.oversampling = os_mode
         plugin.filter_type = "Linear Phase"
-        plugin.enforce_ceiling = True
+        plugin.true_clip = True
 
         ceiling_linear = db_to_linear(-6.0)
 
@@ -190,7 +190,7 @@ class TestIntersampleComparison:
         plugin_1x.bypass_clipper = False
         plugin_1x.ceiling_db = -6.0
         plugin_1x.oversampling = "1x"
-        plugin_1x.enforce_ceiling = False  # Measure actual OS behavior, not hard limiter
+        plugin_1x.true_clip = False  # Measure actual OS behavior, not hard limiter
 
         output_1x = plugin_1x.process(input_signal.copy(), 44100)
         true_peak_1x = true_peak(output_1x)
@@ -201,7 +201,7 @@ class TestIntersampleComparison:
         plugin_4x.ceiling_db = -6.0
         plugin_4x.oversampling = "4x"
         plugin_4x.filter_type = "Minimum Phase"
-        plugin_4x.enforce_ceiling = False  # Measure actual OS behavior, not hard limiter
+        plugin_4x.true_clip = False  # Measure actual OS behavior, not hard limiter
 
         output_4x = plugin_4x.process(input_signal.copy(), 44100)
         true_peak_4x = true_peak(output_4x)

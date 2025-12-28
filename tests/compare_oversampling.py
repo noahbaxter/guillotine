@@ -141,7 +141,7 @@ def measure_intersample_control(plugin, ceiling_db=-6.0, sr=44100):
     )
     
     plugin.ceiling_db = ceiling_db
-    plugin.enforce_ceiling = False  # Measure pure clipper+filter behavior
+    plugin.true_clip = False  # Measure pure clipper+filter behavior
     
     output = plugin.process(input_signal.copy(), sr)
     output_tp = true_peak(output)
@@ -168,7 +168,7 @@ def measure_aliasing(plugin, ceiling_db=-6.0, sr=44100):
     )
     
     plugin.ceiling_db = ceiling_db
-    plugin.enforce_ceiling = False
+    plugin.true_clip = False
     
     output = plugin.process(input_signal.copy(), sr)
     
@@ -214,7 +214,7 @@ def measure_transparency(plugin, sr=44100):
     input_signal = generate_transparency_test(amplitude=0.05, sr=sr, duration=0.5)
     
     plugin.ceiling_db = 0.0  # Full scale ceiling - signal won't clip
-    plugin.enforce_ceiling = False
+    plugin.true_clip = False
     
     output = plugin.process(input_signal.copy(), sr)
     
@@ -239,7 +239,7 @@ def measure_latency(plugin, sr=44100):
     # Process something to ensure prepare() has been called
     dummy = np.zeros((2, 1024), dtype=np.float32)
     plugin.ceiling_db = 0.0
-    plugin.enforce_ceiling = False
+    plugin.true_clip = False
     plugin.process(dummy, sr)
 
     # Get the latency the plugin reports to the host
@@ -263,7 +263,7 @@ def measure_cpu(plugin, sr=44100, iterations=20):
     test_signal = np.random.randn(2, n_samples).astype(np.float32) * 0.3
     
     plugin.ceiling_db = -6.0
-    plugin.enforce_ceiling = False
+    plugin.true_clip = False
     
     # Warmup
     for _ in range(5):
@@ -300,7 +300,7 @@ def measure_transient_preservation(plugin, sr=44100):
     input_signal[:, impulse_pos] = 0.5
 
     plugin.ceiling_db = 0.0  # No clipping
-    plugin.enforce_ceiling = False
+    plugin.true_clip = False
 
     output = plugin.process(input_signal.copy(), sr)
 
@@ -353,7 +353,7 @@ def measure_frequency_response(plugin, sr=44100):
     input_signal = generate_sweep(sr=sr, duration=1.0, f_start=20, f_end=20000)
     
     plugin.ceiling_db = 0.0  # No clipping
-    plugin.enforce_ceiling = False
+    plugin.true_clip = False
     
     output = plugin.process(input_signal.copy(), sr)
     
@@ -405,7 +405,7 @@ def measure_thd(plugin, sr=44100):
     input_signal = np.stack([input_signal, input_signal]).astype(np.float32)
     
     plugin.ceiling_db = 0.0  # No clipping
-    plugin.enforce_ceiling = False
+    plugin.true_clip = False
     
     output = plugin.process(input_signal.copy(), sr)
     

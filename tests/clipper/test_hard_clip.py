@@ -38,7 +38,7 @@ class TestHardClipParameterBinding:
         plugin = load_plugin(plugin_path)
         plugin.bypass_clipper = False
         plugin.ceiling_db = -6.0
-        plugin.enforce_ceiling = True
+        plugin.true_clip = True
 
         ceiling_linear = db_to_linear(-6.0)
         input_audio = generate_sine(amplitude=ceiling_linear * 2, duration=0.1)
@@ -74,7 +74,7 @@ class TestEnforceCeiling:
         plugin.bypass_clipper = False
         plugin.ceiling_db = -12.0
         plugin.oversampling = "4x"
-        plugin.enforce_ceiling = True
+        plugin.true_clip = True
 
         ceiling_linear = db_to_linear(-12.0)
         input_audio = generate_sine(amplitude=1.5, duration=0.3)
@@ -89,7 +89,7 @@ class TestEnforceCeiling:
         plugin.bypass_clipper = False
         plugin.ceiling_db = -12.0
         plugin.oversampling = "4x"
-        plugin.enforce_ceiling = False
+        plugin.true_clip = False
 
         ceiling_linear = db_to_linear(-12.0)
         input_audio = generate_sine(amplitude=1.5, duration=0.3)
@@ -115,7 +115,7 @@ class TestOversampling:
         plugin.bypass_clipper = False
         plugin.ceiling_db = -6.0
         plugin.oversampling = os_mode
-        plugin.enforce_ceiling = True
+        plugin.true_clip = True
 
         ceiling_linear = db_to_linear(-6.0)
         input_audio = generate_sine(amplitude=ceiling_linear * 2, duration=0.2)
@@ -133,7 +133,7 @@ class TestOversampling:
         plugin.ceiling_db = -6.0
         plugin.oversampling = os_mode
         plugin.filter_type = filter_type
-        plugin.enforce_ceiling = True
+        plugin.true_clip = True
 
         ceiling_linear = db_to_linear(-6.0)
         input_audio = generate_sine(amplitude=ceiling_linear * 2, duration=0.2)
@@ -158,7 +158,7 @@ class TestFilterOvershoot:
         plugin.ceiling_db = -6.0
         plugin.oversampling = os_mode
         plugin.filter_type = "Minimum Phase"
-        plugin.enforce_ceiling = False
+        plugin.true_clip = False
 
         ceiling_linear = db_to_linear(-6.0)
         input_audio = generate_sine(amplitude=ceiling_linear * 2, duration=0.3)
@@ -177,7 +177,7 @@ class TestFilterOvershoot:
         plugin.ceiling_db = -6.0
         plugin.oversampling = os_mode
         plugin.filter_type = "Linear Phase"
-        plugin.enforce_ceiling = False
+        plugin.true_clip = False
 
         ceiling_linear = db_to_linear(-6.0)
         input_audio = generate_sine(amplitude=ceiling_linear * 2, duration=0.3)
@@ -202,7 +202,7 @@ class TestCeilingRange:
         plugin = load_plugin(plugin_path)
         plugin.bypass_clipper = False
         plugin.ceiling_db = ceiling_db
-        plugin.enforce_ceiling = True
+        plugin.true_clip = True
 
         ceiling_linear = db_to_linear(ceiling_db)
         input_audio = generate_sine(amplitude=1.5, duration=0.2)
@@ -227,7 +227,7 @@ class TestGainInteraction:
         plugin.bypass_clipper = False
         plugin.ceiling_db = -6.0
         plugin.output_gain_db = 0.0
-        plugin.enforce_ceiling = True
+        plugin.true_clip = True
 
         ceiling_linear = db_to_linear(-6.0)
         input_audio = generate_sine(amplitude=0.2, duration=0.2)
@@ -260,7 +260,7 @@ class TestStereo:
         plugin.ceiling_db = -6.0
         plugin.oversampling = "1x"
         plugin.stereo_link = False
-        plugin.enforce_ceiling = True
+        plugin.true_clip = True
 
         ceiling_linear = db_to_linear(-6.0)
 
@@ -283,7 +283,7 @@ class TestStereo:
         plugin.ceiling_db = -6.0
         plugin.oversampling = "1x"
         plugin.stereo_link = True
-        plugin.enforce_ceiling = True
+        plugin.true_clip = True
 
         ceiling_linear = db_to_linear(-6.0)
 

@@ -61,7 +61,7 @@ def delta_plugin(plugin_path, request):
     plugin.ceiling_db = 0.0
     plugin.oversampling = oversampling
     plugin.filter_type = filter_type
-    plugin.delta_monitor = True
+    plugin.delta = True
 
     return plugin, oversampling, filter_type
 
@@ -124,7 +124,7 @@ class TestDeltaOutputsClippedPortion:
         plugin.bypass_clipper = False
         plugin.ceiling_db = -6.0
         plugin.oversampling = "1x"
-        plugin.delta_monitor = True
+        plugin.delta = True
 
         ceiling_linear = db_to_linear(-6.0)
         # Signal significantly above ceiling
@@ -142,8 +142,8 @@ class TestDeltaOutputsClippedPortion:
         plugin.bypass_clipper = False
         plugin.ceiling_db = -6.0
         plugin.oversampling = "1x"
-        plugin.delta_monitor = True
-        plugin.enforce_ceiling = True
+        plugin.delta = True
+        plugin.true_clip = True
 
         ceiling_linear = db_to_linear(-6.0)
         dc_level = ceiling_linear * 1.5  # 50% above ceiling
@@ -169,8 +169,8 @@ class TestDeltaOutputsClippedPortion:
         plugin.bypass_clipper = False
         plugin.ceiling_db = -6.0
         plugin.oversampling = "1x"
-        plugin.delta_monitor = True
-        plugin.enforce_ceiling = True
+        plugin.delta = True
+        plugin.true_clip = True
         plugin.input_gain_db = 6.0   # +6dB input gain
         plugin.output_gain_db = -3.0  # -3dB output gain
 
@@ -205,17 +205,17 @@ class TestSignalReconstruction:
         plugin.bypass_clipper = False
         plugin.ceiling_db = -6.0
         plugin.oversampling = "1x"
-        plugin.enforce_ceiling = True
+        plugin.true_clip = True
 
         ceiling_linear = db_to_linear(-6.0)
         input_audio = generate_sine(amplitude=ceiling_linear * 2, duration=0.3)
 
         # Get wet (clipped) output
-        plugin.delta_monitor = False
+        plugin.delta = False
         wet = plugin.process(input_audio.copy(), 44100)
 
         # Get delta (dry - wet, i.e., what was clipped off)
-        plugin.delta_monitor = True
+        plugin.delta = True
         delta = plugin.process(input_audio.copy(), 44100)
 
         # Reconstruct: dry = wet + delta (since delta = dry - wet)
@@ -247,8 +247,8 @@ class TestDeltaOff:
         plugin.bypass_clipper = False
         plugin.ceiling_db = -6.0
         plugin.oversampling = "1x"
-        plugin.delta_monitor = False
-        plugin.enforce_ceiling = True
+        plugin.delta = False
+        plugin.true_clip = True
 
         ceiling_linear = db_to_linear(-6.0)
         input_audio = generate_sine(amplitude=ceiling_linear * 2, duration=0.3)
@@ -266,15 +266,15 @@ class TestDeltaOff:
         plugin.bypass_clipper = False
         plugin.ceiling_db = -6.0
         plugin.oversampling = "1x"
-        plugin.enforce_ceiling = True
+        plugin.true_clip = True
 
         ceiling_linear = db_to_linear(-6.0)
         input_audio = generate_sine(amplitude=ceiling_linear * 2, duration=0.3)
 
-        plugin.delta_monitor = False
+        plugin.delta = False
         output_wet = plugin.process(input_audio.copy(), 44100)
 
-        plugin.delta_monitor = True
+        plugin.delta = True
         output_delta = plugin.process(input_audio.copy(), 44100)
 
         # They should be different
@@ -296,8 +296,8 @@ class TestDeltaStereo:
         plugin.ceiling_db = -6.0
         plugin.oversampling = "1x"
         plugin.stereo_link = False
-        plugin.delta_monitor = True
-        plugin.enforce_ceiling = True
+        plugin.delta = True
+        plugin.true_clip = True
 
         ceiling_linear = db_to_linear(-6.0)
 
@@ -326,8 +326,8 @@ class TestDeltaStereo:
         plugin.ceiling_db = -6.0
         plugin.oversampling = "1x"
         plugin.channel_mode = "M/S"
-        plugin.delta_monitor = True
-        plugin.enforce_ceiling = True
+        plugin.delta = True
+        plugin.true_clip = True
 
         ceiling_linear = db_to_linear(-6.0)
 
@@ -364,7 +364,7 @@ class TestDeltaEdgeCases:
         """Zero input → zero delta."""
         plugin = load_plugin(plugin_path)
         plugin.bypass_clipper = False
-        plugin.delta_monitor = True
+        plugin.delta = True
         plugin.ceiling_db = -6.0
 
         input_audio = generate_dc(level=0.0, duration=0.2)
@@ -380,7 +380,7 @@ class TestDeltaEdgeCases:
         plugin.bypass_clipper = False
         plugin.ceiling_db = -6.0
         plugin.oversampling = "1x"
-        plugin.delta_monitor = True
+        plugin.delta = True
 
         ceiling_linear = db_to_linear(-6.0)
         # Signal at exactly ceiling level

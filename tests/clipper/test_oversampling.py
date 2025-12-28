@@ -161,7 +161,7 @@ class TestInstanceIndependence:
         plugin.ceiling_db = -6.0
         plugin.input_gain_db = 0.0
         plugin.output_gain_db = 0.0
-        plugin.delta_monitor = True
+        plugin.delta = True
 
         ceiling = db_to_linear(-6.0)
         input_audio = generate_sine(amplitude=ceiling * 1.5, duration=0.2)

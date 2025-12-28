@@ -75,7 +75,7 @@ class TestNaNDefense:
         plugin.bypass_clipper = False
         plugin.ceiling_db = -6.0
         plugin.oversampling = os_mode
-        plugin.enforce_ceiling = True
+        plugin.true_clip = True
 
         # Mix of valid samples and NaN
         signal = np.array([0.5, float('nan'), 0.8, float('nan'), 0.3] * 20, dtype=np.float32)
