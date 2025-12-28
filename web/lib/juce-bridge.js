@@ -13,7 +13,8 @@ const sliderStates = {
     channelMode: Juce.getSliderState("channelMode"),
     stereoLink: Juce.getSliderState("stereoLink"),
     deltaMonitor: Juce.getSliderState("deltaMonitor"),
-    bypassClipper: Juce.getSliderState("bypassClipper")
+    bypassClipper: Juce.getSliderState("bypassClipper"),
+    enforceCeiling: Juce.getSliderState("enforceCeiling")
 };
 
 // Set a parameter value (normalized 0-1)
@@ -106,6 +107,28 @@ export function getBypassClipper() {
 
 export function onBypassClipperChange(callback) {
     const state = sliderStates.bypassClipper;
+    if (state) {
+        state.valueChangedEvent.addListener(() => {
+            callback(state.getNormalisedValue() > 0.5);
+        });
+    }
+}
+
+// Enforce ceiling helpers - syncs UI toggle with C++ param
+export function setEnforceCeiling(enabled) {
+    const state = sliderStates.enforceCeiling;
+    if (state) {
+        state.setNormalisedValue(enabled ? 1.0 : 0.0);
+    }
+}
+
+export function getEnforceCeiling() {
+    const state = sliderStates.enforceCeiling;
+    return state ? state.getNormalisedValue() > 0.5 : true;
+}
+
+export function onEnforceCeilingChange(callback) {
+    const state = sliderStates.enforceCeiling;
     if (state) {
         state.valueChangedEvent.addListener(() => {
             callback(state.getNormalisedValue() > 0.5);
