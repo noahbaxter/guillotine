@@ -9,8 +9,8 @@ export const CurveType = {
   Cubic: 2,
   Tanh: 3,
   Arctan: 4,
-  TSquared: 5,
-  Knee: 6
+  Knee: 5,
+  T2: 6
 };
 
 // Hard clip: just clamp to [-1, 1]
@@ -67,13 +67,13 @@ function tsquared(x, exponent = 2.0) {
 
 // Knee: soft knee compression with adjustable knee width
 // Linear below kneeStart, t² compression in knee region, hard clip above 1.0
-// Exponent controls knee size: 1.0=huge knee (starts at 5%), 4.0=tiny knee (near hard clip)
+// Exponent controls knee size: 4.0=huge knee (starts at 5%), 1.0=tiny knee (near hard clip)
 function knee(x, exponent = 2.0) {
   const absX = Math.abs(x);
   const sign = x >= 0 ? 1 : -1;
 
-  // Map exponent (1-4) to sharpness (0-1): higher exponent = sharper = smaller knee
-  const sharpness = (exponent - 1.0) / 3.0;
+  // Map exponent (1-4) to sharpness (0-1): lower exponent = sharper = smaller knee
+  const sharpness = (4.0 - exponent) / 3.0;
 
   // Knee width: 0 at sharpness=1, 0.95 at sharpness=0 (starts at 5% of ceiling!)
   const kneeWidth = (1.0 - sharpness) * 0.95;
@@ -96,7 +96,7 @@ function knee(x, exponent = 2.0) {
 }
 
 // Apply curve by type (normalized input/output)
-// exponent used for TSquared and Knee curves
+// exponent used for Knee and T2 curves
 export function applyCurve(curveType, x, exponent = 2.0) {
   switch (curveType) {
     case CurveType.Hard:     return hard(x);
@@ -104,8 +104,8 @@ export function applyCurve(curveType, x, exponent = 2.0) {
     case CurveType.Cubic:    return cubic(x);
     case CurveType.Tanh:     return tanh(x);
     case CurveType.Arctan:   return arctan(x);
-    case CurveType.TSquared: return tsquared(x, exponent);
     case CurveType.Knee:     return knee(x, exponent);
+    case CurveType.T2:       return tsquared(x, exponent);
     default:                 return hard(x);
   }
 }
@@ -113,7 +113,7 @@ export function applyCurve(curveType, x, exponent = 2.0) {
 // Apply curve with ceiling (handles normalization)
 // input: amplitude value
 // ceiling: threshold in linear amplitude
-// exponent: only used for TSquared curve
+// exponent: only used for Knee and T2 curves
 // returns: clipped amplitude value
 export function applyWithCeiling(curveType, sample, ceiling, exponent = 2.0) {
   if (ceiling <= 0) return 0;

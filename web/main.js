@@ -76,7 +76,7 @@ class GuillotineApp {
     this.threshold = 0;         // Display threshold (0-1 in current scale, 0 = 0dB)
     this.currentMinDb = DEFAULT_MIN_DB;  // Current microscope scale (matches default preset)
     this.currentCurve = 0;      // Current curve type (0=Hard, 1=Quintic, etc.)
-    this.currentExponent = 2.0; // Curve exponent (for T² and Knee)
+    this.currentExponent = 2.0; // Curve exponent (for Knee and T2)
     this.fonts = ['Zeyada', 'Cedarville Cursive', 'Dawning of a New Day'];
     this.fontIndex = 0;
 
@@ -103,22 +103,22 @@ class GuillotineApp {
     this.bloodPool = new BloodPool(this.guillotineContainer);
     this.microscope = new Microscope(this.microscopeContainer);
 
-    // Blade knob (stepped: Hard, Quintic, Cubic, Tanh, Arctan, T², Knee) - LEFT
+    // Blade knob (stepped: Hard, Quintic, Cubic, Tanh, Arctan, Knee, T2) - LEFT
     this.curveKnob = new Knob(this.mainKnobsContainer, {
       label: 'Blade',
       min: 0, max: 6, value: 0, step: 1,
       size: 50,
-      formatValue: (v) => ['Hard', 'Quint', 'Cubic', 'Tanh', 'Atan', 'T²', 'Knee'][Math.round(v)],
+      formatValue: (v) => ['Hard', 'Quint', 'Cubic', 'Tanh', 'Atan', 'Knee', 'T2'][Math.round(v)],
       parseValue: (input) => {
-        const mapping = { 'hard': 0, 'quint': 1, 'quintic': 1, 'cubic': 2, 'tanh': 3, 'atan': 4, 'arctan': 4, 't2': 5, 't^2': 5, 'tsquared': 5, 'knee': 6 };
+        const mapping = { 'hard': 0, 'quint': 1, 'quintic': 1, 'cubic': 2, 'tanh': 3, 'atan': 4, 'arctan': 4, 'knee': 5, 't2': 6, 't^2': 6, 'tsquared': 6 };
         return mapping[input.toLowerCase()] ?? null;
       }
     });
 
-    // Curve exponent knob (tiny, no label, only enabled for T²)
+    // Curve exponent knob (tiny, no label, only enabled for Knee/T2)
     this.curveExponentKnob = new Knob(this.mainKnobsContainer, createSpriteKnob({
       label: '',
-      min: 1, max: 4, value: 2,
+      min: 1, max: 4, value: 4,
       size: 24,
       spriteScale: 0.2,
       suffix: '',
@@ -289,7 +289,7 @@ class GuillotineApp {
         this.currentCurve = curveIndex;
         this.curveKnob.setValue(curveIndex);
         this.microscope.setCurveMode(curveIndex);
-        // Enable exponent knob for T² (5) and Knee (6)
+        // Enable exponent knob for Knee (5) and T2 (6)
         this.curveExponentKnob.setDisabled(curveIndex < 5);
         this.updateSharpnessFromCurve();
       }
@@ -360,10 +360,10 @@ class GuillotineApp {
     this.currentCurve = curveIndex;
     this.curveKnob.setValue(curveIndex);
     this.microscope.setCurveMode(curveIndex);
-    // Enable exponent knob for T² (5) and Knee (6)
+    // Enable exponent knob for Knee (5) and T2 (6)
     this.curveExponentKnob.setDisabled(curveIndex < 5);
 
-    // Curve exponent (1.0-4.0)
+    // Curve exponent (1.0-4.0, knob display is inverted)
     const expNorm = getParameterNormalized('curveExponent');
     const exponent = 1.0 + expNorm * 3.0;
     this.currentExponent = exponent;
@@ -506,15 +506,15 @@ class GuillotineApp {
     setParameterNormalized('curve', index / 6);  // 7 curves: 0-6
     // Update waveform display to simulate the same curve
     this.microscope.setCurveMode(index);
-    // Enable exponent knob for T² (5) and Knee (6)
+    // Enable exponent knob for Knee (5) and T2 (6)
     this.curveExponentKnob.setDisabled(index < 5);
     this.updateSharpnessFromCurve();
   }
 
   setCurveExponent(value) {
-    // Exponent is 1.0-4.0, normalize to 0-1
+    // Knob shows 4-1 inverted, but value is the actual exponent (1-4)
     this.currentExponent = value;
-    const normalized = (value - 1.0) / 3.0;
+    const normalized = (value - 1.0) / 3.0;  // 1.0-4.0 -> 0-1
     setParameterNormalized('curveExponent', normalized);
     this.microscope.setCurveExponent(value);
     this.updateSharpnessFromCurve();
@@ -526,10 +526,10 @@ class GuillotineApp {
     const curveSharpness = [1.0, 0.85, 0.7, 0.35, 0.15, null, null];
     let sharpness = curveSharpness[this.currentCurve];
 
-    // T² (5) and Knee (6): exponent controls sharpness
-    // Exponent 4 = sharp (0.9), exponent 1 = very soft (0.05)
+    // Knee (5) and T2 (6): exponent controls sharpness (inverted)
+    // Exponent 1 = sharp (0.9), exponent 4 = very soft (0.05)
     if (sharpness === null) {
-      sharpness = 0.05 + (this.currentExponent - 1) / 3 * 0.85;
+      sharpness = 0.05 + (4.0 - this.currentExponent) / 3 * 0.85;
     }
 
     this.microscope.setSharpness(sharpness);

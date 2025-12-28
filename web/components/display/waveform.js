@@ -29,9 +29,9 @@ export class Waveform {
     this.cutPosition = 1;  // 0 = cut at top (no clipping), 1 = cut at threshold (full clipping)
 
     // Soft clipping simulation
-    this.curveMode = CurveType.Hard;  // 0=Hard, 1=Quintic, 2=Cubic, 3=Tanh, 4=Arctan, 5=T²
+    this.curveMode = CurveType.Hard;  // 0=Hard, 1=Quintic, 2=Cubic, 3=Tanh, 4=Arctan, 5=Knee, 6=T2
     this.ceilingLinear = 1.0;  // Threshold in linear amplitude
-    this.curveExponent = 2.0;  // For T² mode: 1.0=linear, 2.0=squared, up to 4.0
+    this.curveExponent = 2.0;  // For Knee/T2 modes: 1.0-4.0
 
     this.ready = this.init();
     this.render = this.render.bind(this);

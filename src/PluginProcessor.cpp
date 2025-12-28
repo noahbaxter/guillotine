@@ -24,19 +24,19 @@ juce::AudioProcessorValueTreeState::ParameterLayout GuillotineProcessor::createP
 {
     std::vector<std::unique_ptr<juce::RangedAudioParameter>> params;
 
-    // Curve type: 0=Hard, 1=Quintic, 2=Cubic, 3=Tanh, 4=Arctan, 5=T², 6=Knee
+    // Curve type: 0=Hard, 1=Quintic, 2=Cubic, 3=Tanh, 4=Arctan, 5=Knee, 6=T2
     params.push_back(std::make_unique<juce::AudioParameterChoice>(
         juce::ParameterID{"curve", 1},
         "Curve",
-        juce::StringArray{"Hard", "Quintic", "Cubic", "Tanh", "Arctan", "T^2", "Knee"},
+        juce::StringArray{"Hard", "Quintic", "Cubic", "Tanh", "Arctan", "Knee", "T2"},
         0));  // Default to hard clip
 
-    // Curve exponent (for T² mode: 1.0=linear, 2.0=squared, up to 4.0)
+    // Curve exponent (for Knee/T2 modes: 4.0=maximum softness, 1.0=minimum softness)
     params.push_back(std::make_unique<juce::AudioParameterFloat>(
         juce::ParameterID{"curveExponent", 1},
         "Curve Exponent",
         juce::NormalisableRange<float>(1.0f, 4.0f),
-        2.0f));
+        4.0f));
 
     // Oversampling: 0=1x, 1=2x, 2=4x, 3=8x, 4=16x, 5=32x
     params.push_back(std::make_unique<juce::AudioParameterChoice>(

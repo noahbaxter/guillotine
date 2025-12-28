@@ -14,8 +14,8 @@ enum class CurveType
     Cubic = 2,   // x - (4/27)x^3 - gentle, clean
     Tanh = 3,    // tanh - smooth, musical saturation
     Arctan = 4,  // (2/pi)atan(x) - softest, most saturated
-    TSquared = 5, // sign(x) * |x|^n - power curve
-    Knee = 6     // Soft knee compression - linear below knee, t² above
+    Knee = 5,    // Soft knee compression - exponent 4.0=wide knee, 1.0=sharp
+    T2 = 6       // sign(x) * |x|^n - power curve
 };
 
 constexpr int kNumCurveTypes = 7;
@@ -86,14 +86,14 @@ inline float tsquared(float x, float exponent = 2.0f)
 
 // Knee: soft knee compression with adjustable knee width
 // Linear below kneeStart, t² compression in knee region, hard clip above 1.0
-// Exponent controls knee size: 1.0=huge knee (starts at 5%), 4.0=tiny knee (near hard clip)
+// Exponent controls knee size: 4.0=huge knee (starts at 5%), 1.0=tiny knee (near hard clip)
 inline float knee(float x, float exponent = 2.0f)
 {
     float absX = std::abs(x);
     float sign = (x >= 0.0f) ? 1.0f : -1.0f;
 
-    // Map exponent (1-4) to sharpness (0-1): higher exponent = sharper = smaller knee
-    float sharpness = (exponent - 1.0f) / 3.0f;
+    // Map exponent (1-4) to sharpness (0-1): lower exponent = sharper = smaller knee
+    float sharpness = (4.0f - exponent) / 3.0f;
 
     // Knee width: 0 at sharpness=1, 0.95 at sharpness=0 (starts at 5% of ceiling!)
     float kneeWidth = (1.0f - sharpness) * 0.95f;
@@ -114,7 +114,7 @@ inline float knee(float x, float exponent = 2.0f)
 }
 
 // Apply curve by type (normalized input/output)
-// exponent used for TSquared and Knee curves
+// exponent used for Knee and T2 curves
 inline float apply(CurveType type, float x, float exponent = 2.0f)
 {
     switch (type)
@@ -124,14 +124,14 @@ inline float apply(CurveType type, float x, float exponent = 2.0f)
         case CurveType::Cubic:    return cubic(x);
         case CurveType::Tanh:     return tanh(x);
         case CurveType::Arctan:   return arctan(x);
-        case CurveType::TSquared: return tsquared(x, exponent);
         case CurveType::Knee:     return knee(x, exponent);
+        case CurveType::T2:       return tsquared(x, exponent);
         default:                  return hard(x);
     }
 }
 
 // Apply curve with ceiling (handles normalization)
-// exponent used for TSquared and Knee curves
+// exponent used for Knee and T2 curves
 inline float applyWithCeiling(CurveType type, float sample, float ceiling, float exponent = 2.0f)
 {
     if (ceiling <= 0.0f)

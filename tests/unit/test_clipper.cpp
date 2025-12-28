@@ -213,14 +213,14 @@ TEST_CASE("Arctan: softest saturation", "[softclip]")
 }
 
 // =============================================================================
-// TSquared Curve Tests (power curve with exponent)
+// T2 Curve Tests (power curve with exponent)
 // =============================================================================
 
-TEST_CASE("TSquared: exponent 1.0 is linear until clip", "[tsquared]")
+TEST_CASE("T2: exponent 1.0 is linear until clip", "[t2]")
 {
     auto clipper = makeClipper();
     clipper.setCeiling(1.0f);
-    clipper.setCurve(CurveType::TSquared);
+    clipper.setCurve(CurveType::T2);
     clipper.setCurveExponent(1.0f);
 
     auto input = GENERATE(0.2f, 0.5f, 0.8f);
@@ -230,11 +230,11 @@ TEST_CASE("TSquared: exponent 1.0 is linear until clip", "[tsquared]")
     REQUIRE(output == Approx(input).margin(kClipperTolerance));
 }
 
-TEST_CASE("TSquared: exponent 2.0 squares the signal", "[tsquared]")
+TEST_CASE("T2: exponent 2.0 squares the signal", "[t2]")
 {
     auto clipper = makeClipper();
     clipper.setCeiling(1.0f);
-    clipper.setCurve(CurveType::TSquared);
+    clipper.setCurve(CurveType::T2);
     clipper.setCurveExponent(2.0f);
 
     float input = 0.5f;
@@ -244,11 +244,11 @@ TEST_CASE("TSquared: exponent 2.0 squares the signal", "[tsquared]")
     REQUIRE(output == Approx(0.25f).margin(kClipperTolerance));
 }
 
-TEST_CASE("TSquared: preserves sign", "[tsquared]")
+TEST_CASE("T2: preserves sign", "[t2]")
 {
     auto clipper = makeClipper();
     clipper.setCeiling(1.0f);
-    clipper.setCurve(CurveType::TSquared);
+    clipper.setCurve(CurveType::T2);
     clipper.setCurveExponent(2.0f);
 
     float outputPos = processSingleSample(clipper, 0.5f);
@@ -259,11 +259,11 @@ TEST_CASE("TSquared: preserves sign", "[tsquared]")
     REQUIRE(std::abs(outputPos) == Approx(std::abs(outputNeg)).margin(kClipperTolerance));
 }
 
-TEST_CASE("TSquared: clips at ceiling", "[tsquared]")
+TEST_CASE("T2: clips at ceiling", "[t2]")
 {
     auto clipper = makeClipper();
     clipper.setCeiling(1.0f);
-    clipper.setCurve(CurveType::TSquared);
+    clipper.setCurve(CurveType::T2);
     clipper.setCurveExponent(2.0f);
 
     float output = processSingleSample(clipper, 2.0f);
@@ -274,12 +274,12 @@ TEST_CASE("TSquared: clips at ceiling", "[tsquared]")
 // Knee Curve Tests (soft knee compression)
 // =============================================================================
 
-TEST_CASE("Knee: exponent 4.0 is nearly hard clip", "[knee]")
+TEST_CASE("Knee: exponent 1.0 is nearly hard clip", "[knee]")
 {
     auto clipper = makeClipper();
     clipper.setCeiling(1.0f);
     clipper.setCurve(CurveType::Knee);
-    clipper.setCurveExponent(4.0f);  // Maps to sharpness ~1.0
+    clipper.setCurveExponent(1.0f);  // Maps to sharpness ~1.0
 
     // Below ceiling should pass through mostly unchanged
     float input = 0.8f;
@@ -287,14 +287,14 @@ TEST_CASE("Knee: exponent 4.0 is nearly hard clip", "[knee]")
     REQUIRE(output == Approx(input).margin(0.01f));
 }
 
-TEST_CASE("Knee: exponent 1.0 has large soft knee", "[knee]")
+TEST_CASE("Knee: exponent 4.0 has large soft knee", "[knee]")
 {
     auto clipper = makeClipper();
     clipper.setCeiling(1.0f);
     clipper.setCurve(CurveType::Knee);
-    clipper.setCurveExponent(1.0f);  // Maps to sharpness ~0.0, large knee
+    clipper.setCurveExponent(4.0f);  // Maps to sharpness ~0.0, large knee
 
-    // At 70% of ceiling, should see compression (knee starts at 5% for exponent 1.0)
+    // At 70% of ceiling, should see compression (knee starts at 5% for exponent 4.0)
     float input = 0.7f;
     float output = processSingleSample(clipper, input);
     REQUIRE(output < input);
@@ -328,7 +328,7 @@ TEST_CASE("Knee: above ceiling hard-limits", "[knee]")
     REQUIRE(output == Approx(1.0f).margin(kClipperTolerance));
 }
 
-TEST_CASE("Knee: higher exponent = less compression", "[knee]")
+TEST_CASE("Knee: higher exponent = more softness", "[knee]")
 {
     float input = 0.7f;
     float outputs[4];
@@ -343,11 +343,11 @@ TEST_CASE("Knee: higher exponent = less compression", "[knee]")
         outputs[i] = processSingleSample(clipper, input);
     }
 
-    // Higher exponent = smaller knee = less compression = higher output
+    // Higher exponent = wider knee = more compression = lower output
     for (int i = 1; i < 4; ++i)
     {
         CAPTURE(exponents[i], outputs[i-1], outputs[i]);
-        REQUIRE(outputs[i] >= outputs[i-1] - 0.001f);
+        REQUIRE(outputs[i] <= outputs[i-1] + 0.001f);
     }
 }
 
@@ -519,8 +519,8 @@ TEST_CASE("All curve types produce bounded output", "[curves]")
         CurveType::Cubic,
         CurveType::Tanh,
         CurveType::Arctan,
-        CurveType::TSquared,
-        CurveType::Knee
+        CurveType::Knee,
+        CurveType::T2
     );
     CAPTURE(static_cast<int>(curveType));
 
