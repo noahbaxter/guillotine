@@ -73,9 +73,13 @@ GuillotineEditor::GuillotineEditor(GuillotineProcessor& p)
 {
     addAndMakeVisible(webView);
 
-    webView.goToURL(juce::WebBrowserComponent::getResourceProviderRoot());
-
     setSize(600, 500);
+
+    // Delay navigation to allow WebView2 async initialization on Windows
+    juce::MessageManager::callAsync([safeThis = juce::Component::SafePointer<GuillotineEditor>(this)]() {
+        if (safeThis != nullptr)
+            safeThis->webView.goToURL(juce::WebBrowserComponent::getResourceProviderRoot());
+    });
 
     // Start timer to push envelope data at 60Hz
     startTimerHz(60);
