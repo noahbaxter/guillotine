@@ -233,7 +233,8 @@ jobs:
         run: |
           curl -L -o pluginval.zip https://github.com/Tracktion/pluginval/releases/latest/download/pluginval_macOS.zip
           unzip pluginval.zip -d /usr/local/bin
-          chmod +x /usr/local/bin/pluginval
+          chmod +x /usr/local/bin/pluginval.app/Contents/MacOS/pluginval
+          ln -s /usr/local/bin/pluginval.app/Contents/MacOS/pluginval /usr/local/bin/pluginval
 
       - name: Build C++ unit tests
         run: |
