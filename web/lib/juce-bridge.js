@@ -7,6 +7,7 @@ const sliderStates = {
     outputGain: Juce.getSliderState("outputGain"),
     ceiling: Juce.getSliderState("ceiling"),
     curve: Juce.getSliderState("curve"),
+    curveExponent: Juce.getSliderState("curveExponent"),
     oversampling: Juce.getSliderState("oversampling"),
     filterType: Juce.getSliderState("filterType"),
     channelMode: Juce.getSliderState("channelMode"),

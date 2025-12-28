@@ -172,9 +172,43 @@ body::before {
 }
 
 #main-knobs {
-  display: flex;
-  justify-content: space-around;
+  position: relative;
+  display: grid;
+  grid-template-columns: auto auto auto;
+  grid-template-rows: auto auto;
+  justify-content: center;
+  gap: 30px;
   padding: 8px 0;
+  align-items: start;
+  row-gap: 8px;
+}
+
+/* Curve knob in column 1, row 1 */
+#main-knobs .knob-wrapper:nth-child(1) {
+  grid-column: 1;
+  grid-row: 1;
+}
+
+/* Exponent knob - positioned up and to the right of curve knob */
+#main-knobs .knob-wrapper--exponent {
+  position: absolute;
+  top: 10px;
+  left: 70px;
+  width: auto;
+}
+
+/* Ceiling in column 2 (spans both rows vertically centered) */
+#main-knobs .knob-wrapper:nth-child(3) {
+  grid-column: 2;
+  grid-row: 1 / 3;
+  align-self: center;
+}
+
+/* Oversampling in column 3 (spans both rows vertically centered) */
+#main-knobs .knob-wrapper:nth-child(4) {
+  grid-column: 3;
+  grid-row: 1 / 3;
+  align-self: center;
 }
 
 #gain-knobs {
