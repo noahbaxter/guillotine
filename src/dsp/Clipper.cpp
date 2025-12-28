@@ -31,7 +31,9 @@ float Clipper::processSample(float sample) const
 
 float Clipper::calculateGainReduction(float peakLevel) const
 {
-    if (peakLevel <= ceiling)
+    // Only check for zero to avoid division by zero
+    // Don't skip based on ceiling - soft curves shape signal at all levels
+    if (peakLevel <= 0.0f)
         return 1.0f;
 
     float targetPeak = std::abs(processSample(peakLevel));
@@ -42,19 +44,17 @@ void Clipper::processInternal(float* const* channelData, int numChannels, int nu
 {
     if (stereoLinkEnabled && numChannels >= 2)
     {
-        // Stereo link: find max peak across channels, apply same reduction
+        // Stereo link: find max peak across channels, apply same gain reduction
+        // Always process - soft curves shape signal at all levels, not just above ceiling
         for (int i = 0; i < numSamples; ++i)
         {
             float maxPeak = 0.0f;
             for (int ch = 0; ch < numChannels; ++ch)
                 maxPeak = std::max(maxPeak, std::abs(channelData[ch][i]));
 
-            if (maxPeak > ceiling)
-            {
-                float gainReduction = calculateGainReduction(maxPeak);
-                for (int ch = 0; ch < numChannels; ++ch)
-                    channelData[ch][i] *= gainReduction;
-            }
+            float gainReduction = calculateGainReduction(maxPeak);
+            for (int ch = 0; ch < numChannels; ++ch)
+                channelData[ch][i] *= gainReduction;
         }
     }
     else
