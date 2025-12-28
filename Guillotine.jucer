@@ -2,6 +2,7 @@
 
 <JUCERPROJECT id="Gltn01" name="Guillotine" projectType="audioplug" useAppConfig="0"
               addUsingNamespaceToJuceHeader="0" displaySplashScreen="1" jucerFormatVersion="1"
+              version="0.1.0"
               companyName="Dichotic Studios" pluginVST3Category="Fx" cppLanguageStandard="17"
               pluginFormats="buildVST3,buildAU,buildStandalone" pluginName="Guillotine"
               pluginDesc="A clipping plugin with guillotine visualization">
@@ -36,6 +37,7 @@
             file="assets/fonts/cedarville.ttf"/>
       <FILE id="FontDawning" name="dawning.ttf" compile="0" resource="1"
             file="assets/fonts/dawning.ttf"/>
+      <FILE id="SwitchPng" name="switch.png" compile="0" resource="1" file="assets/switch.png"/>
     </GROUP>
     <GROUP id="{WEBUI001-0000-0000-0000-000000000000}" name="web">
       <FILE id="WebIndex" name="index.html" compile="0" resource="1" file="web/index.html"/>
@@ -71,6 +73,7 @@
       <FILE id="WebKnobCss" name="knob.css" compile="0" resource="1" file="web/components/controls/knob.css"/>
       <FILE id="WebLeverJs" name="lever.js" compile="0" resource="1" file="web/components/controls/lever.js"/>
       <FILE id="WebLeverCss" name="lever.css" compile="0" resource="1" file="web/components/controls/lever.css"/>
+      <FILE id="WebToggleJs" name="toggle.js" compile="0" resource="1" file="web/components/controls/toggle.js"/>
       <FILE id="WebWaveformJs" name="waveform.js" compile="0" resource="1"
             file="web/components/display/waveform.js"/>
       <FILE id="WebWaveformCss" name="waveform.css" compile="0" resource="1"
@@ -113,22 +116,22 @@
     </GROUP>
   </MAINGROUP>
   <MODULES>
-    <MODULE id="juce_audio_basics" showAllCode="1" useLocalCopy="1" useGlobalPath="0"/>
-    <MODULE id="juce_audio_devices" showAllCode="1" useLocalCopy="1" useGlobalPath="0"/>
-    <MODULE id="juce_audio_formats" showAllCode="1" useLocalCopy="1" useGlobalPath="0"/>
-    <MODULE id="juce_audio_plugin_client" showAllCode="1" useLocalCopy="1"
+    <MODULE id="juce_audio_basics" showAllCode="1" useLocalCopy="0" useGlobalPath="0"/>
+    <MODULE id="juce_audio_devices" showAllCode="1" useLocalCopy="0" useGlobalPath="0"/>
+    <MODULE id="juce_audio_formats" showAllCode="1" useLocalCopy="0" useGlobalPath="0"/>
+    <MODULE id="juce_audio_plugin_client" showAllCode="1" useLocalCopy="0"
             useGlobalPath="0"/>
-    <MODULE id="juce_audio_processors" showAllCode="1" useLocalCopy="1" useGlobalPath="0"/>
-    <MODULE id="juce_audio_processors_headless" showAllCode="1" useLocalCopy="1"
+    <MODULE id="juce_audio_processors" showAllCode="1" useLocalCopy="0" useGlobalPath="0"/>
+    <MODULE id="juce_audio_processors_headless" showAllCode="1" useLocalCopy="0"
             useGlobalPath="0"/>
-    <MODULE id="juce_audio_utils" showAllCode="1" useLocalCopy="1" useGlobalPath="0"/>
-    <MODULE id="juce_core" showAllCode="1" useLocalCopy="1" useGlobalPath="0"/>
-    <MODULE id="juce_data_structures" showAllCode="1" useLocalCopy="1" useGlobalPath="0"/>
-    <MODULE id="juce_dsp" showAllCode="1" useLocalCopy="1" useGlobalPath="0"/>
-    <MODULE id="juce_events" showAllCode="1" useLocalCopy="1" useGlobalPath="0"/>
-    <MODULE id="juce_graphics" showAllCode="1" useLocalCopy="1" useGlobalPath="0"/>
-    <MODULE id="juce_gui_basics" showAllCode="1" useLocalCopy="1" useGlobalPath="0"/>
-    <MODULE id="juce_gui_extra" showAllCode="1" useLocalCopy="1" useGlobalPath="0"/>
+    <MODULE id="juce_audio_utils" showAllCode="1" useLocalCopy="0" useGlobalPath="0"/>
+    <MODULE id="juce_core" showAllCode="1" useLocalCopy="0" useGlobalPath="0"/>
+    <MODULE id="juce_data_structures" showAllCode="1" useLocalCopy="0" useGlobalPath="0"/>
+    <MODULE id="juce_dsp" showAllCode="1" useLocalCopy="0" useGlobalPath="0"/>
+    <MODULE id="juce_events" showAllCode="1" useLocalCopy="0" useGlobalPath="0"/>
+    <MODULE id="juce_graphics" showAllCode="1" useLocalCopy="0" useGlobalPath="0"/>
+    <MODULE id="juce_gui_basics" showAllCode="1" useLocalCopy="0" useGlobalPath="0"/>
+    <MODULE id="juce_gui_extra" showAllCode="1" useLocalCopy="0" useGlobalPath="0"/>
   </MODULES>
   <JUCEOPTIONS JUCE_STRICT_REFCOUNTEDPOINTER="1" JUCE_VST3_CAN_REPLACE_VST2="0"/>
   <EXPORTFORMATS>
