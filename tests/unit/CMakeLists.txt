@@ -18,9 +18,6 @@ FetchContent_MakeAvailable(Catch2)
 set(JUCE_MODULES_ONLY ON CACHE BOOL "" FORCE)
 add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/../../third_party/JUCE juce_build EXCLUDE_FROM_ALL)
 
-# Add oversimple
-add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/../../third_party/oversimple oversimple_build EXCLUDE_FROM_ALL)
-
 # Path to project source
 set(PROJECT_SRC_DIR ${CMAKE_CURRENT_SOURCE_DIR}/../../src)
 
@@ -47,7 +44,6 @@ target_link_libraries(unit_tests PRIVATE
     juce_audio_basics
     juce_core
     juce_dsp
-    oversimple
     Catch2::Catch2WithMain
 )
 

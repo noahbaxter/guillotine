@@ -124,7 +124,11 @@ TEST_CASE("1x bypass reports zero latency", "[latency]")
     REQUIRE(os.getLatencyInSamples() == 0);
 }
 
-TEST_CASE("MinimumPhase reports zero latency", "[latency]")
+// Expected latencies from JUCE oversampling (see README.md)
+constexpr int kExpectedLatencyMinPhase[6] = { 0, 2, 3, 4, 4, 4 };
+constexpr int kExpectedLatencyLinPhase[6] = { 0, 55, 73, 81, 86, 88 };
+
+TEST_CASE("MinimumPhase reports expected latency", "[latency]")
 {
     auto factorIndex = GENERATE(1, 2, 3, 4, 5);
 
@@ -133,10 +137,10 @@ TEST_CASE("MinimumPhase reports zero latency", "[latency]")
     os.setOversamplingFactor(factorIndex);
     os.setFilterType(Oversampler::FilterType::MinimumPhase);
 
-    REQUIRE(os.getLatencyInSamples() == 0);
+    REQUIRE(os.getLatencyInSamples() == kExpectedLatencyMinPhase[factorIndex]);
 }
 
-TEST_CASE("LinearPhase reports non-zero latency for 2x+", "[latency]")
+TEST_CASE("LinearPhase reports expected latency", "[latency]")
 {
     auto factorIndex = GENERATE(1, 2, 3, 4, 5);
 
@@ -145,11 +149,7 @@ TEST_CASE("LinearPhase reports non-zero latency for 2x+", "[latency]")
     os.setOversamplingFactor(factorIndex);
     os.setFilterType(Oversampler::FilterType::LinearPhase);
 
-    int latency = os.getLatencyInSamples();
-    CAPTURE(factorIndex, latency);
-
-    // Linear phase should report positive latency
-    REQUIRE(latency > 0);
+    REQUIRE(os.getLatencyInSamples() == kExpectedLatencyLinPhase[factorIndex]);
 }
 
 TEST_CASE("Latency is consistent across calls", "[latency]")
@@ -341,19 +341,19 @@ TEST_CASE("Filter type switching updates latency correctly", "[filter]")
 {
     Oversampler os;
     os.prepare(kSampleRate, kBlockSize, kNumChannels);
-    os.setOversamplingFactor(2);  // 4x
+    os.setOversamplingFactor(2);  // 4x (index 2)
 
-    // MinimumPhase: 0 latency
+    // MinimumPhase: expected latency
     os.setFilterType(Oversampler::FilterType::MinimumPhase);
-    REQUIRE(os.getLatencyInSamples() == 0);
+    REQUIRE(os.getLatencyInSamples() == kExpectedLatencyMinPhase[2]);
 
-    // LinearPhase: non-zero latency
+    // LinearPhase: expected latency
     os.setFilterType(Oversampler::FilterType::LinearPhase);
-    REQUIRE(os.getLatencyInSamples() > 0);
+    REQUIRE(os.getLatencyInSamples() == kExpectedLatencyLinPhase[2]);
 
-    // Switch back: 0 latency again
+    // Switch back: same latency
     os.setFilterType(Oversampler::FilterType::MinimumPhase);
-    REQUIRE(os.getLatencyInSamples() == 0);
+    REQUIRE(os.getLatencyInSamples() == kExpectedLatencyMinPhase[2]);
 }
 
 TEST_CASE("Filter type switching produces valid output", "[filter]")

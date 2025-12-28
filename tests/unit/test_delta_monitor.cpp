@@ -6,6 +6,7 @@
 
 using Catch::Approx;
 using dsp::ClipperEngine;
+using dsp::CurveType;
 using namespace test_utils;
 
 namespace {
@@ -117,7 +118,7 @@ TEST_CASE("Engine delta: signal below ceiling produces silence", "[delta][engine
     ClipperEngine engine;
     engine.prepare(kSampleRate, kBlockSize, kNumChannels);
     engine.setCeiling(0.0f);           // 0 dB = 1.0 linear
-    engine.setSharpness(1.0f);         // Hard clip
+    engine.setCurve(static_cast<int>(CurveType::Hard));         // Hard clip
     engine.setOversamplingFactor(0);   // 1x (no oversampling)
     engine.setInputGain(0.0f);         // Unity gain
     engine.setOutputGain(0.0f);
@@ -137,7 +138,7 @@ TEST_CASE("Engine delta: signal above ceiling produces delta", "[delta][engine]"
     ClipperEngine engine;
     engine.prepare(kSampleRate, kBlockSize, kNumChannels);
     engine.setCeiling(0.0f);           // 0 dB = 1.0 linear
-    engine.setSharpness(1.0f);         // Hard clip
+    engine.setCurve(static_cast<int>(CurveType::Hard));         // Hard clip
     engine.setOversamplingFactor(0);   // 1x (no oversampling)
     engine.setInputGain(0.0f);
     engine.setOutputGain(0.0f);
@@ -160,7 +161,7 @@ TEST_CASE("Engine delta: stereo independent channels", "[delta][engine]")
     ClipperEngine engine;
     engine.prepare(kSampleRate, kBlockSize, kNumChannels);
     engine.setCeiling(0.0f);           // 0 dB = 1.0 linear
-    engine.setSharpness(1.0f);         // Hard clip
+    engine.setCurve(static_cast<int>(CurveType::Hard));         // Hard clip
     engine.setOversamplingFactor(0);   // 1x
     engine.setInputGain(0.0f);
     engine.setOutputGain(0.0f);
@@ -190,7 +191,7 @@ TEST_CASE("Engine delta: disabled outputs wet signal", "[delta][engine]")
     ClipperEngine engine;
     engine.prepare(kSampleRate, kBlockSize, kNumChannels);
     engine.setCeiling(0.0f);           // 0 dB = 1.0 linear
-    engine.setSharpness(1.0f);         // Hard clip
+    engine.setCurve(static_cast<int>(CurveType::Hard));         // Hard clip
     engine.setOversamplingFactor(0);   // 1x
     engine.setInputGain(0.0f);
     engine.setOutputGain(0.0f);
@@ -217,7 +218,7 @@ TEST_CASE("Engine delta: works with both filter types", "[delta][engine]")
     ClipperEngine engine;
     engine.prepare(kSampleRate, kBlockSize, kNumChannels);
     engine.setCeiling(0.0f);           // 0 dB = 1.0 linear
-    engine.setSharpness(1.0f);         // Hard clip
+    engine.setCurve(static_cast<int>(CurveType::Hard));         // Hard clip
     engine.setOversamplingFactor(2);   // 4x - actually uses filters
     engine.setFilterType(isLinearPhase);
     engine.setInputGain(0.0f);

@@ -1,4 +1,5 @@
 #include "ClipperEngine.h"
+#include <cmath>
 
 namespace dsp {
 
@@ -22,7 +23,6 @@ void ClipperEngine::prepare(double sampleRate, int maxBlockSize, int numChannels
     inputGain.setRampDurationSeconds(0.002);  // 2ms smoothing
     outputGain.prepare(spec);
     outputGain.setRampDurationSeconds(0.002);  // 2ms smoothing
-    clipper.prepare(sampleRate);
     oversampler.prepare(sampleRate, maxBlockSize, numChannels);
 
     // Prepare dry buffer and oversampler for delta monitoring
@@ -35,7 +35,6 @@ void ClipperEngine::reset()
     inputGain.reset();
     outputGain.reset();
     oversampler.reset();
-    clipper.reset();
     dryOversampler.reset();
 }
 
@@ -52,7 +51,7 @@ void ClipperEngine::setOutputGain(float dB)
 void ClipperEngine::setCeiling(float dB)
 {
     ceilingLinear = juce::Decibels::decibelsToGain(dB);
-    clipper.setCeiling(ceilingLinear);  // Clipper handles smoothing internally
+    clipper.setCeiling(ceilingLinear);
 }
 
 void ClipperEngine::setCurve(int curveIndex)

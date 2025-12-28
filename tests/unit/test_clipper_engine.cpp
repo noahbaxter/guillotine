@@ -6,24 +6,18 @@
 
 using Catch::Approx;
 using dsp::ClipperEngine;
+using dsp::CurveType;
 using namespace test_utils;
 
 // =============================================================================
 // Latency Accuracy Tests [engine][latency]
 // =============================================================================
 
-// Expected latency values from oversimple library
-// These are fixed FIR filter lengths (independent of sample rate / block size)
-// Minimum phase (IIR): 0 - no look-ahead latency, causal filters
-// Linear phase (FIR): latency = (filter_length - 1) / 2, varies slightly by factor
-//   1x:  0 (bypass)
-//   2x:  1694
-//   4x:  1704
-//   8x:  1707
-//   16x: 1708
-//   32x: 1709
-constexpr int kExpectedLatencyMinPhase[6] = { 0, 0, 0, 0, 0, 0 };
-constexpr int kExpectedLatencyLinPhase[6] = { 0, 1694, 1704, 1707, 1708, 1709 };
+// Expected latencies from JUCE oversampling (see README.md)
+// Min-phase: 0, 2, 3, 4, 4, 4 for 1x, 2x, 4x, 8x, 16x, 32x
+// Lin-phase: 0, 55, 73, 81, 86, 88 for 1x, 2x, 4x, 8x, 16x, 32x
+constexpr int kExpectedLatencyMinPhase[6] = { 0, 2, 3, 4, 4, 4 };
+constexpr int kExpectedLatencyLinPhase[6] = { 0, 55, 73, 81, 86, 88 };
 
 TEST_CASE("Engine latency: minimum-phase all factors", "[engine][latency]")
 {
@@ -66,15 +60,36 @@ TEST_CASE("Engine latency: consistent across multiple queries", "[engine][latenc
 
     REQUIRE(latency1 == latency2);
     REQUIRE(latency2 == latency3);
-    REQUIRE(latency1 == kExpectedLatencyLinPhase[2]);
+    REQUIRE(latency1 > 0);  // Should have positive latency for linear phase
 }
 
-TEST_CASE("Engine latency: independent of sample rate and block size", "[engine][latency]")
+TEST_CASE("Engine latency: consistent across sample rates and block sizes", "[engine][latency]")
 {
-    // Latency is fixed FIR filter length, not dependent on sample rate / block size
     double sampleRates[] = { 44100.0, 48000.0, 96000.0, 192000.0 };
     int blockSizes[] = { 64, 256, 512, 1024 };
 
+    // Capture reference latencies at first sample rate / block size
+    int refLatencyMinPhase[6];
+    int refLatencyLinPhase[6];
+
+    ClipperEngine refEngine;
+    refEngine.prepare(44100.0, 512, kNumChannels);
+
+    refEngine.setFilterType(false);
+    for (int i = 0; i <= 5; ++i)
+    {
+        refEngine.setOversamplingFactor(i);
+        refLatencyMinPhase[i] = refEngine.getLatencyInSamples();
+    }
+
+    refEngine.setFilterType(true);
+    for (int i = 0; i <= 5; ++i)
+    {
+        refEngine.setOversamplingFactor(i);
+        refLatencyLinPhase[i] = refEngine.getLatencyInSamples();
+    }
+
+    // Verify all configurations match reference
     for (double sr : sampleRates)
     {
         for (int bs : blockSizes)
@@ -84,20 +99,18 @@ TEST_CASE("Engine latency: independent of sample rate and block size", "[engine]
             ClipperEngine engine;
             engine.prepare(sr, bs, kNumChannels);
 
-            // Check minimum phase
             engine.setFilterType(false);
             for (int i = 0; i <= 5; ++i)
             {
                 engine.setOversamplingFactor(i);
-                REQUIRE(engine.getLatencyInSamples() == kExpectedLatencyMinPhase[i]);
+                REQUIRE(engine.getLatencyInSamples() == refLatencyMinPhase[i]);
             }
 
-            // Check linear phase
             engine.setFilterType(true);
             for (int i = 0; i <= 5; ++i)
             {
                 engine.setOversamplingFactor(i);
-                REQUIRE(engine.getLatencyInSamples() == kExpectedLatencyLinPhase[i]);
+                REQUIRE(engine.getLatencyInSamples() == refLatencyLinPhase[i]);
             }
         }
     }
@@ -112,12 +125,13 @@ TEST_CASE("Enforce ceiling: output never exceeds ceiling", "[engine][ceiling]")
     ClipperEngine engine;
     engine.prepare(kSampleRate, kBlockSize, kNumChannels);
     engine.setCeiling(-6.0f);          // -6 dB = 0.5 linear
-    engine.setSharpness(1.0f);
+    engine.setCurve(static_cast<int>(CurveType::Hard));
     engine.setOversamplingFactor(2);   // 4x - filters can cause overshoot
     engine.setInputGain(0.0f);
     engine.setOutputGain(0.0f);
     engine.setEnforceCeiling(true);
     engine.setDeltaMonitor(false);
+    engine.reset();  // Snap smoothed values to target
 
     float ceilingLinear = juce::Decibels::decibelsToGain(-6.0f);
 
@@ -136,7 +150,7 @@ TEST_CASE("Enforce ceiling: disabled allows overshoot", "[engine][ceiling]")
     ClipperEngine engine;
     engine.prepare(kSampleRate, kBlockSize, kNumChannels);
     engine.setCeiling(-6.0f);          // -6 dB = 0.5 linear
-    engine.setSharpness(1.0f);
+    engine.setCurve(static_cast<int>(CurveType::Hard));
     engine.setOversamplingFactor(2);   // 4x
     engine.setInputGain(0.0f);
     engine.setOutputGain(0.0f);
@@ -176,7 +190,7 @@ TEST_CASE("Enforce ceiling: works at 0 dB", "[engine][ceiling]")
     ClipperEngine engine;
     engine.prepare(kSampleRate, kBlockSize, kNumChannels);
     engine.setCeiling(0.0f);           // 0 dB = 1.0 linear
-    engine.setSharpness(1.0f);
+    engine.setCurve(static_cast<int>(CurveType::Hard));
     engine.setOversamplingFactor(3);   // 8x
     engine.setInputGain(0.0f);
     engine.setOutputGain(0.0f);
@@ -196,7 +210,7 @@ TEST_CASE("Enforce ceiling: works with different ceiling values", "[engine][ceil
 {
     ClipperEngine engine;
     engine.prepare(kSampleRate, kBlockSize, kNumChannels);
-    engine.setSharpness(1.0f);
+    engine.setCurve(static_cast<int>(CurveType::Hard));
     engine.setOversamplingFactor(2);
     engine.setInputGain(0.0f);
     engine.setOutputGain(0.0f);
@@ -207,6 +221,7 @@ TEST_CASE("Enforce ceiling: works with different ceiling values", "[engine][ceil
     CAPTURE(ceilingDb);
 
     engine.setCeiling(ceilingDb);
+    engine.reset();  // Snap smoothed values to target
     float ceilingLinear = juce::Decibels::decibelsToGain(ceilingDb);
 
     auto buffer = generateSine(1000.0f, kBlockSize, 1.0f);
@@ -226,7 +241,7 @@ TEST_CASE("Engine gain: input gain affects clipping threshold", "[engine][gain]"
     ClipperEngine engine;
     engine.prepare(kSampleRate, kBlockSize, kNumChannels);
     engine.setCeiling(0.0f);           // 0 dB
-    engine.setSharpness(1.0f);
+    engine.setCurve(static_cast<int>(CurveType::Hard));
     engine.setOversamplingFactor(0);   // 1x for simplicity
     engine.setOutputGain(0.0f);
     engine.setEnforceCeiling(true);
@@ -249,7 +264,7 @@ TEST_CASE("Engine gain: output gain scales final signal", "[engine][gain]")
     ClipperEngine engine;
     engine.prepare(kSampleRate, kBlockSize, kNumChannels);
     engine.setCeiling(0.0f);
-    engine.setSharpness(1.0f);
+    engine.setCurve(static_cast<int>(CurveType::Hard));
     engine.setOversamplingFactor(0);
     engine.setInputGain(0.0f);
     engine.setEnforceCeiling(false);   // Let output gain work freely
@@ -259,6 +274,11 @@ TEST_CASE("Engine gain: output gain scales final signal", "[engine][gain]")
 
     // -6 dB output gain should halve the signal
     engine.setOutputGain(-6.0f);
+
+    // Let smoothing settle
+    auto warmup = generateDC(inputLevel, kBlockSize);
+    engine.process(warmup);
+
     auto buffer = generateDC(inputLevel, kBlockSize);
     engine.process(buffer);
 
@@ -277,7 +297,7 @@ TEST_CASE("Engine M/S: stereo image preserved through chain", "[engine][ms]")
     ClipperEngine engine;
     engine.prepare(kSampleRate, kBlockSize, kNumChannels);
     engine.setCeiling(0.0f);
-    engine.setSharpness(1.0f);
+    engine.setCurve(static_cast<int>(CurveType::Hard));
     engine.setOversamplingFactor(0);   // 1x for precise comparison
     engine.setInputGain(0.0f);
     engine.setOutputGain(0.0f);
@@ -310,7 +330,7 @@ TEST_CASE("Engine M/S: disabled passes L/R unchanged", "[engine][ms]")
     ClipperEngine engine;
     engine.prepare(kSampleRate, kBlockSize, kNumChannels);
     engine.setCeiling(0.0f);
-    engine.setSharpness(1.0f);
+    engine.setCurve(static_cast<int>(CurveType::Hard));
     engine.setOversamplingFactor(0);
     engine.setInputGain(0.0f);
     engine.setOutputGain(0.0f);
@@ -343,7 +363,7 @@ TEST_CASE("Engine reset: clears filter state", "[engine][reset]")
     ClipperEngine engine;
     engine.prepare(kSampleRate, kBlockSize, kNumChannels);
     engine.setCeiling(0.0f);
-    engine.setSharpness(1.0f);
+    engine.setCurve(static_cast<int>(CurveType::Hard));
     engine.setOversamplingFactor(2);   // 4x - uses filters
     engine.setInputGain(0.0f);
     engine.setOutputGain(0.0f);
@@ -379,7 +399,7 @@ TEST_CASE("Engine reset: no leakage between signals", "[engine][reset]")
     ClipperEngine engine;
     engine.prepare(kSampleRate, kBlockSize, kNumChannels);
     engine.setCeiling(0.0f);
-    engine.setSharpness(1.0f);
+    engine.setCurve(static_cast<int>(CurveType::Hard));
     engine.setOversamplingFactor(2);
     engine.setInputGain(0.0f);
     engine.setOutputGain(0.0f);
@@ -421,7 +441,7 @@ TEST_CASE("Engine reset: consistent behavior across multiple resets", "[engine][
     ClipperEngine engine;
     engine.prepare(kSampleRate, kBlockSize, kNumChannels);
     engine.setCeiling(0.0f);
-    engine.setSharpness(1.0f);
+    engine.setCurve(static_cast<int>(CurveType::Hard));
     engine.setOversamplingFactor(2);
     engine.setInputGain(0.0f);
     engine.setOutputGain(0.0f);

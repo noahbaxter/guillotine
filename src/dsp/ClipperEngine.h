@@ -60,7 +60,7 @@ private:
 
     // Enforce ceiling (final hard limiter after downsampling)
     bool enforceCeilingEnabled = true;
-    float ceilingLinear = 1.0f;  // Copy for enforceCeiling - clipper owns the smoothed value
+    float ceilingLinear = 1.0f;
 
     // Bypass clipper (still applies input/output gain)
     bool bypassed = false;

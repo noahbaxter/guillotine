@@ -6,6 +6,7 @@
 
 using Catch::Approx;
 using dsp::ClipperEngine;
+using dsp::CurveType;
 using namespace test_utils;
 
 // Helper to process large buffer through engine in blocks
@@ -38,7 +39,7 @@ TEST_CASE("Diagnostic: measure actual group delay for min-phase", "[transient][d
     ClipperEngine engine;
     engine.prepare(kSampleRate, kBlockSize, kNumChannels);
     engine.setCeiling(0.0f);
-    engine.setSharpness(1.0f);
+    engine.setCurve(static_cast<int>(CurveType::Hard));
     engine.setOversamplingFactor(2);   // 4x
     engine.setFilterType(false);       // Minimum phase
     engine.setInputGain(0.0f);
@@ -59,11 +60,10 @@ TEST_CASE("Diagnostic: measure actual group delay for min-phase", "[transient][d
     INFO("Min-phase 4x: reported latency = " << reportedLatency << ", actual delay = " << actualDelay);
     CAPTURE(reportedLatency, actualDelay, impulsePos, peakPos);
 
-    // Document what we observe - this test captures behavior
-    // Reported latency for min-phase should be 0
-    REQUIRE(reportedLatency == 0);
-    // But actual group delay might be non-zero due to IIR filter characteristics
-    // This test documents the discrepancy
+    // JUCE's min-phase oversampling has small latency (3 samples for 4x)
+    REQUIRE(reportedLatency == 3);
+    // Actual delay should match or be very close to reported
+    REQUIRE(std::abs(actualDelay - reportedLatency) <= 2);
 }
 
 TEST_CASE("Diagnostic: measure actual latency for lin-phase", "[transient][diagnostic]")
@@ -71,7 +71,7 @@ TEST_CASE("Diagnostic: measure actual latency for lin-phase", "[transient][diagn
     ClipperEngine engine;
     engine.prepare(kSampleRate, kBlockSize, kNumChannels);
     engine.setCeiling(0.0f);
-    engine.setSharpness(1.0f);
+    engine.setCurve(static_cast<int>(CurveType::Hard));
     engine.setOversamplingFactor(2);   // 4x
     engine.setFilterType(true);        // Linear phase
     engine.setInputGain(0.0f);
@@ -105,7 +105,7 @@ TEST_CASE("Diagnostic: impulse response shape", "[transient][diagnostic]")
     ClipperEngine engine;
     engine.prepare(kSampleRate, kBlockSize, kNumChannels);
     engine.setCeiling(0.0f);
-    engine.setSharpness(1.0f);
+    engine.setCurve(static_cast<int>(CurveType::Hard));
     engine.setOversamplingFactor(2);
     engine.setFilterType(filterType);
     engine.setInputGain(0.0f);
@@ -170,7 +170,7 @@ TEST_CASE("Transient: impulse timing preserved (lin-phase)", "[transient][unclip
     ClipperEngine engine;
     engine.prepare(kSampleRate, kBlockSize, kNumChannels);
     engine.setCeiling(0.0f);
-    engine.setSharpness(1.0f);
+    engine.setCurve(static_cast<int>(CurveType::Hard));
     engine.setOversamplingFactor(2);   // 4x
     engine.setFilterType(true);        // Linear phase
     engine.setInputGain(0.0f);
@@ -199,7 +199,7 @@ TEST_CASE("Transient: min-phase is causal (no pre-ringing)", "[transient][unclip
     ClipperEngine engine;
     engine.prepare(kSampleRate, kBlockSize, kNumChannels);
     engine.setCeiling(0.0f);
-    engine.setSharpness(1.0f);
+    engine.setCurve(static_cast<int>(CurveType::Hard));
     engine.setOversamplingFactor(2);
     engine.setFilterType(false);       // Minimum phase
     engine.setInputGain(0.0f);
@@ -233,7 +233,7 @@ TEST_CASE("Transient: lin-phase has symmetric pre/post ringing", "[transient][un
     ClipperEngine engine;
     engine.prepare(kSampleRate, kBlockSize, kNumChannels);
     engine.setCeiling(0.0f);
-    engine.setSharpness(1.0f);
+    engine.setCurve(static_cast<int>(CurveType::Hard));
     engine.setOversamplingFactor(2);
     engine.setFilterType(true);        // Linear phase
     engine.setInputGain(0.0f);
@@ -286,7 +286,7 @@ TEST_CASE("Transient clipped: output never exceeds ceiling", "[transient][clippe
     ClipperEngine engine;
     engine.prepare(kSampleRate, kBlockSize, kNumChannels);
     engine.setCeiling(-6.0f);          // -6 dB ceiling
-    engine.setSharpness(1.0f);         // Hard clip
+    engine.setCurve(static_cast<int>(CurveType::Hard));         // Hard clip
     engine.setOversamplingFactor(2);
     engine.setFilterType(filterType);
     engine.setInputGain(0.0f);
@@ -314,7 +314,7 @@ TEST_CASE("Transient clipped: burst recovery", "[transient][clipped]")
     ClipperEngine engine;
     engine.prepare(kSampleRate, kBlockSize, kNumChannels);
     engine.setCeiling(0.0f);
-    engine.setSharpness(1.0f);
+    engine.setCurve(static_cast<int>(CurveType::Hard));
     engine.setOversamplingFactor(2);
     engine.setFilterType(false);
     engine.setInputGain(0.0f);
@@ -350,7 +350,7 @@ TEST_CASE("Transient: both filters preserve timing after latency compensation", 
     ClipperEngine minEngine;
     minEngine.prepare(kSampleRate, kBlockSize, kNumChannels);
     minEngine.setCeiling(0.0f);
-    minEngine.setSharpness(1.0f);
+    minEngine.setCurve(static_cast<int>(CurveType::Hard));
     minEngine.setOversamplingFactor(2);
     minEngine.setFilterType(false);
     minEngine.setInputGain(0.0f);
@@ -367,7 +367,7 @@ TEST_CASE("Transient: both filters preserve timing after latency compensation", 
     ClipperEngine linEngine;
     linEngine.prepare(kSampleRate, kBlockSize, kNumChannels);
     linEngine.setCeiling(0.0f);
-    linEngine.setSharpness(1.0f);
+    linEngine.setCurve(static_cast<int>(CurveType::Hard));
     linEngine.setOversamplingFactor(2);
     linEngine.setFilterType(true);
     linEngine.setInputGain(0.0f);

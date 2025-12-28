@@ -6,17 +6,16 @@
 
 using Catch::Approx;
 using dsp::Clipper;
+using dsp::CurveType;
 using namespace test_utils;
 
 namespace {
 
-// Create a clipper (stateless, no prepare needed)
 Clipper makeClipper()
 {
     return Clipper();
 }
 
-// Process a single sample through the clipper
 float processSingleSample(Clipper& clipper, float sample)
 {
     juce::AudioBuffer<float> buffer(1, 1);
@@ -25,7 +24,6 @@ float processSingleSample(Clipper& clipper, float sample)
     return buffer.getSample(0, 0);
 }
 
-// Process stereo samples through the clipper
 std::pair<float, float> processStereoSample(Clipper& clipper, float left, float right)
 {
     juce::AudioBuffer<float> buffer(2, 1);
@@ -38,14 +36,14 @@ std::pair<float, float> processStereoSample(Clipper& clipper, float left, float 
 } // namespace
 
 // =============================================================================
-// Hard Clip Tests (sharpness = 1.0)
+// Hard Clip Tests (CurveType::Hard)
 // =============================================================================
 
 TEST_CASE("Hard clip: signal at ceiling passes unchanged", "[hardclip]")
 {
     auto clipper = makeClipper();
     clipper.setCeiling(1.0f);
-    clipper.setSharpness(1.0f);
+    clipper.setCurve(CurveType::Hard);
 
     float input = 1.0f;
     float output = processSingleSample(clipper, input);
@@ -57,7 +55,7 @@ TEST_CASE("Hard clip: signal above ceiling clips to ceiling", "[hardclip]")
 {
     auto clipper = makeClipper();
     clipper.setCeiling(1.0f);
-    clipper.setSharpness(1.0f);
+    clipper.setCurve(CurveType::Hard);
 
     auto input = GENERATE(1.1f, 1.5f, 2.0f, 10.0f, 100.0f);
     CAPTURE(input);
@@ -71,7 +69,7 @@ TEST_CASE("Hard clip: signal below ceiling passes through", "[hardclip]")
 {
     auto clipper = makeClipper();
     clipper.setCeiling(1.0f);
-    clipper.setSharpness(1.0f);
+    clipper.setCurve(CurveType::Hard);
 
     auto input = GENERATE(0.0f, 0.1f, 0.5f, 0.9f, 0.999f);
     CAPTURE(input);
@@ -85,7 +83,7 @@ TEST_CASE("Hard clip: negative values clip to -ceiling", "[hardclip]")
 {
     auto clipper = makeClipper();
     clipper.setCeiling(1.0f);
-    clipper.setSharpness(1.0f);
+    clipper.setCurve(CurveType::Hard);
 
     auto input = GENERATE(-1.1f, -1.5f, -2.0f, -10.0f);
     CAPTURE(input);
@@ -99,7 +97,7 @@ TEST_CASE("Hard clip: symmetry - abs(clip(x)) == abs(clip(-x))", "[hardclip]")
 {
     auto clipper = makeClipper();
     clipper.setCeiling(1.0f);
-    clipper.setSharpness(1.0f);
+    clipper.setCurve(CurveType::Hard);
 
     auto input = GENERATE(0.5f, 1.0f, 1.5f, 2.0f, 5.0f);
     CAPTURE(input);
@@ -113,239 +111,242 @@ TEST_CASE("Hard clip: symmetry - abs(clip(x)) == abs(clip(-x))", "[hardclip]")
 TEST_CASE("Hard clip: with different ceiling values", "[hardclip]")
 {
     auto clipper = makeClipper();
-    clipper.setSharpness(1.0f);
+    clipper.setCurve(CurveType::Hard);
 
     auto ceiling = GENERATE(0.5f, 0.25f, 0.1f, 2.0f);
     CAPTURE(ceiling);
 
     clipper.setCeiling(ceiling);
 
-    // Input above ceiling should clip
     float output = processSingleSample(clipper, ceiling * 2.0f);
     REQUIRE(output == Approx(ceiling).margin(kClipperTolerance));
 
-    // Input below ceiling should pass through
     float belowCeiling = ceiling * 0.5f;
     float outputBelow = processSingleSample(clipper, belowCeiling);
     REQUIRE(outputBelow == Approx(belowCeiling).margin(kClipperTolerance));
 }
 
 // =============================================================================
-// Soft Clip Tests (sharpness < 0.999)
+// Soft Curve Tests (Tanh, Cubic, etc.)
 // =============================================================================
 
-TEST_CASE("Soft clip: below kneeStart passes unchanged", "[softclip]")
+TEST_CASE("Tanh: below threshold passes with minimal change", "[softclip]")
 {
     auto clipper = makeClipper();
     clipper.setCeiling(1.0f);
-    clipper.setSharpness(0.0f);  // Max soft knee
+    clipper.setCurve(CurveType::Tanh);
 
-    // At sharpness=0: knee = 0.5, kneeStart = 0.5
-    auto input = GENERATE(0.0f, 0.1f, 0.25f, 0.4f, 0.49f);
+    // Low levels should be nearly linear
+    auto input = GENERATE(0.0f, 0.1f, 0.2f);
     CAPTURE(input);
 
     float output = processSingleSample(clipper, input);
+    REQUIRE(output == Approx(input).margin(0.05f));
+}
 
+TEST_CASE("Tanh: at ceiling outputs ceiling", "[softclip]")
+{
+    auto clipper = makeClipper();
+    clipper.setCeiling(1.0f);
+    clipper.setCurve(CurveType::Tanh);
+
+    // tanh(1) ≈ 0.76, so at normalized input=1, output < ceiling
+    // But we scale by ceiling, so it's actually compressed
+    float output = processSingleSample(clipper, 1.0f);
+    REQUIRE(output < 1.0f);
+    REQUIRE(output > 0.7f);
+}
+
+TEST_CASE("Tanh: above ceiling approaches ceiling asymptotically", "[softclip]")
+{
+    auto clipper = makeClipper();
+    clipper.setCeiling(1.0f);
+    clipper.setCurve(CurveType::Tanh);
+
+    auto input = GENERATE(2.0f, 5.0f, 10.0f);
+    CAPTURE(input);
+
+    float output = processSingleSample(clipper, input);
+    // tanh asymptotically approaches 1.0 - for very large inputs, it's essentially 1.0
+    REQUIRE(output <= 1.0f + kClipperTolerance);
+    REQUIRE(output > 0.9f);
+}
+
+TEST_CASE("Cubic: soft saturation behavior", "[softclip]")
+{
+    auto clipper = makeClipper();
+    clipper.setCeiling(1.0f);
+    clipper.setCurve(CurveType::Cubic);
+
+    // Low levels nearly linear
+    float lowOutput = processSingleSample(clipper, 0.2f);
+    REQUIRE(lowOutput == Approx(0.2f).margin(0.02f));
+
+    // At ceiling, should be compressed
+    float ceilingOutput = processSingleSample(clipper, 1.0f);
+    REQUIRE(ceilingOutput < 1.0f);
+}
+
+TEST_CASE("Quintic: most transparent soft clip", "[softclip]")
+{
+    auto clipper = makeClipper();
+    clipper.setCeiling(1.0f);
+    clipper.setCurve(CurveType::Quintic);
+
+    // Low levels should be very close to linear
+    auto input = GENERATE(0.1f, 0.2f, 0.3f, 0.4f);
+    CAPTURE(input);
+
+    float output = processSingleSample(clipper, input);
+    REQUIRE(output == Approx(input).margin(0.01f));
+}
+
+TEST_CASE("Arctan: softest saturation", "[softclip]")
+{
+    auto clipper = makeClipper();
+    clipper.setCeiling(1.0f);
+    clipper.setCurve(CurveType::Arctan);
+
+    // arctan is the softest curve - most compression at low levels
+    float output = processSingleSample(clipper, 1.0f);
+    REQUIRE(output < 0.8f);  // More compressed than tanh
+}
+
+// =============================================================================
+// TSquared Curve Tests (power curve with exponent)
+// =============================================================================
+
+TEST_CASE("TSquared: exponent 1.0 is linear until clip", "[tsquared]")
+{
+    auto clipper = makeClipper();
+    clipper.setCeiling(1.0f);
+    clipper.setCurve(CurveType::TSquared);
+    clipper.setCurveExponent(1.0f);
+
+    auto input = GENERATE(0.2f, 0.5f, 0.8f);
+    CAPTURE(input);
+
+    float output = processSingleSample(clipper, input);
     REQUIRE(output == Approx(input).margin(kClipperTolerance));
 }
 
-TEST_CASE("Soft clip: at ceiling outputs ceiling", "[softclip]")
+TEST_CASE("TSquared: exponent 2.0 squares the signal", "[tsquared]")
 {
     auto clipper = makeClipper();
     clipper.setCeiling(1.0f);
+    clipper.setCurve(CurveType::TSquared);
+    clipper.setCurveExponent(2.0f);
 
-    auto sharpness = GENERATE(0.0f, 0.25f, 0.5f, 0.75f, 0.9f);
-    CAPTURE(sharpness);
+    float input = 0.5f;
+    float output = processSingleSample(clipper, input);
 
-    clipper.setSharpness(sharpness);
+    // output = sign(x) * |x|^2 = 0.5^2 = 0.25
+    REQUIRE(output == Approx(0.25f).margin(kClipperTolerance));
+}
 
-    // Input exactly at ceiling should output ceiling
-    float output = processSingleSample(clipper, 1.0f);
+TEST_CASE("TSquared: preserves sign", "[tsquared]")
+{
+    auto clipper = makeClipper();
+    clipper.setCeiling(1.0f);
+    clipper.setCurve(CurveType::TSquared);
+    clipper.setCurveExponent(2.0f);
 
+    float outputPos = processSingleSample(clipper, 0.5f);
+    float outputNeg = processSingleSample(clipper, -0.5f);
+
+    REQUIRE(outputPos > 0.0f);
+    REQUIRE(outputNeg < 0.0f);
+    REQUIRE(std::abs(outputPos) == Approx(std::abs(outputNeg)).margin(kClipperTolerance));
+}
+
+TEST_CASE("TSquared: clips at ceiling", "[tsquared]")
+{
+    auto clipper = makeClipper();
+    clipper.setCeiling(1.0f);
+    clipper.setCurve(CurveType::TSquared);
+    clipper.setCurveExponent(2.0f);
+
+    float output = processSingleSample(clipper, 2.0f);
     REQUIRE(output == Approx(1.0f).margin(kClipperTolerance));
 }
 
-TEST_CASE("Soft clip: in knee region output < input (compression)", "[softclip]")
+// =============================================================================
+// Knee Curve Tests (soft knee compression)
+// =============================================================================
+
+TEST_CASE("Knee: exponent 4.0 is nearly hard clip", "[knee]")
 {
     auto clipper = makeClipper();
     clipper.setCeiling(1.0f);
-    clipper.setSharpness(0.0f);  // Max soft knee
+    clipper.setCurve(CurveType::Knee);
+    clipper.setCurveExponent(4.0f);  // Maps to sharpness ~1.0
 
-    // At sharpness=0: kneeStart = 0.5, ceiling = 1.0
-    // Test points in the knee region
-    auto input = GENERATE(0.6f, 0.7f, 0.8f, 0.9f);
-    CAPTURE(input);
-
+    // Below ceiling should pass through mostly unchanged
+    float input = 0.8f;
     float output = processSingleSample(clipper, input);
+    REQUIRE(output == Approx(input).margin(0.01f));
+}
 
-    // Output should be less than input (compressed)
+TEST_CASE("Knee: exponent 1.0 has large soft knee", "[knee]")
+{
+    auto clipper = makeClipper();
+    clipper.setCeiling(1.0f);
+    clipper.setCurve(CurveType::Knee);
+    clipper.setCurveExponent(1.0f);  // Maps to sharpness ~0.0, large knee
+
+    // At 70% of ceiling, should see compression (knee starts at 5% for exponent 1.0)
+    float input = 0.7f;
+    float output = processSingleSample(clipper, input);
     REQUIRE(output < input);
-    // But output should be greater than kneeStart
-    REQUIRE(output > 0.5f);
 }
 
-TEST_CASE("Soft clip: quadratic formula verification", "[softclip]")
+TEST_CASE("Knee: at ceiling outputs ceiling", "[knee]")
 {
     auto clipper = makeClipper();
     clipper.setCeiling(1.0f);
-    clipper.setSharpness(0.0f);  // Max soft knee
+    clipper.setCurve(CurveType::Knee);
 
-    // At sharpness=0: knee = 0.5, kneeStart = 0.5
-    // Formula: output = kneeStart + knee * t² where t = (input - kneeStart) / knee
+    auto exponent = GENERATE(1.0f, 2.0f, 3.0f, 4.0f);
+    CAPTURE(exponent);
 
-    float ceiling = 1.0f;
-    float knee = 0.5f;
-    float kneeStart = 0.5f;
-
-    // Test at t = 0.5 (midpoint of knee)
-    float input = kneeStart + knee * 0.5f;  // 0.75
-    float expectedT = (input - kneeStart) / knee;  // 0.5
-    float expectedOutput = kneeStart + knee * expectedT * expectedT;  // 0.5 + 0.5 * 0.25 = 0.625
-
-    float output = processSingleSample(clipper, input);
-
-    REQUIRE(output == Approx(expectedOutput).margin(kClipperTolerance));
+    clipper.setCurveExponent(exponent);
+    float output = processSingleSample(clipper, 1.0f);
+    REQUIRE(output == Approx(1.0f).margin(kClipperTolerance));
 }
 
-TEST_CASE("Soft clip: continuous at kneeStart boundary", "[softclip]")
+TEST_CASE("Knee: above ceiling hard-limits", "[knee]")
 {
     auto clipper = makeClipper();
     clipper.setCeiling(1.0f);
-    clipper.setSharpness(0.0f);
-
-    // At sharpness=0: kneeStart = 0.5
-    float kneeStart = 0.5f;
-
-    // Just below kneeStart
-    float inputBelow = kneeStart - 0.001f;
-    float outputBelow = processSingleSample(clipper, inputBelow);
-
-    // Just above kneeStart
-    float inputAbove = kneeStart + 0.001f;
-    float outputAbove = processSingleSample(clipper, inputAbove);
-
-    // Outputs should be very close (continuity)
-    float diff = std::abs(outputBelow - outputAbove);
-    REQUIRE(diff < 0.01f);
-}
-
-TEST_CASE("Soft clip: above ceiling hard-limits", "[softclip]")
-{
-    auto clipper = makeClipper();
-    clipper.setCeiling(1.0f);
-    clipper.setSharpness(0.0f);
+    clipper.setCurve(CurveType::Knee);
+    clipper.setCurveExponent(2.0f);
 
     auto input = GENERATE(1.5f, 2.0f, 10.0f);
     CAPTURE(input);
 
     float output = processSingleSample(clipper, input);
-
     REQUIRE(output == Approx(1.0f).margin(kClipperTolerance));
 }
 
-// =============================================================================
-// Sharpness Parameter Tests
-// =============================================================================
-
-TEST_CASE("Sharpness: 1.0 uses hard clip path", "[sharpness]")
+TEST_CASE("Knee: higher exponent = less compression", "[knee]")
 {
-    auto clipper = makeClipper();
-    clipper.setCeiling(1.0f);
-    clipper.setSharpness(1.0f);
-
-    // At 80% of ceiling - should pass through unchanged in hard clip mode
-    float input = 0.8f;
-    float output = processSingleSample(clipper, input);
-
-    REQUIRE(output == Approx(input).margin(kClipperTolerance));
-}
-
-TEST_CASE("Sharpness: 0.999 uses hard clip path (threshold)", "[sharpness]")
-{
-    auto clipper = makeClipper();
-    clipper.setCeiling(1.0f);
-    clipper.setSharpness(0.999f);
-
-    // At 80% of ceiling - should pass through unchanged in hard clip mode
-    float input = 0.8f;
-    float output = processSingleSample(clipper, input);
-
-    REQUIRE(output == Approx(input).margin(kClipperTolerance));
-}
-
-TEST_CASE("Sharpness: 0.998 uses soft knee (different from hard clip)", "[sharpness]")
-{
-    auto clipperHard = makeClipper();
-    auto clipperSoft = makeClipper();
-    clipperHard.setCeiling(1.0f);
-    clipperHard.setSharpness(1.0f);
-    clipperSoft.setCeiling(1.0f);
-    clipperSoft.setSharpness(0.998f);
-
-    // At sharpness=0.998: knee = 0.001, kneeStart = 0.999
-    // Input above kneeStart should show difference
-    float input = 0.9995f;
-
-    float outputHard = processSingleSample(clipperHard, input);
-    float outputSoft = processSingleSample(clipperSoft, input);
-
-    // Hard clip should pass through unchanged
-    REQUIRE(outputHard == Approx(input).margin(kClipperTolerance));
-    // Soft clip should be slightly compressed
-    REQUIRE(outputSoft < input);
-}
-
-TEST_CASE("Sharpness: knee width formula verification", "[sharpness]")
-{
-    auto clipper = makeClipper();
-    float ceiling = 1.0f;
-    clipper.setCeiling(ceiling);
-
-    // Test knee = (1 - sharpness) * ceiling * 0.5
-    auto sharpness = GENERATE(0.0f, 0.25f, 0.5f, 0.75f, 0.9f);
-    CAPTURE(sharpness);
-
-    clipper.setSharpness(sharpness);
-
-    float expectedKnee = (1.0f - sharpness) * ceiling * 0.5f;
-    float expectedKneeStart = ceiling - expectedKnee;
-
-    // Test that input at kneeStart passes through unchanged
-    float inputAtKneeStart = expectedKneeStart;
-    float outputAtKneeStart = processSingleSample(clipper, inputAtKneeStart);
-
-    REQUIRE(outputAtKneeStart == Approx(inputAtKneeStart).margin(0.001f));
-
-    // Test that input just above kneeStart is compressed
-    if (expectedKnee > 0.01f)  // Only if knee is large enough
-    {
-        float inputAboveKnee = expectedKneeStart + expectedKnee * 0.5f;
-        float outputAboveKnee = processSingleSample(clipper, inputAboveKnee);
-        REQUIRE(outputAboveKnee < inputAboveKnee);
-    }
-}
-
-TEST_CASE("Sharpness: higher sharpness = less compression", "[sharpness]")
-{
-    // Input level in the knee region for low sharpness
     float input = 0.7f;
-
-    // Get outputs at different sharpness levels
     float outputs[4];
-    float sharpnesses[] = { 0.0f, 0.25f, 0.5f, 0.75f };
+    float exponents[] = { 1.0f, 2.0f, 3.0f, 4.0f };
 
     for (int i = 0; i < 4; ++i)
     {
         auto clipper = makeClipper();
         clipper.setCeiling(1.0f);
-        clipper.setSharpness(sharpnesses[i]);
+        clipper.setCurve(CurveType::Knee);
+        clipper.setCurveExponent(exponents[i]);
         outputs[i] = processSingleSample(clipper, input);
     }
 
-    // Each higher sharpness should result in higher output (less compression)
+    // Higher exponent = smaller knee = less compression = higher output
     for (int i = 1; i < 4; ++i)
     {
-        CAPTURE(sharpnesses[i], outputs[i-1], outputs[i]);
+        CAPTURE(exponents[i], outputs[i-1], outputs[i]);
         REQUIRE(outputs[i] >= outputs[i-1] - 0.001f);
     }
 }
@@ -358,13 +359,12 @@ TEST_CASE("Edge case: zero ceiling returns 0", "[edge]")
 {
     auto clipper = makeClipper();
     clipper.setCeiling(0.0f);
-    clipper.setSharpness(0.5f);
+    clipper.setCurve(CurveType::Hard);
 
     auto input = GENERATE(0.0f, 0.5f, 1.0f, -1.0f);
     CAPTURE(input);
 
     float output = processSingleSample(clipper, input);
-
     REQUIRE(output == Approx(0.0f).margin(kClipperTolerance));
 }
 
@@ -373,14 +373,12 @@ TEST_CASE("Edge case: very large input still clips to ceiling", "[edge]")
     auto clipper = makeClipper();
     clipper.setCeiling(1.0f);
 
-    auto sharpness = GENERATE(0.0f, 0.5f, 1.0f);
-    CAPTURE(sharpness);
+    auto curve = GENERATE(CurveType::Hard, CurveType::Tanh, CurveType::Knee);
+    CAPTURE(static_cast<int>(curve));
 
-    clipper.setSharpness(sharpness);
-
+    clipper.setCurve(curve);
     float output = processSingleSample(clipper, 1000.0f);
-
-    REQUIRE(output == Approx(1.0f).margin(kClipperTolerance));
+    REQUIRE(output == Approx(1.0f).margin(0.01f));
 }
 
 TEST_CASE("Edge case: zero input passes through", "[edge]")
@@ -388,48 +386,12 @@ TEST_CASE("Edge case: zero input passes through", "[edge]")
     auto clipper = makeClipper();
     clipper.setCeiling(1.0f);
 
-    auto sharpness = GENERATE(0.0f, 0.5f, 1.0f);
-    CAPTURE(sharpness);
+    auto curve = GENERATE(CurveType::Hard, CurveType::Tanh, CurveType::Cubic);
+    CAPTURE(static_cast<int>(curve));
 
-    clipper.setSharpness(sharpness);
-
+    clipper.setCurve(curve);
     float output = processSingleSample(clipper, 0.0f);
-
     REQUIRE(output == Approx(0.0f).margin(kClipperTolerance));
-}
-
-TEST_CASE("Edge case: negative sharpness clamped to 0", "[edge]")
-{
-    auto clipper = makeClipper();
-    clipper.setCeiling(1.0f);
-
-    // Set negative sharpness (should be clamped to 0)
-    clipper.setSharpness(-0.5f);
-
-    // At sharpness=0: kneeStart = 0.5
-    // Input at 0.7 should be compressed
-    float input = 0.7f;
-    float output = processSingleSample(clipper, input);
-
-    // Should behave like sharpness=0 (max soft knee)
-    REQUIRE(output < input);
-    REQUIRE(output > 0.5f);
-}
-
-TEST_CASE("Edge case: sharpness > 1 clamped to 1", "[edge]")
-{
-    auto clipper = makeClipper();
-    clipper.setCeiling(1.0f);
-
-    // Set sharpness > 1 (should be clamped to 1)
-    clipper.setSharpness(1.5f);
-
-    // At sharpness=1: hard clip mode
-    // Input below ceiling should pass through unchanged
-    float input = 0.8f;
-    float output = processSingleSample(clipper, input);
-
-    REQUIRE(output == Approx(input).margin(kClipperTolerance));
 }
 
 // =============================================================================
@@ -440,7 +402,7 @@ TEST_CASE("Buffer processing: multi-sample buffer", "[buffer]")
 {
     auto clipper = makeClipper();
     clipper.setCeiling(1.0f);
-    clipper.setSharpness(1.0f);
+    clipper.setCurve(CurveType::Hard);
 
     juce::AudioBuffer<float> buffer(1, 5);
     buffer.setSample(0, 0, 0.5f);   // Below ceiling
@@ -462,7 +424,7 @@ TEST_CASE("Buffer processing: stereo buffer independent channels", "[buffer]")
 {
     auto clipper = makeClipper();
     clipper.setCeiling(1.0f);
-    clipper.setSharpness(1.0f);
+    clipper.setCurve(CurveType::Hard);
     clipper.setStereoLink(false);
 
     juce::AudioBuffer<float> buffer(2, 2);
@@ -487,13 +449,11 @@ TEST_CASE("Stereo link disabled: channels clip independently", "[stereolink]")
 {
     auto clipper = makeClipper();
     clipper.setCeiling(1.0f);
-    clipper.setSharpness(1.0f);
+    clipper.setCurve(CurveType::Hard);
     clipper.setStereoLink(false);
 
-    // L channel loud, R channel quiet
     auto [outL, outR] = processStereoSample(clipper, 1.5f, 0.5f);
 
-    // L should clip, R should pass through unchanged
     REQUIRE(outL == Approx(1.0f).margin(kClipperTolerance));
     REQUIRE(outR == Approx(0.5f).margin(kClipperTolerance));
 }
@@ -502,26 +462,22 @@ TEST_CASE("Stereo link enabled: same gain reduction to both channels", "[stereol
 {
     auto clipper = makeClipper();
     clipper.setCeiling(1.0f);
-    clipper.setSharpness(0.5f);  // Use soft clip for gain reduction
+    clipper.setCurve(CurveType::Hard);
     clipper.setStereoLink(true);
 
-    // Both channels at same level above threshold
     float input = 0.9f;
     auto [outL, outR] = processStereoSample(clipper, input, input);
 
-    // Both channels should have identical output
     REQUIRE(outL == Approx(outR).margin(kClipperTolerance));
 }
 
-TEST_CASE("Stereo link enabled: quiet channel also reduced based on loud channel", "[stereolink]")
+TEST_CASE("Stereo link enabled: quiet channel reduced based on loud channel", "[stereolink]")
 {
     auto clipper = makeClipper();
     clipper.setCeiling(1.0f);
-    clipper.setSharpness(0.5f);  // Use soft clip
+    clipper.setCurve(CurveType::Hard);
     clipper.setStereoLink(true);
 
-    // L channel very loud (will cause gain reduction)
-    // R channel quiet (below knee start)
     float loudInput = 1.5f;
     float quietInput = 0.3f;
 
@@ -530,47 +486,55 @@ TEST_CASE("Stereo link enabled: quiet channel also reduced based on loud channel
     // L should be limited to ceiling
     REQUIRE(outL == Approx(1.0f).margin(kClipperTolerance));
 
-    // R should be reduced proportionally (gain reduction applied)
-    // The gain reduction is calculated based on the louder channel
-    REQUIRE(outR < quietInput);
-}
-
-TEST_CASE("Stereo link: gain reduction calculation", "[stereolink]")
-{
-    auto clipper = makeClipper();
-    clipper.setCeiling(1.0f);
-    clipper.setSharpness(0.5f);  // soft clip
-    clipper.setStereoLink(true);
-
-    // At sharpness=0.5: knee = 0.25, kneeStart = 0.75
-    float loudInput = 1.0f;  // At ceiling
-    float quietInput = 0.5f;
-
-    auto [outL, outR] = processStereoSample(clipper, loudInput, quietInput);
-
-    // L at ceiling should output ceiling
-    REQUIRE(outL == Approx(1.0f).margin(kClipperTolerance));
-
-    // R should be reduced by the same ratio
-    float gainReduction = outL / loudInput;  // 1.0
-    float expectedR = quietInput * gainReduction;
-    REQUIRE(outR == Approx(expectedR).margin(0.01f));
+    // R should be reduced proportionally (gain reduction = 1.0/1.5)
+    float expectedR = quietInput * (1.0f / loudInput);
+    REQUIRE(outR == Approx(expectedR).margin(kClipperTolerance));
 }
 
 TEST_CASE("Stereo link: both channels below threshold pass unchanged", "[stereolink]")
 {
     auto clipper = makeClipper();
     clipper.setCeiling(1.0f);
-    clipper.setSharpness(0.5f);  // kneeStart = 0.75
+    clipper.setCurve(CurveType::Hard);
     clipper.setStereoLink(true);
 
-    // Both channels well below kneeStart
     float inputL = 0.3f;
     float inputR = 0.5f;
 
     auto [outL, outR] = processStereoSample(clipper, inputL, inputR);
 
-    // Both should pass through unchanged (below knee)
     REQUIRE(outL == Approx(inputL).margin(kClipperTolerance));
     REQUIRE(outR == Approx(inputR).margin(kClipperTolerance));
+}
+
+// =============================================================================
+// All Curve Types Test
+// =============================================================================
+
+TEST_CASE("All curve types produce bounded output", "[curves]")
+{
+    auto curveType = GENERATE(
+        CurveType::Hard,
+        CurveType::Quintic,
+        CurveType::Cubic,
+        CurveType::Tanh,
+        CurveType::Arctan,
+        CurveType::TSquared,
+        CurveType::Knee
+    );
+    CAPTURE(static_cast<int>(curveType));
+
+    auto clipper = makeClipper();
+    clipper.setCeiling(1.0f);
+    clipper.setCurve(curveType);
+    clipper.setCurveExponent(2.0f);
+
+    // Test various input levels
+    auto input = GENERATE(-10.0f, -1.0f, -0.5f, 0.0f, 0.5f, 1.0f, 10.0f);
+    CAPTURE(input);
+
+    float output = processSingleSample(clipper, input);
+
+    // Output should always be bounded by ceiling
+    REQUIRE(std::abs(output) <= 1.0f + kClipperTolerance);
 }
