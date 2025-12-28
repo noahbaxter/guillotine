@@ -177,10 +177,8 @@ case "$MODE" in
 
 
     Debug)
-        # Regenerate if .jucer is newer than xcodeproj
-        if [ "$JUCER_FILE" -nt "$BUILD_DIR/$PLUGIN_NAME.xcodeproj" ] 2>/dev/null || [ ! -d "$BUILD_DIR" ]; then
-            regen_project
-        fi
+        # Always regenerate to pick up web file changes (they're embedded in BinaryData)
+        regen_project
 
         echo -e "\n${YELLOW}Building Debug...${NC}"
         xcodebuild -project "$BUILD_DIR/$PLUGIN_NAME.xcodeproj" \
@@ -209,10 +207,8 @@ case "$MODE" in
         ;;
 
     Release)
-        # Regenerate if .jucer is newer than xcodeproj
-        if [ "$JUCER_FILE" -nt "$BUILD_DIR/$PLUGIN_NAME.xcodeproj" ] 2>/dev/null || [ ! -d "$BUILD_DIR" ]; then
-            regen_project
-        fi
+        # Always regenerate to pick up web file changes (they're embedded in BinaryData)
+        regen_project
 
         echo -e "\n${YELLOW}Building Release (Universal Binary)...${NC}"
 
