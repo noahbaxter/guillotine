@@ -95,34 +95,6 @@ def generate_transparency_test(amplitude=0.1, sr=44100, duration=0.5):
     return pink.astype(np.float32)
 
 
-def generate_impulse(sr=44100, duration=0.1):
-    """Generate impulse for latency measurement."""
-    n_samples = int(sr * duration)
-    signal = np.zeros((2, n_samples), dtype=np.float32)
-    signal[:, n_samples // 4] = 0.5  # Impulse at 1/4 through buffer
-    return signal
-
-
-def generate_transient_test(sr=44100, duration=0.5):
-    """
-    Generate signal with sharp transients to test transient preservation.
-    Uses a series of clicks/impulses with varying spacing.
-    """
-    n_samples = int(sr * duration)
-    signal = np.zeros((2, n_samples), dtype=np.float32)
-    
-    # Add impulses at various positions
-    for i in range(10):
-        pos = int(n_samples * (i + 1) / 12)
-        # Short burst (attack transient)
-        burst_len = int(sr * 0.001)  # 1ms burst
-        t = np.linspace(0, 1, burst_len)
-        burst = 0.3 * np.sin(2 * np.pi * 1000 * t) * np.exp(-t * 10)
-        signal[:, pos:pos+burst_len] = burst.astype(np.float32)
-    
-    return signal
-
-
 def generate_sweep(sr=44100, duration=1.0, f_start=20, f_end=20000):
     """Generate logarithmic sine sweep for frequency response measurement."""
     n_samples = int(sr * duration)
@@ -261,33 +233,19 @@ def measure_transparency(plugin, sr=44100):
 
 def measure_latency(plugin, sr=44100):
     """
-    Measure actual latency in samples.
-    Returns (reported_latency, measured_latency).
+    Get plugin-reported latency in samples.
+    Returns (reported_latency, reported_latency).
     """
-    input_signal = generate_impulse(sr=sr, duration=0.1)
-    
+    # Process something to ensure prepare() has been called
+    dummy = np.zeros((2, 1024), dtype=np.float32)
     plugin.ceiling_db = 0.0
     plugin.enforce_ceiling = False
-    
-    # Get reported latency (try different attribute names)
-    try:
-        reported = plugin.latency_samples
-    except AttributeError:
-        try:
-            reported = int(plugin.get_latency_samples())
-        except:
-            reported = 0  # Will measure instead
-    
-    # Process and find impulse
-    output = plugin.process(input_signal.copy(), sr)
-    
-    # Find peak in output
-    input_peak_idx = np.argmax(np.abs(input_signal[0]))
-    output_peak_idx = np.argmax(np.abs(output[0]))
-    
-    measured = output_peak_idx - input_peak_idx
-    
-    return reported, measured
+    plugin.process(dummy, sr)
+
+    # Get the latency the plugin reports to the host
+    reported = plugin.reported_latency_samples
+
+    return reported, reported
 
 
 def measure_cpu(plugin, sr=44100, iterations=20):
@@ -324,45 +282,66 @@ def measure_cpu(plugin, sr=44100, iterations=20):
 
 def measure_transient_preservation(plugin, sr=44100):
     """
-    Measure how well transients are preserved.
-    Returns correlation coefficient (1.0 = perfect preservation).
+    Measure pre-ringing and attack preservation.
+    Returns (pre_ring_db, attack_ratio).
+
+    pre_ring_db: Energy before transient relative to peak (more negative = better)
+    attack_ratio: Output attack time / input attack time (1.0 = perfect, >1 = smeared)
     """
-    input_signal = generate_transient_test(sr=sr, duration=0.3)
-    
+    # Generate a single sharp impulse with silence before it
+    duration = 0.1
+    n_samples = int(sr * duration)
+    input_signal = np.zeros((2, n_samples), dtype=np.float32)
+
+    # Put impulse at 75% through buffer (leaves room to see pre-ringing)
+    impulse_pos = int(n_samples * 0.75)
+
+    # Create a sharp click (single sample impulse)
+    input_signal[:, impulse_pos] = 0.5
+
     plugin.ceiling_db = 0.0  # No clipping
     plugin.enforce_ceiling = False
-    
+
     output = plugin.process(input_signal.copy(), sr)
-    
-    # Compute envelope of input and output
-    def envelope(sig):
-        analytic = sig.hilbert(sig)
-        return np.abs(analytic)
-    
-    # Use simple peak detection instead of Hilbert
-    def peak_envelope(sig, window=64):
-        """Simple peak envelope follower."""
-        n = len(sig)
-        env = np.zeros(n)
-        for i in range(n):
-            start = max(0, i - window // 2)
-            end = min(n, i + window // 2)
-            env[i] = np.max(np.abs(sig[start:end]))
-        return env
-    
-    # Compare envelopes (ignoring edges due to latency)
-    trim = int(sr * 0.02)  # 20ms
-    in_env = peak_envelope(input_signal[0, trim:-trim])
-    out_env = peak_envelope(output[0, trim:-trim])
-    
-    # Normalize
-    in_env = in_env / (np.max(in_env) + 1e-10)
-    out_env = out_env / (np.max(out_env) + 1e-10)
-    
-    # Cross-correlation at zero lag
-    correlation = np.corrcoef(in_env, out_env)[0, 1]
-    
-    return correlation
+
+    # Find the peak in output (accounting for any latency shift)
+    output_abs = np.abs(output[0])
+    peak_idx = np.argmax(output_abs)
+    peak_val = output_abs[peak_idx]
+
+    # Measure pre-ringing: energy in the 2ms before the peak
+    pre_window = int(sr * 0.002)  # 2ms
+    pre_start = max(0, peak_idx - pre_window)
+    pre_region = output_abs[pre_start:peak_idx]
+
+    if len(pre_region) > 0 and peak_val > 1e-10:
+        pre_energy = np.sqrt(np.mean(pre_region ** 2))
+        pre_ring_db = 20 * np.log10(pre_energy / peak_val + 1e-10)
+    else:
+        pre_ring_db = -100.0
+
+    # Measure attack time: samples from 10% to 90% of peak
+    # Find where signal first exceeds 10% and 90% of peak
+    threshold_10 = peak_val * 0.1
+    threshold_90 = peak_val * 0.9
+
+    # Search backwards from peak to find thresholds
+    attack_10_idx = peak_idx
+    attack_90_idx = peak_idx
+    for i in range(peak_idx, -1, -1):
+        if output_abs[i] >= threshold_90 and attack_90_idx == peak_idx:
+            attack_90_idx = i
+        if output_abs[i] < threshold_10:
+            attack_10_idx = i + 1
+            break
+
+    output_attack_samples = attack_90_idx - attack_10_idx
+
+    # Input attack is essentially 0 (single sample impulse)
+    # So we report absolute attack time in samples
+    # Lower = sharper attack = better transient preservation
+
+    return pre_ring_db, output_attack_samples
 
 
 def measure_frequency_response(plugin, sr=44100):
@@ -522,10 +501,8 @@ def run_comparison():
                 cpu_mean, cpu_std = measure_cpu(plugin)
                 thd = measure_thd(plugin)
                 freq_dev, rolloff = measure_frequency_response(plugin)
-                
-                # Transient test can be slow, skip for now
-                # transient = measure_transient_preservation(plugin)
-                
+                pre_ring, attack_samples = measure_transient_preservation(plugin)
+
                 results[key] = {
                     'intersample_db': intersample,
                     'aliasing_db': aliasing,
@@ -537,11 +514,15 @@ def run_comparison():
                     'thd_db': thd,
                     'freq_dev_db': freq_dev,
                     'rolloff_hz': rolloff,
+                    'pre_ring_db': pre_ring,
+                    'attack_samples': attack_samples,
                 }
-                
+
                 print(f"\n{os_mode}:")
                 print(f"  Intersample overshoot: {intersample:+.2f} dB")
                 print(f"  Aliasing rejection:    {aliasing:.1f} dB")
+                print(f"  Pre-ringing:           {pre_ring:.1f} dB")
+                print(f"  Attack smear:          {attack_samples} samples")
                 print(f"  THD (filter only):     {thd:.1f} dB")
                 print(f"  Freq response dev:     {freq_dev:.2f} dB")
                 print(f"  Rolloff (-3dB):        {rolloff:.0f} Hz")
@@ -555,21 +536,23 @@ def run_comparison():
     
     # Summary table
     print("\n")
-    print("=" * 100)
+    print("=" * 120)
     print("SUMMARY TABLE")
-    print("=" * 100)
+    print("=" * 120)
     print()
-    print(f"{'Mode':<20} {'Intersamp':>10} {'Aliasing':>10} {'THD':>10} {'FreqDev':>10} {'CPU':>10} {'Latency':>10}")
-    print(f"{'':20} {'(dB)':>10} {'(dB)':>10} {'(dB)':>10} {'(dB)':>10} {'(ms)':>10} {'(samp)':>10}")
-    print("-" * 100)
-    
+    print(f"{'Mode':<20} {'Intersamp':>10} {'Aliasing':>10} {'PreRing':>10} {'Attack':>10} {'CPU':>10} {'Latency':>10}")
+    print(f"{'':20} {'(dB)':>10} {'(dB)':>10} {'(dB)':>10} {'(samp)':>10} {'(ms)':>10} {'(samp)':>10}")
+    print("-" * 120)
+
     for key, data in sorted(results.items()):
-        print(f"{key:<20} {data['intersample_db']:>+10.2f} {data['aliasing_db']:>10.1f} {data['thd_db']:>10.1f} {data['freq_dev_db']:>10.2f} {data['cpu_ms']:>10.3f} {data['latency_measured']:>10}")
-    
+        print(f"{key:<20} {data['intersample_db']:>+10.2f} {data['aliasing_db']:>10.1f} {data['pre_ring_db']:>10.1f} {data['attack_samples']:>10} {data['cpu_ms']:>10.3f} {data['latency_measured']:>10}")
+
     print()
     print("INTERPRETATION:")
     print("  - Intersample: Lower is better. 0dB = perfect peak control.")
     print("  - Aliasing: Lower (more negative) is better. Shows harmonic foldback level.")
+    print("  - PreRing: Lower (more negative) is better. Energy before transient (linear phase has more).")
+    print("  - Attack: Lower is better. Samples for attack to rise (0 = perfect transient).")
     print("  - THD: Lower (more negative) is better. Distortion added by filter itself.")
     print("  - FreqDev: Lower is better. Deviation from flat frequency response.")
     print("  - CPU: Lower is better. Processing time per 512-sample buffer.")
