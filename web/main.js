@@ -1,9 +1,7 @@
 // Guillotine Plugin - Main Entry Point
 // Phase 2: Microscope view with waveform and draggable threshold
 
-// Display dB range for threshold visualization (-60 to 0 dB)
-const DISPLAY_DB_RANGE = 60;
-
+import { DISPLAY_DB_RANGE } from './lib/config.js';
 import { Guillotine } from './components/views/guillotine.js';
 import { Microscope } from './components/views/microscope.js';
 import { BloodPool } from './components/display/blood-pool.js';
@@ -131,9 +129,9 @@ class GuillotineApp {
       wrapperClass: 'knob-wrapper--exponent'
     }));
 
-    // Threshold knob (0-1 maps to 0dB to currentMinDb dynamically) - CENTER, larger
+    // Ceiling knob (0-1 maps to 0dB to currentMinDb dynamically) - CENTER, larger
     this.thresholdKnob = new Knob(this.mainKnobsContainer, createSpriteKnob({
-      label: 'Threshold',
+      label: 'Ceiling',
       value: this.threshold,
       size: 60,
       spriteScale: 0.4,
@@ -145,10 +143,11 @@ class GuillotineApp {
         const db = parseFloat(match[0]);
         return this.dbToThreshold(db);  // Convert dB to 0-1 threshold
       },
-      snap: (v) => {
-        // Snap to 0.5dB steps in dB domain
+      snap: (v, fineMode) => {
+        // Snap to 0.5dB steps normally, 0.1dB when shift held
         const db = this.thresholdToDb(v);
-        const snappedDb = Math.round(db * 2) / 2;
+        const mult = fineMode ? 10 : 2;  // 0.1dB or 0.5dB
+        const snappedDb = Math.round(db * mult) / mult;
         return this.dbToThreshold(snappedDb);
       },
       suffixVariant: 'large',
