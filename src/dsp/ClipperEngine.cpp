@@ -19,8 +19,10 @@ void ClipperEngine::prepare(double sampleRate, int maxBlockSize, int numChannels
     spec.numChannels = static_cast<juce::uint32>(numChannels);
 
     inputGain.prepare(spec);
+    inputGain.setRampDurationSeconds(0.002);  // 2ms smoothing
     outputGain.prepare(spec);
-    clipper.prepare(spec);
+    outputGain.setRampDurationSeconds(0.002);  // 2ms smoothing
+    clipper.prepare(sampleRate);
     oversampler.prepare(sampleRate, maxBlockSize, numChannels);
 
     // Prepare dry buffer and oversampler for delta monitoring
@@ -50,7 +52,7 @@ void ClipperEngine::setOutputGain(float dB)
 void ClipperEngine::setCeiling(float dB)
 {
     ceilingLinear = juce::Decibels::decibelsToGain(dB);
-    clipper.setCeiling(ceilingLinear);
+    clipper.setCeiling(ceilingLinear);  // Clipper handles smoothing internally
 }
 
 void ClipperEngine::setCurve(int curveIndex)

@@ -7,7 +7,9 @@
 - [x] **Replaced oversimple with JUCE oversampling** - JUCE's dsp::Oversampling is 10-40x faster, has 7dB better aliasing rejection, and 14dB lower THD than oversimple. Now supports all rates: 1x/2x/4x/8x/16x/32x.
 - [x] **BUG: Bypass mode doesn't sanitize NaN/Inf** - Fixed: bypass now sanitizes NaN/Inf before returning.
 - [x] **DSP Unit Tests** - C++ unit tests for Clipper, Oversampler, StereoProcessor, ClipperEngine, Delta Monitor, Transients (tests/unit/)
-- [ ] **Parameter smoothing** - Use SmoothedValue for ceiling/sharpness to prevent automation clicks
+- [ ] **Tests for saturation curves** - SaturatorCurves.h has 7 curve implementations, test boundary behavior (±1 clamping, exponent range)
+- [ ] **Tests for dual envelope buffers** - Verify preClip/postClip sync for display accuracy
+- [x] **Parameter smoothing** - SmoothedValue for ceiling/curveExponent in Clipper (2ms ramp). Tests need updating for smoothed behavior.
 - [x] **Bidirectional parameter sync** - Backend → UI (DAW automation should update knobs)
 - [x] **True bypass hookup** - Connect blade up/down to actual DSP bypass
 - [ ] **Dry/wet control** - New parameter, DSP blend logic, UI knob
@@ -33,7 +35,8 @@ Input → InputGain → M/S Encode → Upsample → Clipper → Downsample → M
 ### Parameters
 | Parameter | C++ | UI | Bidirectional |
 |-----------|-----|-----|---------------|
-| sharpness | ✓ | ✓ | ✓ |
+| curve | ✓ | ✓ | ✓ |
+| curveExponent | ✓ | ✓ | ✓ |
 | oversampling | ✓ | ✓ | ✓ |
 | inputGain | ✓ | ✓ | ✓ |
 | outputGain | ✓ | ✓ | ✓ |

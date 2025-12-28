@@ -4,19 +4,24 @@
 
 namespace dsp {
 
-void Clipper::prepare(const juce::dsp::ProcessSpec& /*spec*/)
+void Clipper::prepare(double sampleRate)
 {
-    // Stateless - nothing to prepare
+    constexpr double rampTimeSeconds = 0.002;  // 2ms smoothing
+    ceilingSmoothed.reset(sampleRate, rampTimeSeconds);
+    curveExponentSmoothed.reset(sampleRate, rampTimeSeconds);
+    ceilingSmoothed.setCurrentAndTargetValue(1.0f);
+    curveExponentSmoothed.setCurrentAndTargetValue(2.0f);
 }
 
 void Clipper::reset()
 {
-    // Stateless - nothing to reset
+    ceilingSmoothed.setCurrentAndTargetValue(ceilingSmoothed.getTargetValue());
+    curveExponentSmoothed.setCurrentAndTargetValue(curveExponentSmoothed.getTargetValue());
 }
 
 void Clipper::setCeiling(float linearAmplitude)
 {
-    ceiling = linearAmplitude;
+    ceilingSmoothed.setTargetValue(linearAmplitude);
 }
 
 void Clipper::setCurve(CurveType newCurve)
@@ -26,7 +31,7 @@ void Clipper::setCurve(CurveType newCurve)
 
 void Clipper::setCurveExponent(float exponent)
 {
-    curveExponent = exponent;
+    curveExponentSmoothed.setTargetValue(exponent);
 }
 
 void Clipper::setStereoLink(bool enabled)
@@ -34,17 +39,17 @@ void Clipper::setStereoLink(bool enabled)
     stereoLinkEnabled = enabled;
 }
 
-float Clipper::processSample(float sample) const
+float Clipper::processSample(float sample, float ceiling, float exponent) const
 {
-    return curves::applyWithCeiling(curve, sample, ceiling, curveExponent);
+    return curves::applyWithCeiling(curve, sample, ceiling, exponent);
 }
 
-float Clipper::calculateGainReduction(float peakLevel) const
+float Clipper::calculateGainReduction(float peakLevel, float ceiling, float exponent) const
 {
     if (peakLevel <= ceiling)
         return 1.0f;
 
-    float targetPeak = std::abs(processSample(peakLevel));
+    float targetPeak = std::abs(processSample(peakLevel, ceiling, exponent));
     return targetPeak / peakLevel;
 }
 
@@ -55,13 +60,16 @@ void Clipper::processInternal(float* const* channelData, int numChannels, int nu
         // Stereo link: find max peak across channels, apply same reduction
         for (int i = 0; i < numSamples; ++i)
         {
+            float ceiling = ceilingSmoothed.getNextValue();
+            float exponent = curveExponentSmoothed.getNextValue();
+
             float maxPeak = 0.0f;
             for (int ch = 0; ch < numChannels; ++ch)
                 maxPeak = std::max(maxPeak, std::abs(channelData[ch][i]));
 
             if (maxPeak > ceiling)
             {
-                float gainReduction = calculateGainReduction(maxPeak);
+                float gainReduction = calculateGainReduction(maxPeak, ceiling, exponent);
                 for (int ch = 0; ch < numChannels; ++ch)
                     channelData[ch][i] *= gainReduction;
             }
@@ -69,12 +77,14 @@ void Clipper::processInternal(float* const* channelData, int numChannels, int nu
     }
     else
     {
-        // Independent channel processing
-        for (int ch = 0; ch < numChannels; ++ch)
+        // Independent channel processing - sample-by-sample for smooth transitions
+        for (int i = 0; i < numSamples; ++i)
         {
-            float* data = channelData[ch];
-            for (int i = 0; i < numSamples; ++i)
-                data[i] = processSample(data[i]);
+            float ceiling = ceilingSmoothed.getNextValue();
+            float exponent = curveExponentSmoothed.getNextValue();
+
+            for (int ch = 0; ch < numChannels; ++ch)
+                channelData[ch][i] = processSample(channelData[ch][i], ceiling, exponent);
         }
     }
 }
