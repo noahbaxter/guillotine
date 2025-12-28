@@ -4,10 +4,11 @@
 import { loadStyles } from '../../lib/component-loader.js';
 import { getClippedColor, getClippedOutlineColor, getWaveformColors } from '../../lib/theme.js';
 import { CurveType, applyWithCeiling } from '../../lib/saturation-curves.js';
+import { DISPLAY_CONFIG } from '../../lib/config.js';
 
 const DEFAULTS = {
-  displayMinDb: -60,
-  displayMaxDb: 0,
+  displayMinDb: DISPLAY_CONFIG.defaultMinDb,
+  displayMaxDb: DISPLAY_CONFIG.maxCeilingDb,
   smoothingFactor: 0.3
 };
 
