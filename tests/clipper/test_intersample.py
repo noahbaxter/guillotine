@@ -188,10 +188,9 @@ class TestIntersampleComparison:
         # Process at 1x
         plugin_1x = load_plugin(plugin_path)
         plugin_1x.bypass_clipper = False
-        plugin_1x.sharpness = 1.0
         plugin_1x.ceiling_db = -6.0
         plugin_1x.oversampling = "1x"
-        plugin_1x.enforce_ceiling = True
+        plugin_1x.enforce_ceiling = False  # Measure actual OS behavior, not hard limiter
 
         output_1x = plugin_1x.process(input_signal.copy(), 44100)
         true_peak_1x = true_peak(output_1x)
@@ -199,11 +198,10 @@ class TestIntersampleComparison:
         # Process at 4x min-phase
         plugin_4x = load_plugin(plugin_path)
         plugin_4x.bypass_clipper = False
-        plugin_4x.sharpness = 1.0
         plugin_4x.ceiling_db = -6.0
         plugin_4x.oversampling = "4x"
         plugin_4x.filter_type = "Minimum Phase"
-        plugin_4x.enforce_ceiling = True
+        plugin_4x.enforce_ceiling = False  # Measure actual OS behavior, not hard limiter
 
         output_4x = plugin_4x.process(input_signal.copy(), 44100)
         true_peak_4x = true_peak(output_4x)

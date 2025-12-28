@@ -85,6 +85,7 @@ def test_clipper_stereo_link_same_reduction(plugin_path):
     plugin.bypass_clipper = False
     plugin.ceiling_db = -6.0
     plugin.stereo_link = True
+    plugin.enforce_ceiling = False  # Disable final limiter to test stereo link in isolation
     plugin.input_gain_db = 0.0
     plugin.output_gain_db = 0.0
     settle_params(plugin)

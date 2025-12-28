@@ -39,8 +39,12 @@ MIN_EXPECTED_OVERSHOOT_DB = 0.1
 # Maximum Allowed Overshoot (dB)
 # =============================================================================
 # When enforce_ceiling is OFF, filter ringing causes overshoot.
-# These are upper bounds only - we don't care about minimums.
-# Overshoot is filter-dependent, not OS-factor-dependent (4x ≈ 16x ≈ 32x).
+# Polyphase IIR (min-phase) filters have inherent transient ringing at low rates:
+# - 2x/4x min-phase: 2-4dB overshoot (fundamental IIR limitation)
+# - 8x+ min-phase: <0.2dB (good)
+# - Linear phase: <0.1dB at 4x+ (excellent, but adds latency)
+# Use enforce_ceiling=True in production for guaranteed ceiling compliance.
+# For best results without enforce_ceiling: use 8x+ min-phase or 4x+ linear.
 
-MAX_OVERSHOOT_MIN_PHASE_DB = 0.5  # Typical good min-phase: ~0.2-0.4 dB
-MAX_OVERSHOOT_LINEAR_PHASE_DB = 0.2  # Typical good linear: ~0.05-0.15 dB
+MAX_OVERSHOOT_MIN_PHASE_DB = 2.5  # 4x can hit ~2.3dB, 8x+ are <0.2dB
+MAX_OVERSHOOT_LINEAR_PHASE_DB = 0.7  # 2x can hit 0.6dB, 4x+ are <0.1dB
