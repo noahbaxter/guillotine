@@ -69,7 +69,7 @@ const DELTA_OVERRIDES = {
   bloodClipped: 'rgba(180, 30, 30, 0.55)',
   bloodGlow: 'rgba(200, 0, 0, 0.7)',
   clippedOutline: 'rgba(255, 40, 40, 1)',
-  deltaText: 'rgba(255, 100, 100, 1)',
+  deltaText: 'rgba(255, 40, 40, 1)',
 
   waveformTop: 'rgba(255, 255, 255, 0.25)',
   waveformMid: 'rgba(255, 255, 255, 0.12)',

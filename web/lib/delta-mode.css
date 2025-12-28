@@ -1,67 +1,119 @@
-/* DELTA Mode Transitions
- * .deltable - non-red elements that dull in delta mode
- * .delta-clickable - hover affordance when blade is down
- *
- * Colors are managed via CSS variables from theme.js
- * This file handles transitions and non-color visual effects
+/* DELTA Mode Styles
+ * Manages visual transitions when monitoring clipped signal only
+ * Colors come from CSS variables in theme.js
  */
 
-/* Transition setup for all deltable elements */
+/* ==========================================================================
+   Base Transitions
+   ========================================================================== */
+
 .deltable {
   transition: opacity 0.2s ease, filter 0.2s ease;
 }
 
-/* Dull non-red elements in delta mode */
-body.delta-mode .deltable {
-  opacity: 0.3;
-  filter: grayscale(0.7) brightness(0.6);
-}
-
-/* Make header and side images even more transparent in delta mode */
-body.delta-mode #plugin-logo,
-body.delta-mode #guillotine-side {
-  opacity: 0.12;
-}
-
-/* Blood puddle uses CSS variable for color */
-.blood-pool__puddle {
-  transition: background 0.2s ease;
-  background: radial-gradient(ellipse, var(--color-blood-puddle) 0%, transparent 70%);
-}
-
-/* La Monte-à-Regret text turns red via filter */
-#bucket-text img {
-  transition: filter 0.05s ease;
-}
-
-body.delta-mode #bucket-text img {
-  filter: brightness(0) saturate(100%) invert(12%) sepia(100%) saturate(5000%) hue-rotate(360deg) brightness(1.2);
-}
-
-/* Hover affordance - only when blade is down */
 .delta-clickable {
   cursor: pointer;
   transition: filter 0.15s ease;
 }
 
-/* Bucket text hover - subtle red */
-#bucket-text.delta-clickable:hover img {
-  filter: brightness(0) saturate(100%) invert(15%) sepia(100%) saturate(3000%) hue-rotate(360deg) brightness(1.1);
+/* ==========================================================================
+   Dimming Non-Red Elements
+   ========================================================================== */
+
+body.delta-mode .deltable:not(.knob-wrapper) {
+  opacity: 0.3;
+  filter: grayscale(0.7) brightness(0.6);
 }
 
-/* Blood pool hover */
+body.delta-mode #plugin-logo,
+body.delta-mode #guillotine-side {
+  opacity: 0.12;
+}
+
+/* ==========================================================================
+   Blood Pool & Delta Toggle
+   ========================================================================== */
+
+.blood-pool__puddle {
+  transition: background 0.2s ease;
+  background: radial-gradient(ellipse, var(--color-blood-puddle) 0%, transparent 70%);
+}
+
 .blood-pool.delta-clickable:hover .blood-pool__puddle {
   background: radial-gradient(ellipse, var(--color-blood-puddle-hover, var(--color-blood-puddle)) 0%, transparent 70%);
 }
 
-/* When in delta mode, bucket text hover shows even more intense red */
-body.delta-mode #bucket-text.delta-clickable:hover img {
-  filter: brightness(0) saturate(100%) invert(15%) sepia(100%) saturate(6000%) hue-rotate(360deg) brightness(1.4);
-}
-
-/* Blood pool lights up when bucket text is hovered (only when blade is down) */
 .blood-pool.delta-clickable.blood-pool--hover-glow .blood-pool__puddle {
   opacity: 1.5;
   filter: brightness(1.35) drop-shadow(0 0 6px var(--color-blood-glow));
   transition: opacity 0.1s ease, filter 0.1s ease;
+}
+
+/* ==========================================================================
+   Bucket Text (La Monte-à-Regret)
+   ========================================================================== */
+
+#bucket-text img {
+  transition: filter 0.1s ease;
+}
+
+#bucket-text.delta-clickable:hover img {
+  filter: brightness(0) saturate(100%) invert(20%) sepia(100%) saturate(4000%) hue-rotate(355deg) brightness(1.0);
+}
+
+body.delta-mode #bucket-text img {
+  filter: brightness(0) saturate(100%) invert(18%) sepia(100%) saturate(7000%) hue-rotate(355deg) brightness(1.0);
+}
+
+body.delta-mode #bucket-text.delta-clickable:hover img {
+  filter: brightness(0) saturate(100%) invert(22%) sepia(100%) saturate(8000%) hue-rotate(355deg) brightness(1.3);
+}
+
+/* ==========================================================================
+   Knobs - Red Text in Delta Mode
+   ========================================================================== */
+
+body.delta-mode .knob-wrapper:not(.knob-wrapper--disabled) {
+  filter: none !important;
+}
+
+body.delta-mode .knob-wrapper:not(.knob-wrapper--disabled) .knob__label,
+body.delta-mode .knob-wrapper:not(.knob-wrapper--disabled) .knob__value,
+body.delta-mode .knob-wrapper:not(.knob-wrapper--disabled) .knob__suffix {
+  color: var(--color-delta-text) !important;
+  opacity: 1 !important;
+  filter: none !important;
+  transition: color 0.2s ease;
+}
+
+/* ==========================================================================
+   Digits - Red in Delta Mode
+   ========================================================================== */
+
+body.delta-mode .digits {
+  filter: none !important;
+}
+
+body.delta-mode .digits__digit,
+body.delta-mode .digits__dot,
+body.delta-mode .digits__dash {
+  background-color: var(--color-delta-text) !important;
+  opacity: 1 !important;
+  filter: none !important;
+  transition: background-color 0.2s ease;
+}
+
+/* ==========================================================================
+   Logo & Labels - Red in Delta Mode
+   ========================================================================== */
+
+body.delta-mode #plugin-logo {
+  filter: brightness(0) saturate(100%) invert(18%) sepia(100%) saturate(7000%) hue-rotate(355deg) brightness(1.0);
+  opacity: 0.8;
+}
+
+body.delta-mode #microscope-labels {
+  color: var(--color-delta-text) !important;
+  opacity: 1 !important;
+  transition: color 0.2s ease;
 }
