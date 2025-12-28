@@ -5,20 +5,7 @@ on:
     branches: [main, develop]
   pull_request:
     branches: [main, develop]
-  release:
-    types: [created]
   workflow_dispatch:
-    inputs:
-      create_release:
-        description: 'Create a release from this build'
-        required: false
-        default: false
-        type: boolean
-      release_tag:
-        description: 'Release tag (e.g., v1.0.0)'
-        required: false
-        default: ''
-        type: string
 
 jobs:
   build-windows:
@@ -33,15 +20,11 @@ jobs:
       - name: Setup MSBuild
         uses: microsoft/setup-msbuild@v1.3
 
-      - name: Cache JUCE build files
-        uses: actions/cache@v4
-        with:
-          path: |
-            Builds
-            JuceLibraryCode
-          key: ${{ runner.os }}-juce-${{ hashFiles('Guillotine.jucer') }}
-          restore-keys: |
-            ${{ runner.os }}-juce-
+      - name: Sync VERSION to jucer
+        shell: pwsh
+        run: |
+          $version = (Get-Content VERSION).Trim()
+          (Get-Content Guillotine.jucer) -replace 'version="[^"]*"', "version=`"$version`"" | Set-Content Guillotine.jucer
 
       - name: Generate Windows project with Projucer
         shell: cmd
@@ -52,11 +35,54 @@ jobs:
             third_party\JUCE\extras\Projucer\Builds\VisualStudio2022\x64\Release\App\Projucer.exe --resave Guillotine.jucer --fix-missing-dependencies
           )
 
-      - name: Build with MSBuild
+      - name: Build SharedCode
+        shell: cmd
+        run: msbuild "Builds/VisualStudio2022/Guillotine_SharedCode.vcxproj" /p:Configuration=Release /p:Platform=x64 /m
+
+      - name: Build VST3
+        shell: cmd
+        run: msbuild "Builds/VisualStudio2022/Guillotine_VST3.vcxproj" /p:Configuration=Release /p:Platform=x64 /m
+
+      - name: Verify VST3 bundle structure
         shell: cmd
         run: |
-          msbuild "Builds/VisualStudio2022/Guillotine_SharedCode.vcxproj" /p:Configuration=Release /p:Platform=x64 /m /verbosity:minimal
-          msbuild "Builds/VisualStudio2022/Guillotine_VST3.vcxproj" /p:Configuration=Release /p:Platform=x64 /m /verbosity:minimal
+          echo === Checking VST3 output structure ===
+          dir /s "Builds\VisualStudio2022\x64\Release\VST3\"
+
+          echo.
+          echo === Verifying VST3 bundle ===
+          if exist "Builds\VisualStudio2022\x64\Release\VST3\Guillotine.vst3\Contents\x86_64-win\Guillotine.vst3" (
+            echo [OK] VST3 bundle structure is correct
+            dir "Builds\VisualStudio2022\x64\Release\VST3\Guillotine.vst3\Contents\x86_64-win\Guillotine.vst3"
+          ) else if exist "Builds\VisualStudio2022\x64\Release\VST3\Guillotine.vst3" (
+            echo [OK] VST3 bundle folder exists
+            dir "Builds\VisualStudio2022\x64\Release\VST3\Guillotine.vst3"
+          ) else (
+            echo [ERROR] VST3 bundle not found!
+            exit /b 1
+          )
+
+      - name: Check embedded resources
+        shell: pwsh
+        run: |
+          $vst3Path = "Builds/VisualStudio2022/x64/Release/VST3/Guillotine.vst3"
+          $binary = Get-ChildItem -Path $vst3Path -Recurse -Include "*.vst3","*.dll" -File | Select-Object -First 1
+
+          if (-not $binary) {
+            Write-Host "[ERROR] No binary found in VST3 bundle"
+            exit 1
+          }
+
+          Write-Host "Binary: $($binary.FullName)"
+          $sizeMB = [math]::Round($binary.Length / 1MB, 2)
+          Write-Host "Size: $sizeMB MB"
+
+          # Binary should be > 1MB if resources are embedded
+          if ($binary.Length -lt 1MB) {
+            Write-Host "[ERROR] Binary too small ($sizeMB MB) - resources likely missing"
+            exit 1
+          }
+          Write-Host "[OK] Binary size indicates resources are embedded"
 
       - name: Upload Windows VST3 artifact
         uses: actions/upload-artifact@v4
@@ -79,15 +105,10 @@ jobs:
         with:
           xcode-version: latest-stable
 
-      - name: Cache JUCE build files
-        uses: actions/cache@v4
-        with:
-          path: |
-            Builds
-            JuceLibraryCode
-          key: ${{ runner.os }}-juce-${{ hashFiles('Guillotine.jucer') }}
-          restore-keys: |
-            ${{ runner.os }}-juce-
+      - name: Sync VERSION to jucer
+        run: |
+          VERSION=$(cat VERSION | tr -d '\n')
+          sed -i '' "s/version=\"[^\"]*\"/version=\"$VERSION\"/" Guillotine.jucer
 
       - name: Build Projucer
         run: |
@@ -123,6 +144,42 @@ jobs:
             ONLY_ACTIVE_ARCH=NO \
             MACOSX_DEPLOYMENT_TARGET=10.15 \
             build
+
+      - name: Verify macOS builds
+        run: |
+          echo "=== Verifying VST3 bundle ==="
+          VST3_PATH="Builds/MacOSX/build/Release/Guillotine.vst3"
+          if [ ! -d "$VST3_PATH" ]; then
+            echo "[ERROR] VST3 not found"
+            exit 1
+          fi
+          echo "[OK] VST3 bundle exists"
+
+          BINARY="$VST3_PATH/Contents/MacOS/Guillotine"
+          if [ ! -f "$BINARY" ]; then
+            echo "[ERROR] VST3 binary not found"
+            exit 1
+          fi
+
+          lipo -info "$BINARY"
+          SIZE=$(stat -f%z "$BINARY")
+          SIZE_MB=$(echo "scale=2; $SIZE / 1048576" | bc)
+          echo "Size: ${SIZE_MB} MB"
+
+          if [ "$SIZE" -lt 1048576 ]; then
+            echo "[ERROR] Binary too small (${SIZE_MB} MB) - resources likely missing"
+            exit 1
+          fi
+          echo "[OK] Binary size indicates resources are embedded"
+
+          echo "=== Verifying AU bundle ==="
+          AU_PATH="Builds/MacOSX/build/Release/Guillotine.component"
+          if [ ! -d "$AU_PATH" ]; then
+            echo "[ERROR] AU not found"
+            exit 1
+          fi
+          echo "[OK] AU bundle exists"
+          lipo -info "$AU_PATH/Contents/MacOS/Guillotine"
 
       - name: Upload macOS artifacts
         uses: actions/upload-artifact@v4
@@ -160,15 +217,10 @@ jobs:
             libxss-dev \
             pkg-config
 
-      - name: Cache JUCE build files
-        uses: actions/cache@v4
-        with:
-          path: |
-            Builds
-            JuceLibraryCode
-          key: ${{ runner.os }}-juce-${{ hashFiles('Guillotine.jucer') }}
-          restore-keys: |
-            ${{ runner.os }}-juce-
+      - name: Sync VERSION to jucer
+        run: |
+          VERSION=$(cat VERSION | tr -d '\n')
+          sed -i "s/version=\"[^\"]*\"/version=\"$VERSION\"/" Guillotine.jucer
 
       - name: Build Projucer
         run: |
@@ -184,6 +236,36 @@ jobs:
           cd Builds/LinuxMakefile
           make clean
           make -j$(nproc) CONFIG=Release
+
+      - name: Verify Linux VST3 bundle
+        run: |
+          echo "=== Checking VST3 bundle structure ==="
+          VST3_PATH="Builds/LinuxMakefile/build/Guillotine.vst3"
+          if [ ! -d "$VST3_PATH" ]; then
+            echo "[ERROR] VST3 bundle not found"
+            exit 1
+          fi
+          echo "[OK] VST3 bundle directory exists"
+          find "$VST3_PATH" -type f
+
+          SO_FILE="$VST3_PATH/Contents/x86_64-linux/Guillotine.so"
+          if [ ! -f "$SO_FILE" ]; then
+            echo "[ERROR] VST3 .so file not found in bundle"
+            exit 1
+          fi
+          echo "[OK] VST3 .so file found"
+          ls -la "$SO_FILE"
+          file "$SO_FILE"
+
+          SIZE=$(stat -c%s "$SO_FILE")
+          SIZE_MB=$(echo "scale=2; $SIZE / 1048576" | bc)
+          echo "Size: ${SIZE_MB} MB"
+
+          if [ "$SIZE" -lt 1048576 ]; then
+            echo "[ERROR] Binary too small (${SIZE_MB} MB) - resources likely missing"
+            exit 1
+          fi
+          echo "[OK] Binary size indicates resources are embedded"
 
       - name: Upload Linux artifacts
         uses: actions/upload-artifact@v4
@@ -237,10 +319,38 @@ jobs:
       - name: Run all tests
         run: pytest tests/ -v
 
-  release:
+  check-release:
     needs: [build-windows, build-macos, build-linux, test]
     runs-on: ubuntu-latest
-    if: startsWith(github.ref, 'refs/tags/') || (github.event_name == 'workflow_dispatch' && inputs.create_release)
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    outputs:
+      should_release: ${{ steps.check.outputs.should_release }}
+      version: ${{ steps.check.outputs.version }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Check if VERSION changed
+        id: check
+        run: |
+          VERSION=$(cat VERSION | tr -d '\n')
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+
+          # Check if tag already exists
+          if git rev-parse "v$VERSION" >/dev/null 2>&1; then
+            echo "Tag v$VERSION already exists, skipping release"
+            echo "should_release=false" >> $GITHUB_OUTPUT
+          else
+            echo "New version $VERSION detected, will create release"
+            echo "should_release=true" >> $GITHUB_OUTPUT
+          fi
+
+  release:
+    needs: [check-release]
+    runs-on: ubuntu-latest
+    if: needs.check-release.outputs.should_release == 'true'
 
     steps:
       - name: Download Windows artifacts
@@ -269,20 +379,20 @@ jobs:
 
       - name: Generate release notes
         run: |
-          echo "## Guillotine Release" >> release_notes.md
+          VERSION="${{ needs.check-release.outputs.version }}"
+          echo "## Guillotine v$VERSION" >> release_notes.md
           echo "" >> release_notes.md
           echo "### Installation" >> release_notes.md
-          echo "- **Windows**: Extract and place Guillotine.vst3 in your VST3 directory" >> release_notes.md
-          echo "- **macOS**: Extract and install VST3/AU to ~/Library/Audio/Plug-Ins/" >> release_notes.md
-          echo "- **Linux**: Extract to ~/.vst3/ or your DAW's VST3 directory" >> release_notes.md
+          echo "- **Windows**: Extract and place \`Guillotine.vst3\` folder in your VST3 directory" >> release_notes.md
+          echo "- **macOS**: Extract and copy VST3/AU to \`~/Library/Audio/Plug-Ins/\`" >> release_notes.md
+          echo "- **Linux**: Extract to \`~/.vst3/\` or your DAW's VST3 directory" >> release_notes.md
 
-      - name: Upload release assets
+      - name: Create release
         uses: softprops/action-gh-release@v1
         with:
-          tag_name: ${{ github.event_name == 'workflow_dispatch' && inputs.release_tag || github.ref_name }}
-          name: ${{ github.event_name == 'workflow_dispatch' && format('Guillotine {0}', inputs.release_tag) || format('Guillotine {0}', github.ref_name) }}
+          tag_name: v${{ needs.check-release.outputs.version }}
+          name: Guillotine v${{ needs.check-release.outputs.version }}
           body_path: release_notes.md
-          draft: ${{ github.event_name == 'workflow_dispatch' }}
           files: |
             Guillotine-VST3-Windows-x64.zip
             Guillotine-macOS.zip
