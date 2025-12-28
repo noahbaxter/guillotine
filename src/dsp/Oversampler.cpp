@@ -32,16 +32,29 @@ void Oversampler::rebuildOversampler()
 
     for (int n = 0; n < numStages; ++n)
     {
-        // Filter parameters tuned for good intersample peak control
-        // Stage 0 needs tighter transition width, later stages can be wider
-        // Using JUCE's max quality as baseline with some adjustments
-        float twUp   = (n == 0) ? 0.05f : 0.10f;
-        float twDown = (n == 0) ? 0.06f : 0.12f;
+        // IIR (min-phase) filters have inherent transient ringing at low OS rates
+        // that cannot be tuned away - this is a fundamental limitation of polyphase IIR.
+        // Use 8x+ for best min-phase results, or use linear phase for lower rates.
+        // enforce_ceiling=true provides a safety net regardless of filter choice.
+        bool isIIR = (currentFilterType == FilterType::MinimumPhase);
+        float twUp, twDown, gaindBUp, gaindBDown;
 
-        // High attenuation for better stopband rejection
-        // Consistent across stages (unlike JUCE's decreasing approach)
-        float gaindBUp   = -90.0f;
-        float gaindBDown = -80.0f;
+        if (isIIR)
+        {
+            // IIR: moderate settings - can't avoid ringing at low rates
+            twUp   = 0.10f;
+            twDown = 0.10f;
+            gaindBUp   = -70.0f;
+            gaindBDown = -60.0f;
+        }
+        else
+        {
+            // FIR: tight transitions, high attenuation (no ringing)
+            twUp   = (n == 0) ? 0.05f : 0.08f;
+            twDown = (n == 0) ? 0.05f : 0.08f;
+            gaindBUp   = -90.0f;
+            gaindBDown = -80.0f;
+        }
 
         oversampler->addOversamplingStage(juceFilterType, twUp, gaindBUp, twDown, gaindBDown);
     }

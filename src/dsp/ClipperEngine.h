@@ -24,7 +24,7 @@ public:
     void setCeiling(float dB);
     void setCurve(int curveIndex);                // 0=Hard, 1=Quintic, 2=Cubic, 3=Tanh, 4=Arctan, 5=T², 6=Knee
     void setCurveExponent(float exponent);        // For T² mode: 1.0=linear, 2.0=squared, up to 4.0
-    void setOversamplingFactor(int factorIndex);  // 0=1x, 1=2x, 2=4x, 3=8x, 4=16x, 5=32x
+    void setOversamplingFactor(int factorIndex);  // 0=1x, 1=2x, ... 5=32x
     void setFilterType(bool isLinearPhase);
     void setChannelMode(bool isMidSide);
     void setStereoLink(bool enabled);

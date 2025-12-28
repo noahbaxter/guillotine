@@ -231,7 +231,7 @@ void GuillotineProcessor::processBlock(juce::AudioBuffer<float>& buffer, juce::M
     bool bypassClipper = apvts.getRawParameterValue("bypassClipper")->load() > 0.5f;
     bool enforceCeiling = apvts.getRawParameterValue("enforceCeiling")->load() > 0.5f;
 
-    // Choice index now directly maps to factor index: 0=1x, 1=2x, 2=4x, 3=8x, 4=16x, 5=32x
+    // Choice index now directly maps to factor index: 0=1x, 1=2x, ... 5=32x
     int oversamplingFactor = oversamplingChoice;
 
     // Update clipper engine parameters

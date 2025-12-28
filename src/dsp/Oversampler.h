@@ -24,7 +24,7 @@ public:
     void prepare(double sampleRate, int maxBlockSize, int numChannels);
     void reset();
 
-    void setOversamplingFactor(int factorIndex);  // 0=1x, 1=2x, 2=4x, 3=8x, 4=16x, 5=32x
+    void setOversamplingFactor(int factorIndex);  // 0=1x, 1=2x, ... 5=32x
     void setFilterType(FilterType type);
 
     int getOversamplingFactor() const;
