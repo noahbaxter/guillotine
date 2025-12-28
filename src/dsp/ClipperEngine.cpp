@@ -194,18 +194,7 @@ void ClipperEngine::process(juce::AudioBuffer<float>& buffer)
     if (deltaMonitorEnabled)
         stereoProcessor.decodeFromMidSide(dryBuffer);
 
-    // 7. Enforce ceiling (final hard limiter to catch filter overshoot) - wet only
-    if (enforceCeilingEnabled)
-    {
-        for (int ch = 0; ch < numChannels; ++ch)
-        {
-            float* data = buffer.getWritePointer(ch);
-            for (int i = 0; i < numSamples; ++i)
-                data[i] = std::clamp(data[i], -ceilingLinear, ceilingLinear);
-        }
-    }
-
-    // 8. Capture post-clip peak (after clipping, before output gain)
+    // 7. Capture post-clip peak (after clipping, before output gain)
     lastPostClipPeak = 0.0f;
     for (int ch = 0; ch < numChannels; ++ch)
     {
@@ -218,17 +207,7 @@ void ClipperEngine::process(juce::AudioBuffer<float>& buffer)
         }
     }
 
-    // 9. Output gain
-    juce::dsp::AudioBlock<float> outputBlock(buffer);
-    outputGain.process(juce::dsp::ProcessContextReplacing<float>(outputBlock));
-
-    if (deltaMonitorEnabled)
-    {
-        juce::dsp::AudioBlock<float> dryOutputBlock(dryBuffer);
-        outputGain.process(juce::dsp::ProcessContextReplacing<float>(dryOutputBlock));
-    }
-
-    // 10. Delta monitor: output = dry - wet (what was clipped off)
+    // 8. Delta monitor: output = dry - wet (what was clipped off)
     // Both signals have been through the same filter chain, so they're phase-aligned
     if (deltaMonitorEnabled)
     {
@@ -240,6 +219,22 @@ void ClipperEngine::process(juce::AudioBuffer<float>& buffer)
                 wet[i] = dry[i] - wet[i];
         }
     }
+
+    // 9. Enforce ceiling (final hard limiter) - applies to both normal and delta output
+    // This ensures true peak limiting regardless of mode, pre-output-gain
+    if (enforceCeilingEnabled)
+    {
+        for (int ch = 0; ch < numChannels; ++ch)
+        {
+            float* data = buffer.getWritePointer(ch);
+            for (int i = 0; i < numSamples; ++i)
+                data[i] = std::clamp(data[i], -ceilingLinear, ceilingLinear);
+        }
+    }
+
+    // 10. Output gain
+    juce::dsp::AudioBlock<float> outputBlock(buffer);
+    outputGain.process(juce::dsp::ProcessContextReplacing<float>(outputBlock));
 
     // 11. Sanitize output - replace NaN/Inf with 0 (defensive against oversimple bugs)
     for (int ch = 0; ch < numChannels; ++ch)
