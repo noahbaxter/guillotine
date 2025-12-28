@@ -52,6 +52,7 @@
       <FILE id="WebTheme" name="theme.js" compile="0" resource="1" file="web/lib/theme.js"/>
       <FILE id="WebSaturationCurves" name="saturation-curves.js" compile="0" resource="1"
             file="web/lib/saturation-curves.js"/>
+      <FILE id="WebConfig" name="config.js" compile="0" resource="1" file="web/lib/config.js"/>
       <FILE id="WebDeltaModeCss" name="delta-mode.css" compile="0" resource="1"
             file="web/lib/delta-mode.css"/>
       <FILE id="WebJuceLibIndex" name="index.js" compile="0" resource="1"
