@@ -168,8 +168,27 @@ void GuillotineEditor::pushEnvelopeData()
 
 std::optional<juce::WebBrowserComponent::Resource> GuillotineEditor::getResource(const juce::String& url)
 {
-    auto urlToRetrieve = url == "/" ? juce::String("index.html")
-                                    : url.fromFirstOccurrenceOf("/", false, false);
+    // Extract path from URL - handle both relative paths and full URLs
+    // e.g., "/" -> "index.html"
+    //       "/assets/base.png" -> "assets/base.png"
+    //       "https://juce.backend/assets/base.png" -> "assets/base.png"
+    juce::String urlToRetrieve;
+    if (url == "/")
+    {
+        urlToRetrieve = "index.html";
+    }
+    else
+    {
+        // Parse as URL to extract just the path component
+        juce::URL parsed(url);
+        auto path = parsed.getSubPath();
+        // Remove leading slash if present
+        urlToRetrieve = path.startsWith("/") ? path.substring(1) : path;
+    }
+
+    // Handle empty path (root)
+    if (urlToRetrieve.isEmpty())
+        urlToRetrieve = "index.html";
 
     // Resource lookup table - add new web files here
     struct ResourceEntry { const char* path; const void* data; int size; const char* mime; };
