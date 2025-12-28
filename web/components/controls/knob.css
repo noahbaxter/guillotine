@@ -102,9 +102,6 @@
 
 /* Tiny exponent knob (for T² curve) */
 .knob-wrapper--exponent {
-  position: absolute;
-  left: 80px;
-  top: 15px;
   gap: 2px;
 }
 
@@ -114,7 +111,13 @@
 }
 
 .knob-wrapper--exponent .knob__indicator {
+  width: 6px;
+  height: 6px;
   background: #ff6060;
+  border-radius: 50%;
+  top: 12%;
+  left: 50%;
+  transform-origin: center 300%;
 }
 
 .knob-wrapper--exponent .knob__value {

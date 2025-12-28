@@ -47,8 +47,8 @@ const COLORS = {
 
   // Waveform - normal mode
   waveformTop: 'rgba(255, 255, 255, 0.7)',
-  waveformMid: 'rgba(255, 255, 255, 0.4)',
-  waveformBottom: 'rgba(255, 255, 255, 0.15)',
+  waveformMid: 'rgba(255, 255, 255, 0.5)',
+  waveformBottom: 'rgba(255, 255, 255, 0.3)',
   waveformOutline: 'rgba(255, 255, 255, 0.9)',
 
   // Clipped outline (null in normal mode)
