@@ -169,21 +169,28 @@ void GuillotineEditor::pushEnvelopeData()
 std::optional<juce::WebBrowserComponent::Resource> GuillotineEditor::getResource(const juce::String& url)
 {
     // Extract path from URL - handle both relative paths and full URLs
-    // e.g., "/" -> "index.html"
-    //       "/assets/base.png" -> "assets/base.png"
-    //       "https://juce.backend/assets/base.png" -> "assets/base.png"
+    // WebView2 sends full URLs like "https://juce.backend/assets/base.png"
+    // We need to extract just "assets/base.png"
     juce::String urlToRetrieve;
-    if (url == "/")
+
+    if (url == "/" || url.endsWithIgnoreCase("juce.backend/") || url.endsWithIgnoreCase("juce.backend"))
     {
         urlToRetrieve = "index.html";
     }
+    else if (url.contains("juce.backend/"))
+    {
+        // Full URL: extract everything after "juce.backend/"
+        urlToRetrieve = url.fromLastOccurrenceOf("juce.backend/", false, true);
+    }
+    else if (url.startsWith("/"))
+    {
+        // Relative path like "/assets/base.png" -> "assets/base.png"
+        urlToRetrieve = url.substring(1);
+    }
     else
     {
-        // Parse as URL to extract just the path component
-        juce::URL parsed(url);
-        auto path = parsed.getSubPath();
-        // Remove leading slash if present
-        urlToRetrieve = path.startsWith("/") ? path.substring(1) : path;
+        // Already a relative path
+        urlToRetrieve = url;
     }
 
     // Handle empty path (root)
