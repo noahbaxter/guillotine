@@ -237,8 +237,8 @@ jobs:
       - name: Install plugin to expected location
         shell: pwsh
         run: |
-          $vst3Dir = "C:\Program Files\Common Files\VST3"
-          if (-not (Test-Path $vst3Dir)) { New-Item -ItemType Directory -Path $vst3Dir -Force }
+          $vst3Dir = "C:\Program Files\Common Files\VST3\Guillotine.vst3"
+          New-Item -ItemType Directory -Path $vst3Dir -Force
           Copy-Item -Recurse -Force "./plugin/*" "$vst3Dir/"
           Get-ChildItem "$vst3Dir" -Recurse | Select-Object FullName
 

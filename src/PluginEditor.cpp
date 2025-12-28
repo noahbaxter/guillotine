@@ -23,7 +23,7 @@ GuillotineEditor::GuillotineEditor(GuillotineProcessor& p)
               .withNativeIntegrationEnabled()
               .withResourceProvider(
                   [this](const auto& url) { return getResource(url); },
-                  juce::URL{"http://localhost/"}.getOrigin())
+                  juce::WebBrowserComponent::getResourceProviderRoot())
               .withOptionsFrom(inputGainRelay)
               .withOptionsFrom(outputGainRelay)
               .withOptionsFrom(ceilingRelay)
