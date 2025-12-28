@@ -46,9 +46,19 @@ jobs:
             third_party\JUCE\extras\Projucer\Builds\VisualStudio2022\x64\Release\App\Projucer.exe --resave Guillotine.jucer --fix-missing-dependencies
           )
 
+      - name: Restore NuGet packages
+        shell: cmd
+        run: |
+          echo === Checking for packages.config ===
+          dir /s Builds\VisualStudio2022\packages.config 2>nul || echo No packages.config found
+          echo === Checking vcxproj for PackageReference ===
+          findstr /i "PackageReference\|WebView2" Builds\VisualStudio2022\Guillotine_SharedCode.vcxproj || echo No PackageReference found
+          echo === Running nuget restore ===
+          nuget restore Builds/VisualStudio2022/Guillotine.sln || echo NuGet restore had issues
+
       - name: Build VST3
         shell: cmd
-        run: msbuild "Builds/VisualStudio2022/Guillotine.sln" /p:Configuration=Release /p:Platform=x64 /m /restore /t:Guillotine_VST3
+        run: msbuild "Builds/VisualStudio2022/Guillotine.sln" /p:Configuration=Release /p:Platform=x64 /m
 
       - name: Verify VST3 bundle structure
         shell: cmd
