@@ -58,19 +58,11 @@ jobs:
           msbuild "Builds/VisualStudio2022/Guillotine_SharedCode.vcxproj" /p:Configuration=Release /p:Platform=x64 /m /verbosity:minimal
           msbuild "Builds/VisualStudio2022/Guillotine_VST3.vcxproj" /p:Configuration=Release /p:Platform=x64 /m /verbosity:minimal
 
-      - name: Create Windows artifacts
-        shell: cmd
-        run: |
-          mkdir "dist-windows"
-          if exist "Builds\VisualStudio2022\x64\Release\VST3\Guillotine.dll" (
-            copy "Builds\VisualStudio2022\x64\Release\VST3\Guillotine.dll" "dist-windows\Guillotine.vst3"
-          )
-
       - name: Upload Windows VST3 artifact
         uses: actions/upload-artifact@v4
         with:
           name: Guillotine-VST3-Windows-x64
-          path: dist-windows/
+          path: Builds/VisualStudio2022/x64/Release/VST3/Guillotine.vst3
           retention-days: 30
 
   build-macos:
