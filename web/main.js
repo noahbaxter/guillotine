@@ -128,8 +128,12 @@ class GuillotineApp {
     }));
 
     // Ceiling knob (0-1 maps to 0dB to currentMinDb dynamically) - CENTER, larger
+    // Initial max must match default scale (-24dB -> threshold 0.4) to avoid showing full -60dB range
+    const initialMaxThreshold = -DEFAULT_MIN_DB / DISPLAY_DB_RANGE;
     this.thresholdKnob = new Knob(this.mainKnobsContainer, createSpriteKnob({
       label: 'Ceiling',
+      min: 0,
+      max: initialMaxThreshold,
       value: this.threshold,
       size: 60,
       spriteScale: 0.4,
