@@ -134,8 +134,8 @@ export class Waveform {
     // Compute both raw input and soft-clipped output points
     const { rawPoints, clippedPoints } = this.computePoints(envelope, writePos, pointsToShow, bufferSize, width, height, smoothingFactor);
 
-    // Get current colors from theme
-    const waveformColors = getWaveformColors();
+    // Get current colors from theme (force normal white when bypassed/inactive)
+    const waveformColors = getWaveformColors(!this.active);
     const clippedColor = getClippedColor();
     const clippedOutlineColor = getClippedOutlineColor();
 
@@ -171,11 +171,14 @@ export class Waveform {
       }
     }
 
+    // When bypassed, show raw waveform; when active, show clipped waveform
+    const whitePoints = this.active ? clippedPoints : rawPoints;
+
     // Draw opaque black background ONLY where white waveform will be (blocks red from showing through)
     this.ctx.beginPath();
     this.ctx.moveTo(0, height);
-    for (let i = 0; i < clippedPoints.length; i++) {
-      this.ctx.lineTo(clippedPoints[i].x, clippedPoints[i].y);
+    for (let i = 0; i < whitePoints.length; i++) {
+      this.ctx.lineTo(whitePoints[i].x, whitePoints[i].y);
     }
     this.ctx.lineTo(width, height);
     this.ctx.closePath();
@@ -185,11 +188,11 @@ export class Waveform {
     this.ctx.fillRect(0, 0, width, height);
     this.ctx.restore();
 
-    // Draw WHITE (clipped) waveform on top
+    // Draw WHITE waveform on top (clipped when active, raw when bypassed)
     this.ctx.beginPath();
     this.ctx.moveTo(0, height);
-    for (let i = 0; i < clippedPoints.length; i++) {
-      this.ctx.lineTo(clippedPoints[i].x, clippedPoints[i].y);
+    for (let i = 0; i < whitePoints.length; i++) {
+      this.ctx.lineTo(whitePoints[i].x, whitePoints[i].y);
     }
     this.ctx.lineTo(width, height);
     this.ctx.closePath();
@@ -198,9 +201,9 @@ export class Waveform {
 
     // Draw white outline on upper edge
     this.ctx.beginPath();
-    this.ctx.moveTo(clippedPoints[0].x, clippedPoints[0].y);
-    for (let i = 1; i < clippedPoints.length; i++) {
-      this.ctx.lineTo(clippedPoints[i].x, clippedPoints[i].y);
+    this.ctx.moveTo(whitePoints[0].x, whitePoints[0].y);
+    for (let i = 1; i < whitePoints.length; i++) {
+      this.ctx.lineTo(whitePoints[i].x, whitePoints[i].y);
     }
     this.ctx.strokeStyle = waveformColors.outline;
     this.ctx.lineWidth = 1.5;
