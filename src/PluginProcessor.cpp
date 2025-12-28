@@ -177,7 +177,18 @@ void GuillotineProcessor::prepareToPlay(double newSampleRate, int samplesPerBloc
     testOscPhase = 0.0;
 
     clipperEngine.prepare(newSampleRate, samplesPerBlock, getTotalNumInputChannels());
-    lastReportedLatency = 0;
+
+    // Read and apply oversampling settings so latency is correct from the start
+    // (Some hosts cache latency at load time and don't update when it changes)
+    int oversamplingChoice = static_cast<int>(apvts.getRawParameterValue("oversampling")->load());
+    int filterType = static_cast<int>(apvts.getRawParameterValue("filterType")->load());
+    clipperEngine.setOversamplingFactor(oversamplingChoice);
+    clipperEngine.setFilterType(filterType == 1);
+
+    // Report initial latency
+    int initialLatency = clipperEngine.getLatencyInSamples();
+    setLatencySamples(initialLatency);
+    lastReportedLatency = initialLatency;
 }
 
 void GuillotineProcessor::releaseResources()

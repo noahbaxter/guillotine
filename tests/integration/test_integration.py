@@ -9,28 +9,19 @@ from utils import load_audio, generate_sine, rms, peak, db_to_linear, samples_eq
 # Clipper Tests - Verify clipping behavior
 # =============================================================================
 
-def test_clipper_signal_below_ceiling_unchanged(plugin_path):
+def test_clipper_signal_below_ceiling_unchanged(fresh_plugin):
     """Signal below ceiling should pass through unchanged."""
-    plugin = load_plugin(plugin_path)
-    plugin.bypass_clipper = False
-    plugin.ceiling_db = 0.0  # 0dB = 1.0 linear
-    plugin.input_gain_db = 0.0
-    plugin.output_gain_db = 0.0
-
+    # fresh_plugin already has: oversampling=1x, ceiling=0dB, gains=0dB
     input_audio = generate_sine(amplitude=0.5)  # Well below ceiling
-    output = plugin.process(input_audio, 44100)
+    output = fresh_plugin.process(input_audio, 44100)
 
     passed, msg = samples_equal(output, input_audio, tolerance_db=-60)
     assert passed, f"Signal below ceiling should be unchanged: {msg}"
 
 
-def test_clipper_hard_clip_limits_peak(plugin_path):
+def test_clipper_hard_clip_limits_peak(make_plugin):
     """Hard clip should limit peak to ceiling."""
-    plugin = load_plugin(plugin_path)
-    plugin.bypass_clipper = False
-    plugin.ceiling_db = -6.0  # ~0.5 linear
-    plugin.input_gain_db = 0.0
-    plugin.output_gain_db = 0.0
+    plugin = make_plugin(ceiling_db=-6.0)
 
     input_audio = generate_sine(amplitude=0.9)  # Above ceiling
     output = plugin.process(input_audio, 44100)
@@ -41,13 +32,9 @@ def test_clipper_hard_clip_limits_peak(plugin_path):
         f"Peak {output_peak:.3f} exceeds ceiling {ceiling_linear:.3f}"
 
 
-def test_clipper_bypass_passes_unchanged(plugin_path):
+def test_clipper_bypass_passes_unchanged(make_plugin):
     """Bypass should pass signal unchanged."""
-    plugin = load_plugin(plugin_path)
-    plugin.bypass_clipper = True
-    plugin.ceiling_db = -20.0  # Low ceiling that would clip if active
-    plugin.input_gain_db = 0.0
-    plugin.output_gain_db = 0.0
+    plugin = make_plugin(bypass_clipper=True, ceiling_db=-20.0)
 
     input_audio = generate_sine(amplitude=0.8)
     output = plugin.process(input_audio, 44100)
@@ -56,21 +43,16 @@ def test_clipper_bypass_passes_unchanged(plugin_path):
     assert passed, f"Bypass should pass unchanged: {msg}"
 
 
-def test_clipper_ceiling_sweep(plugin_path):
+def test_clipper_ceiling_sweep(fresh_plugin):
     """Lower ceiling should produce lower output peak."""
-    plugin = load_plugin(plugin_path)
-    plugin.bypass_clipper = False
-    plugin.input_gain_db = 0.0
-    plugin.output_gain_db = 0.0
-
     input_audio = generate_sine(amplitude=0.9)
     ceilings_db = [0.0, -6.0, -12.0, -18.0]
     peaks = []
 
     for ceiling_db in ceilings_db:
-        plugin.ceiling_db = ceiling_db
-        settle_params(plugin)
-        output = plugin.process(input_audio.copy(), 44100)
+        fresh_plugin.ceiling_db = ceiling_db
+        settle_params(fresh_plugin)
+        output = fresh_plugin.process(input_audio.copy(), 44100)
         peaks.append(peak(output))
 
     # Each lower ceiling should produce lower peak
@@ -79,15 +61,9 @@ def test_clipper_ceiling_sweep(plugin_path):
             f"Ceiling {ceilings_db[i]}dB peak {peaks[i]:.3f} should be > ceiling {ceilings_db[i+1]}dB peak {peaks[i+1]:.3f}"
 
 
-def test_clipper_stereo_link_same_reduction(plugin_path):
+def test_clipper_stereo_link_same_reduction(make_plugin):
     """Stereo link should apply same gain reduction to both channels."""
-    plugin = load_plugin(plugin_path)
-    plugin.bypass_clipper = False
-    plugin.ceiling_db = -6.0
-    plugin.stereo_link = True
-    plugin.true_clip = False  # Disable final limiter to test stereo link in isolation
-    plugin.input_gain_db = 0.0
-    plugin.output_gain_db = 0.0
+    plugin = make_plugin(ceiling_db=-6.0, stereo_link=True, true_clip=False)
     settle_params(plugin)
 
     # Create stereo with different amplitudes
@@ -110,12 +86,9 @@ def test_clipper_stereo_link_same_reduction(plugin_path):
 # Gain Tests - Verify gain stage behavior
 # =============================================================================
 
-def test_input_gain_minus_6db_halves_amplitude(plugin_path):
+def test_input_gain_minus_6db_halves_amplitude(make_plugin):
     """-6dB input gain should reduce amplitude by ~50%."""
-    plugin = load_plugin(plugin_path)
-    plugin.bypass_clipper = True  # Bypass clipper to test gain alone
-    plugin.input_gain_db = -6.0
-    plugin.output_gain_db = 0.0
+    plugin = make_plugin(bypass_clipper=True, input_gain_db=-6.0)
 
     input_audio = generate_sine()
     output = plugin.process(input_audio, 44100)
