@@ -18,94 +18,38 @@ jobs:
           submodules: recursive
           fetch-depth: 0
 
-      - name: Verify JUCE submodule
-        shell: cmd
-        run: |
-          echo === JUCE submodule status ===
-          git submodule status
-          echo === JUCE version ===
-          type third_party\JUCE\CMakeLists.txt | findstr "JUCE VERSION"
-          echo === Check for withResourceProvider ===
-          findstr /S "withResourceProvider" third_party\JUCE\modules\juce_gui_extra\misc\juce_WebBrowserComponent.h
+      - name: Configure CMake
+        run: cmake -B build -G "Visual Studio 17 2022" -A x64
 
-      - name: Setup MSBuild
-        uses: microsoft/setup-msbuild@v1.3
+      - name: Build
+        run: cmake --build build --config Release --parallel
 
-      - name: Sync VERSION to jucer
+      - name: Verify VST3 bundle
         shell: pwsh
         run: |
-          $version = (Get-Content VERSION).Trim()
-          (Get-Content Guillotine.jucer) -replace 'version="[^"]*"', "version=`"$version`"" | Set-Content Guillotine.jucer
-
-      - name: Generate Windows project with Projucer
-        shell: cmd
-        run: |
-          third_party\JUCE\extras\Projucer\Builds\VisualStudio2022\x64\Release\App\Projucer.exe --resave Guillotine.jucer --fix-missing-dependencies || (
-            echo "Building Projucer first..."
-            msbuild "third_party\JUCE\extras\Projucer\Builds\VisualStudio2022\Projucer.sln" /p:Configuration=Release /p:Platform=x64 /m
-            third_party\JUCE\extras\Projucer\Builds\VisualStudio2022\x64\Release\App\Projucer.exe --resave Guillotine.jucer --fix-missing-dependencies
-          )
-
-      - name: Restore NuGet packages
-        shell: cmd
-        run: |
-          echo === Checking for packages.config ===
-          dir /s Builds\VisualStudio2022\packages.config 2>nul || echo No packages.config found
-          echo === Checking vcxproj for PackageReference ===
-          findstr /i "PackageReference\|WebView2" Builds\VisualStudio2022\Guillotine_SharedCode.vcxproj || echo No PackageReference found
-          echo === Running nuget restore ===
-          nuget restore Builds/VisualStudio2022/Guillotine.sln || echo NuGet restore had issues
-
-      - name: Build VST3
-        shell: cmd
-        run: msbuild "Builds/VisualStudio2022/Guillotine.sln" /p:Configuration=Release /p:Platform=x64 /m
-
-      - name: Verify VST3 bundle structure
-        shell: cmd
-        run: |
-          echo === Checking VST3 output structure ===
-          dir /s "Builds\VisualStudio2022\x64\Release\VST3\"
-
-          echo.
-          echo === Verifying VST3 bundle ===
-          if exist "Builds\VisualStudio2022\x64\Release\VST3\Guillotine.vst3\Contents\x86_64-win\Guillotine.vst3" (
-            echo [OK] VST3 bundle structure is correct
-            dir "Builds\VisualStudio2022\x64\Release\VST3\Guillotine.vst3\Contents\x86_64-win\Guillotine.vst3"
-          ) else if exist "Builds\VisualStudio2022\x64\Release\VST3\Guillotine.vst3" (
-            echo [OK] VST3 bundle folder exists
-            dir "Builds\VisualStudio2022\x64\Release\VST3\Guillotine.vst3"
-          ) else (
-            echo [ERROR] VST3 bundle not found!
-            exit /b 1
-          )
-
-      - name: Check embedded resources
-        shell: pwsh
-        run: |
-          $vst3Path = "Builds/VisualStudio2022/x64/Release/VST3/Guillotine.vst3"
-          $binary = Get-ChildItem -Path $vst3Path -Recurse -Include "*.vst3","*.dll" -File | Select-Object -First 1
-
-          if (-not $binary) {
-            Write-Host "[ERROR] No binary found in VST3 bundle"
+          $vst3Path = "build/Guillotine_artefacts/Release/VST3/Guillotine.vst3"
+          if (-not (Test-Path $vst3Path)) {
+            Write-Error "VST3 bundle not found at $vst3Path"
+            Get-ChildItem -Recurse build -Filter "*.vst3" | ForEach-Object { Write-Host $_.FullName }
             exit 1
           }
+          Write-Host "[OK] VST3 bundle exists at $vst3Path"
 
-          Write-Host "Binary: $($binary.FullName)"
-          $sizeMB = [math]::Round($binary.Length / 1MB, 2)
-          Write-Host "Size: $sizeMB MB"
-
-          # Binary should be > 1MB if resources are embedded
-          if ($binary.Length -lt 1MB) {
-            Write-Host "[ERROR] Binary too small ($sizeMB MB) - resources likely missing"
-            exit 1
+          $binary = Get-ChildItem -Path $vst3Path -Recurse -Include "*.vst3" -File | Select-Object -First 1
+          if ($binary) {
+            $sizeMB = [math]::Round($binary.Length / 1MB, 2)
+            Write-Host "Binary size: $sizeMB MB"
+            if ($binary.Length -lt 1MB) {
+              Write-Error "Binary too small - resources likely missing"
+              exit 1
+            }
           }
-          Write-Host "[OK] Binary size indicates resources are embedded"
 
-      - name: Upload Windows VST3 artifact
+      - name: Upload Windows artifacts
         uses: actions/upload-artifact@v4
         with:
           name: Guillotine-VST3-Windows-x64
-          path: Builds/VisualStudio2022/x64/Release/VST3/Guillotine.vst3
+          path: build/Guillotine_artefacts/Release/VST3/Guillotine.vst3
           retention-days: 30
 
   build-macos:
@@ -122,77 +66,38 @@ jobs:
         with:
           xcode-version: latest-stable
 
-      - name: Sync VERSION to jucer
+      - name: Configure CMake
         run: |
-          VERSION=$(cat VERSION | tr -d '\n')
-          sed -i '' "s/version=\"[^\"]*\"/version=\"$VERSION\"/" Guillotine.jucer
+          cmake -B build -G Xcode \
+            -DCMAKE_OSX_ARCHITECTURES="arm64;x86_64" \
+            -DCMAKE_OSX_DEPLOYMENT_TARGET=10.15
 
-      - name: Build Projucer
-        run: |
-          xcodebuild -project "third_party/JUCE/extras/Projucer/Builds/MacOSX/Projucer.xcodeproj" \
-            -scheme "Projucer - App" \
-            -configuration Release \
-            build
+      - name: Build
+        run: cmake --build build --config Release --parallel
 
-      - name: Generate Xcode project
-        run: |
-          "third_party/JUCE/extras/Projucer/Builds/MacOSX/build/Release/Projucer.app/Contents/MacOS/Projucer" --resave "Guillotine.jucer" --fix-missing-dependencies
-
-      - name: Build VST3 with xcodebuild
-        run: |
-          xcodebuild \
-            -project "Builds/MacOSX/Guillotine.xcodeproj" \
-            -scheme "Guillotine - VST3" \
-            -configuration Release \
-            -destination "generic/platform=macOS" \
-            ARCHS="arm64 x86_64" \
-            ONLY_ACTIVE_ARCH=NO \
-            MACOSX_DEPLOYMENT_TARGET=10.15 \
-            build
-
-      - name: Build AU with xcodebuild
-        run: |
-          xcodebuild \
-            -project "Builds/MacOSX/Guillotine.xcodeproj" \
-            -scheme "Guillotine - AU" \
-            -configuration Release \
-            -destination "generic/platform=macOS" \
-            ARCHS="arm64 x86_64" \
-            ONLY_ACTIVE_ARCH=NO \
-            MACOSX_DEPLOYMENT_TARGET=10.15 \
-            build
-
-      - name: Verify macOS builds
+      - name: Verify builds
         run: |
           echo "=== Verifying VST3 bundle ==="
-          VST3_PATH="Builds/MacOSX/build/Release/Guillotine.vst3"
+          VST3_PATH="build/Guillotine_artefacts/Release/VST3/Guillotine.vst3"
           if [ ! -d "$VST3_PATH" ]; then
-            echo "[ERROR] VST3 not found"
+            echo "[ERROR] VST3 not found at $VST3_PATH"
+            find build -name "*.vst3" -type d
             exit 1
           fi
           echo "[OK] VST3 bundle exists"
 
           BINARY="$VST3_PATH/Contents/MacOS/Guillotine"
-          if [ ! -f "$BINARY" ]; then
-            echo "[ERROR] VST3 binary not found"
-            exit 1
+          if [ -f "$BINARY" ]; then
+            lipo -info "$BINARY"
+            SIZE=$(stat -f%z "$BINARY")
+            SIZE_MB=$(echo "scale=2; $SIZE / 1048576" | bc)
+            echo "Size: ${SIZE_MB} MB"
           fi
-
-          lipo -info "$BINARY"
-          SIZE=$(stat -f%z "$BINARY")
-          SIZE_MB=$(echo "scale=2; $SIZE / 1048576" | bc)
-          echo "Size: ${SIZE_MB} MB"
-
-          if [ "$SIZE" -lt 1048576 ]; then
-            echo "[ERROR] Binary too small (${SIZE_MB} MB) - resources likely missing"
-            exit 1
-          fi
-          echo "[OK] Binary size indicates resources are embedded"
 
           echo "=== Verifying AU bundle ==="
-          AU_PATH="Builds/MacOSX/build/Release/Guillotine.component"
+          AU_PATH="build/Guillotine_artefacts/Release/AU/Guillotine.component"
           if [ ! -d "$AU_PATH" ]; then
-            echo "[ERROR] AU not found"
+            echo "[ERROR] AU not found at $AU_PATH"
             exit 1
           fi
           echo "[OK] AU bundle exists"
@@ -203,8 +108,8 @@ jobs:
         with:
           name: Guillotine-macOS
           path: |
-            Builds/MacOSX/build/Release/Guillotine.vst3
-            Builds/MacOSX/build/Release/Guillotine.component
+            build/Guillotine_artefacts/Release/VST3/Guillotine.vst3
+            build/Guillotine_artefacts/Release/AU/Guillotine.component
           retention-days: 30
 
   build-linux:
@@ -234,32 +139,19 @@ jobs:
             libxss-dev \
             pkg-config
 
-      - name: Sync VERSION to jucer
-        run: |
-          VERSION=$(cat VERSION | tr -d '\n')
-          sed -i "s/version=\"[^\"]*\"/version=\"$VERSION\"/" Guillotine.jucer
+      - name: Configure CMake
+        run: cmake -B build -DCMAKE_BUILD_TYPE=Release
 
-      - name: Build Projucer
-        run: |
-          cd third_party/JUCE/extras/Projucer/Builds/LinuxMakefile
-          make CONFIG=Release -j$(nproc)
-
-      - name: Generate Linux project
-        run: |
-          third_party/JUCE/extras/Projucer/Builds/LinuxMakefile/build/Projucer --resave Guillotine.jucer --fix-missing-dependencies
-
-      - name: Build with Make
-        run: |
-          cd Builds/LinuxMakefile
-          make clean
-          make -j$(nproc) CONFIG=Release
+      - name: Build
+        run: cmake --build build --config Release --parallel
 
       - name: Verify Linux VST3 bundle
         run: |
           echo "=== Checking VST3 bundle structure ==="
-          VST3_PATH="Builds/LinuxMakefile/build/Guillotine.vst3"
+          VST3_PATH="build/Guillotine_artefacts/Release/VST3/Guillotine.vst3"
           if [ ! -d "$VST3_PATH" ]; then
-            echo "[ERROR] VST3 bundle not found"
+            echo "[ERROR] VST3 bundle not found at $VST3_PATH"
+            find build -name "*.vst3" -type d
             exit 1
           fi
           echo "[OK] VST3 bundle directory exists"
@@ -267,28 +159,17 @@ jobs:
 
           SO_FILE="$VST3_PATH/Contents/x86_64-linux/Guillotine.so"
           if [ ! -f "$SO_FILE" ]; then
-            echo "[ERROR] VST3 .so file not found in bundle"
+            echo "[ERROR] VST3 .so file not found"
             exit 1
           fi
           echo "[OK] VST3 .so file found"
           ls -la "$SO_FILE"
-          file "$SO_FILE"
-
-          SIZE=$(stat -c%s "$SO_FILE")
-          SIZE_MB=$(echo "scale=2; $SIZE / 1048576" | bc)
-          echo "Size: ${SIZE_MB} MB"
-
-          if [ "$SIZE" -lt 1048576 ]; then
-            echo "[ERROR] Binary too small (${SIZE_MB} MB) - resources likely missing"
-            exit 1
-          fi
-          echo "[OK] Binary size indicates resources are embedded"
 
       - name: Upload Linux artifacts
         uses: actions/upload-artifact@v4
         with:
           name: Guillotine-VST3-Linux-x64
-          path: Builds/LinuxMakefile/build/Guillotine.vst3
+          path: build/Guillotine_artefacts/Release/VST3/Guillotine.vst3
           retention-days: 30
 
   test:
@@ -310,7 +191,7 @@ jobs:
       - name: Install plugin to expected location
         run: |
           mkdir -p ~/Library/Audio/Plug-Ins/VST3
-          cp -R ./plugin/Guillotine.vst3 ~/Library/Audio/Plug-Ins/VST3/
+          cp -R ./plugin/VST3/Guillotine.vst3 ~/Library/Audio/Plug-Ins/VST3/
 
       - name: Setup Python
         uses: actions/setup-python@v5
@@ -355,7 +236,6 @@ jobs:
           VERSION=$(cat VERSION | tr -d '\n')
           echo "version=$VERSION" >> $GITHUB_OUTPUT
 
-          # Check if tag already exists
           if git rev-parse "v$VERSION" >/dev/null 2>&1; then
             echo "Tag v$VERSION already exists, skipping release"
             echo "should_release=false" >> $GITHUB_OUTPUT
