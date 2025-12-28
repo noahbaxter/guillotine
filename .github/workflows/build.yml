@@ -16,6 +16,17 @@ jobs:
         uses: actions/checkout@v4
         with:
           submodules: recursive
+          fetch-depth: 0
+
+      - name: Verify JUCE submodule
+        shell: cmd
+        run: |
+          echo === JUCE submodule status ===
+          git submodule status
+          echo === JUCE version ===
+          type third_party\JUCE\CMakeLists.txt | findstr "JUCE VERSION"
+          echo === Check for withResourceProvider ===
+          findstr /S "withResourceProvider" third_party\JUCE\modules\juce_gui_extra\misc\juce_WebBrowserComponent.h
 
       - name: Setup MSBuild
         uses: microsoft/setup-msbuild@v1.3
