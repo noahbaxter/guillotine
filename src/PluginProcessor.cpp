@@ -43,7 +43,7 @@ juce::AudioProcessorValueTreeState::ParameterLayout GuillotineProcessor::createP
         juce::ParameterID{"oversampling", 1},
         "Oversampling",
         juce::StringArray{"1x", "2x", "4x", "8x", "16x", "32x"},
-        0));
+        2));  // Default to 4x
 
     params.push_back(std::make_unique<juce::AudioParameterFloat>(
         juce::ParameterID{"inputGain", 1},
@@ -85,7 +85,7 @@ juce::AudioProcessorValueTreeState::ParameterLayout GuillotineProcessor::createP
     params.push_back(std::make_unique<juce::AudioParameterBool>(
         juce::ParameterID{"stereoLink", 1},
         "Stereo Link",
-        false));
+        true));  // Default to linked
 
     // Delta monitor
     params.push_back(std::make_unique<juce::AudioParameterBool>(
