@@ -27,8 +27,7 @@ GuillotineEditor::GuillotineEditor(GuillotineProcessor& p)
                           juce::File::SpecialLocationType::tempDirectory)))
               .withNativeIntegrationEnabled()
               .withResourceProvider(
-                  [this](const auto& url) { return getResource(url); },
-                  juce::WebBrowserComponent::getResourceProviderRoot())
+                  [this](const auto& url) { return getResource(url); })
               .withOptionsFrom(inputGainRelay)
               .withOptionsFrom(outputGainRelay)
               .withOptionsFrom(ceilingRelay)
