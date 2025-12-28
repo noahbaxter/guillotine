@@ -23,7 +23,8 @@ private:
     juce::WebSliderRelay inputGainRelay;
     juce::WebSliderRelay outputGainRelay;
     juce::WebSliderRelay ceilingRelay;
-    juce::WebSliderRelay sharpnessRelay;
+    juce::WebSliderRelay curveRelay;
+    juce::WebSliderRelay curveExponentRelay;
     juce::WebSliderRelay oversamplingRelay;
     juce::WebSliderRelay filterTypeRelay;
     juce::WebSliderRelay channelModeRelay;
@@ -38,7 +39,8 @@ private:
     juce::WebSliderParameterAttachment inputGainAttachment;
     juce::WebSliderParameterAttachment outputGainAttachment;
     juce::WebSliderParameterAttachment ceilingAttachment;
-    juce::WebSliderParameterAttachment sharpnessAttachment;
+    juce::WebSliderParameterAttachment curveAttachment;
+    juce::WebSliderParameterAttachment curveExponentAttachment;
     juce::WebSliderParameterAttachment oversamplingAttachment;
     juce::WebSliderParameterAttachment filterTypeAttachment;
     juce::WebSliderParameterAttachment channelModeAttachment;

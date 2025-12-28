@@ -9,7 +9,8 @@ GuillotineEditor::GuillotineEditor(GuillotineProcessor& p)
       inputGainRelay{"inputGain"},
       outputGainRelay{"outputGain"},
       ceilingRelay{"ceiling"},
-      sharpnessRelay{"sharpness"},
+      curveRelay{"curve"},
+      curveExponentRelay{"curveExponent"},
       oversamplingRelay{"oversampling"},
       filterTypeRelay{"filterType"},
       channelModeRelay{"channelMode"},
@@ -26,7 +27,8 @@ GuillotineEditor::GuillotineEditor(GuillotineProcessor& p)
               .withOptionsFrom(inputGainRelay)
               .withOptionsFrom(outputGainRelay)
               .withOptionsFrom(ceilingRelay)
-              .withOptionsFrom(sharpnessRelay)
+              .withOptionsFrom(curveRelay)
+              .withOptionsFrom(curveExponentRelay)
               .withOptionsFrom(oversamplingRelay)
               .withOptionsFrom(filterTypeRelay)
               .withOptionsFrom(channelModeRelay)
@@ -44,9 +46,12 @@ GuillotineEditor::GuillotineEditor(GuillotineProcessor& p)
       ceilingAttachment{
           *audioProcessor.getAPVTS().getParameter("ceiling"),
           ceilingRelay, nullptr},
-      sharpnessAttachment{
-          *audioProcessor.getAPVTS().getParameter("sharpness"),
-          sharpnessRelay, nullptr},
+      curveAttachment{
+          *audioProcessor.getAPVTS().getParameter("curve"),
+          curveRelay, nullptr},
+      curveExponentAttachment{
+          *audioProcessor.getAPVTS().getParameter("curveExponent"),
+          curveExponentRelay, nullptr},
       oversamplingAttachment{
           *audioProcessor.getAPVTS().getParameter("oversampling"),
           oversamplingRelay, nullptr},
@@ -98,31 +103,39 @@ void GuillotineEditor::timerCallback()
 
 void GuillotineEditor::pushEnvelopeData()
 {
-    const auto& envelope = audioProcessor.getEnvelopeBuffer();
+    const auto& preClip = audioProcessor.getEnvelopePreClip();
+    const auto& postClip = audioProcessor.getEnvelopePostClip();
     const auto& thresholds = audioProcessor.getEnvelopeClipThresholds();
     const int writePos = audioProcessor.getEnvelopeWritePosition().load();
 
-    // Build JSON array for envelope data
-    juce::String envelopeJson = "[";
+    // Build JSON arrays for envelope data
+    juce::String preClipJson = "[";
+    juce::String postClipJson = "[";
     juce::String thresholdsJson = "[";
 
     for (int i = 0; i < GuillotineProcessor::envelopeBufferSize; ++i)
     {
         if (i > 0)
         {
-            envelopeJson += ",";
+            preClipJson += ",";
+            postClipJson += ",";
             thresholdsJson += ",";
         }
-        envelopeJson += juce::String(envelope[i], 6);
+        preClipJson += juce::String(preClip[i], 6);
+        postClipJson += juce::String(postClip[i], 6);
         thresholdsJson += juce::String(thresholds[i], 6);
     }
 
-    envelopeJson += "]";
+    preClipJson += "]";
+    postClipJson += "]";
     thresholdsJson += "]";
 
     // Call JavaScript function to update the waveform
+    // preClip = after input gain, before clipping (RED - what gets clipped off)
+    // postClip = after clipping, before output gain (WHITE - what you hear)
     juce::String js = "if (window.updateEnvelope) { window.updateEnvelope({ "
-                      "envelope: " + envelopeJson + ", "
+                      "preClip: " + preClipJson + ", "
+                      "postClip: " + postClipJson + ", "
                       "thresholds: " + thresholdsJson + ", "
                       "writePos: " + juce::String(writePos) + " }); }";
 
@@ -146,6 +159,7 @@ std::optional<juce::WebBrowserComponent::Resource> GuillotineEditor::getResource
         { "lib/guillotine-utils.js", BinaryData::guillotineutils_js, BinaryData::guillotineutils_jsSize, "text/javascript" },
         { "lib/svg-utils.js",        BinaryData::svgutils_js,       BinaryData::svgutils_jsSize,       "text/javascript" },
         { "lib/theme.js",            BinaryData::theme_js,          BinaryData::theme_jsSize,          "text/javascript" },
+        { "lib/saturation-curves.js", BinaryData::saturationcurves_js, BinaryData::saturationcurves_jsSize, "text/javascript" },
         { "lib/delta-mode.css",      BinaryData::deltamode_css,     BinaryData::deltamode_cssSize,     "text/css" },
         // JUCE frontend library
         { "lib/juce/index.js",       BinaryData::index_js,        BinaryData::index_jsSize,        "text/javascript" },
