@@ -278,7 +278,6 @@ export class Knob {
     if (parseValue) {
       const parsed = parseValue(input);
       if (parsed !== null && !isNaN(parsed)) {
-        // Don't snap to step - allow any value within range
         return Math.max(min, Math.min(max, parsed));
       }
       return null;
@@ -291,7 +290,6 @@ export class Knob {
     const num = parseFloat(match[0]);
     if (isNaN(num)) return null;
 
-    // Don't snap to step - allow any value within range
     return Math.max(min, Math.min(max, num));
   }
 
