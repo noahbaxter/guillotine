@@ -3,6 +3,7 @@
 
 import { loadStyles } from '../../lib/component-loader.js';
 import { getClippedColor, getClippedOutlineColor, getWaveformColors } from '../../lib/theme.js';
+import { CurveType, applyWithCeiling } from '../../lib/saturation-curves.js';
 
 const DEFAULTS = {
   displayMinDb: -60,
@@ -25,6 +26,11 @@ export class Waveform {
     this.bladeJitterFn = null;  // Function to get blade jitter offset at x
     this.active = true;  // When false, skip drawing clipped regions
     this.cutPosition = 1;  // 0 = cut at top (no clipping), 1 = cut at threshold (full clipping)
+
+    // Soft clipping simulation
+    this.curveMode = CurveType.Hard;  // 0=Hard, 1=Quintic, 2=Cubic, 3=Tanh, 4=Arctan, 5=T²
+    this.ceilingLinear = 1.0;  // Threshold in linear amplitude
+    this.curveExponent = 2.0;  // For T² mode: 1.0=linear, 2.0=squared, up to 4.0
 
     this.ready = this.init();
     this.render = this.render.bind(this);
@@ -68,6 +74,18 @@ export class Waveform {
     this.cutPosition = Math.max(0, Math.min(1, value));
   }
 
+  setCurveMode(mode) {
+    this.curveMode = mode;
+  }
+
+  setCeilingLinear(value) {
+    this.ceilingLinear = Math.max(0.0001, value);
+  }
+
+  setCurveExponent(value) {
+    this.curveExponent = Math.max(1.0, Math.min(4.0, value));
+  }
+
   updateThresholdY() {
     const height = this.canvas.height / (window.devicePixelRatio || 1);
     this.thresholdY = this.threshold * height;
@@ -98,7 +116,9 @@ export class Waveform {
   draw() {
     if (!this.data) return;
 
-    const { envelope, writePos } = this.data;
+    // Use preClip (input signal after input gain, before clipping) for display
+    // We simulate clipping in JS using the saturation curves
+    const { preClip: envelope, writePos } = this.data;
     const { smoothingFactor } = this.options;
 
     const width = this.canvas.width / (window.devicePixelRatio || 1);
@@ -110,18 +130,8 @@ export class Waveform {
     const pointsToShow = Math.min(bufferSize, Math.floor(width));
     if (pointsToShow < 2) return;
 
-    const points = this.computePoints(envelope, writePos, pointsToShow, bufferSize, width, height, smoothingFactor);
-
-    // Effective threshold based on cutPosition: 0 = top (no clipping), 1 = at threshold (full clipping)
-    const effectiveThreshY = this.thresholdY * this.cutPosition;
-
-    // Jittered threshold function
-    const getJitteredThreshY = (x) => {
-      if (this.bladeJitterFn) {
-        return effectiveThreshY + this.bladeJitterFn(x) * this.cutPosition;
-      }
-      return effectiveThreshY;
-    };
+    // Compute both raw input and soft-clipped output points
+    const { rawPoints, clippedPoints } = this.computePoints(envelope, writePos, pointsToShow, bufferSize, width, height, smoothingFactor);
 
     // Get current colors from theme
     const waveformColors = getWaveformColors();
@@ -134,44 +144,72 @@ export class Waveform {
     gradient.addColorStop(0.5, waveformColors.gradientMid);
     gradient.addColorStop(1, waveformColors.gradientBottom);
 
-    // Draw white fill (capped at blade edge when active, full when bypassed)
-    this.ctx.beginPath();
-    this.ctx.moveTo(0, height);
+    // Draw RED (input/raw) as ghost waveform FIRST (behind white)
+    // Only when actively clipping (cutPosition > 0)
+    if (this.cutPosition > 0) {
+      this.ctx.beginPath();
+      this.ctx.moveTo(0, height);
+      for (let i = 0; i < rawPoints.length; i++) {
+        this.ctx.lineTo(rawPoints[i].x, rawPoints[i].y);
+      }
+      this.ctx.lineTo(width, height);
+      this.ctx.closePath();
+      this.ctx.fillStyle = clippedColor;
+      this.ctx.fill();
 
-    const edge = [];
-    for (let i = 0; i < pointsToShow; i++) {
-      const x = points[i].x;
-      const y = points[i].y;
-      // Cap at jittered threshold when cutting (cutPosition > 0)
-      const edgeY = this.cutPosition > 0 ? Math.max(y, getJitteredThreshY(x)) : y;
-      edge.push({ x, y: edgeY });
-      this.ctx.lineTo(x, edgeY);
+      // Red outline on raw waveform edge (only in delta mode)
+      if (clippedOutlineColor) {
+        this.ctx.beginPath();
+        this.ctx.moveTo(rawPoints[0].x, rawPoints[0].y);
+        for (let i = 1; i < rawPoints.length; i++) {
+          this.ctx.lineTo(rawPoints[i].x, rawPoints[i].y);
+        }
+        this.ctx.strokeStyle = clippedOutlineColor;
+        this.ctx.lineWidth = 1.5;
+        this.ctx.stroke();
+      }
     }
 
+    // Draw opaque black background ONLY where white waveform will be (blocks red from showing through)
+    this.ctx.beginPath();
+    this.ctx.moveTo(0, height);
+    for (let i = 0; i < clippedPoints.length; i++) {
+      this.ctx.lineTo(clippedPoints[i].x, clippedPoints[i].y);
+    }
+    this.ctx.lineTo(width, height);
+    this.ctx.closePath();
+    this.ctx.save();
+    this.ctx.clip();
+    this.ctx.fillStyle = 'rgba(0, 0, 0, 1)';
+    this.ctx.fillRect(0, 0, width, height);
+    this.ctx.restore();
+
+    // Draw WHITE (clipped) waveform on top
+    this.ctx.beginPath();
+    this.ctx.moveTo(0, height);
+    for (let i = 0; i < clippedPoints.length; i++) {
+      this.ctx.lineTo(clippedPoints[i].x, clippedPoints[i].y);
+    }
     this.ctx.lineTo(width, height);
     this.ctx.closePath();
     this.ctx.fillStyle = gradient;
     this.ctx.fill();
 
-    // Draw white outline on upper edge (follows jitter)
+    // Draw white outline on upper edge
     this.ctx.beginPath();
-    this.ctx.moveTo(edge[0].x, edge[0].y);
-    for (let i = 1; i < edge.length; i++) {
-      this.ctx.lineTo(edge[i].x, edge[i].y);
+    this.ctx.moveTo(clippedPoints[0].x, clippedPoints[0].y);
+    for (let i = 1; i < clippedPoints.length; i++) {
+      this.ctx.lineTo(clippedPoints[i].x, clippedPoints[i].y);
     }
     this.ctx.strokeStyle = waveformColors.outline;
     this.ctx.lineWidth = 1.5;
     this.ctx.stroke();
-
-    // Draw red fill (portion above threshold) - only when cutting (cutPosition > 0)
-    if (this.cutPosition > 0) {
-      this.drawClippedRegions(points, clippedColor, clippedOutlineColor, getJitteredThreshY);
-    }
   }
 
   computePoints(envelope, writePos, pointsToShow, bufferSize, width, height, smoothingFactor) {
     const { displayMinDb, displayMaxDb } = this.options;
-    const points = [];
+    const rawPoints = [];      // Input signal (for RED ghost)
+    const clippedPoints = [];  // Soft-clipped signal (for WHITE)
     const smoothWindow = Math.max(1, Math.floor(smoothingFactor * 10));
 
     for (let i = 0; i < pointsToShow; i++) {
@@ -183,99 +221,25 @@ export class Waveform {
         sum += envelope[bufIdx];
         count++;
       }
-      const env = sum / count;
+      const env = sum / count;  // Raw input amplitude
 
       const x = (i / (pointsToShow - 1)) * width;
-      const db = env > 0 ? 20 * Math.log10(env) : displayMinDb;
-      const normDb = (db - displayMinDb) / (displayMaxDb - displayMinDb);
-      const y = height - Math.max(0, Math.min(1, normDb)) * height;
 
-      points.push({ x, y });
+      // Raw input point (for RED)
+      const rawDb = env > 0 ? 20 * Math.log10(env) : displayMinDb;
+      const rawNormDb = (rawDb - displayMinDb) / (displayMaxDb - displayMinDb);
+      const rawY = height - Math.max(0, Math.min(1, rawNormDb)) * height;
+      rawPoints.push({ x, y: rawY });
+
+      // Soft-clipped output point (for WHITE)
+      const clippedEnv = applyWithCeiling(this.curveMode, env, this.ceilingLinear, this.curveExponent);
+      const clippedDb = clippedEnv > 0 ? 20 * Math.log10(clippedEnv) : displayMinDb;
+      const clippedNormDb = (clippedDb - displayMinDb) / (displayMaxDb - displayMinDb);
+      const clippedY = height - Math.max(0, Math.min(1, clippedNormDb)) * height;
+      clippedPoints.push({ x, y: clippedY });
     }
 
-    return points;
-  }
-
-  drawClippedRegions(points, color, outlineColor, getJitteredThreshY) {
-    this.ctx.beginPath();
-    let inClip = false;
-    let clipStartX = 0;
-    const outlineSegments = [];  // Store outline points for each clipped region
-
-    for (let i = 0; i < points.length; i++) {
-      const { x, y } = points[i];
-      const jitteredThreshY = getJitteredThreshY(x);
-      const isClipped = y < jitteredThreshY;
-
-      if (isClipped) {
-        if (!inClip) {
-          clipStartX = x;
-          this.ctx.moveTo(x, jitteredThreshY);
-          outlineSegments.push([]);  // Start new outline segment
-          // Include entry point at threshold level for steep edge visibility
-          outlineSegments[outlineSegments.length - 1].push({ x, y: jitteredThreshY });
-          inClip = true;
-        }
-        this.ctx.lineTo(x, y);
-        // Track the actual waveform point for outline
-        if (outlineSegments.length > 0) {
-          outlineSegments[outlineSegments.length - 1].push({ x, y });
-        }
-      } else if (inClip) {
-        // Include exit point at threshold level for steep edge visibility
-        const exitThreshY = getJitteredThreshY(x);
-        if (outlineSegments.length > 0) {
-          outlineSegments[outlineSegments.length - 1].push({ x, y: exitThreshY });
-        }
-        this.ctx.lineTo(x, exitThreshY);
-        // Draw jagged bottom edge back to start
-        for (let bx = x; bx >= clipStartX; bx -= 2) {
-          this.ctx.lineTo(bx, getJitteredThreshY(bx));
-        }
-        this.ctx.closePath();
-        this.ctx.fillStyle = color;
-        this.ctx.fill();
-        this.ctx.beginPath();
-        inClip = false;
-      }
-    }
-
-    if (inClip) {
-      const lastX = points[points.length - 1].x;
-      this.ctx.lineTo(lastX, getJitteredThreshY(lastX));
-      // Draw jagged bottom edge back to start
-      for (let bx = lastX; bx >= clipStartX; bx -= 2) {
-        this.ctx.lineTo(bx, getJitteredThreshY(bx));
-      }
-      this.ctx.closePath();
-      this.ctx.fillStyle = color;
-      this.ctx.fill();
-    }
-
-    // Draw red outline on top edge of clipped regions (only in delta mode)
-    if (outlineColor && outlineSegments.length > 0) {
-      this.ctx.strokeStyle = outlineColor;
-      this.ctx.fillStyle = outlineColor;
-      this.ctx.lineWidth = 2;
-      this.ctx.lineCap = 'round';
-      this.ctx.lineJoin = 'round';
-
-      for (const segment of outlineSegments) {
-        if (segment.length === 1) {
-          // Single point - draw a small circle so it's visible
-          this.ctx.beginPath();
-          this.ctx.arc(segment[0].x, segment[0].y, 2, 0, Math.PI * 2);
-          this.ctx.fill();
-        } else if (segment.length > 1) {
-          this.ctx.beginPath();
-          this.ctx.moveTo(segment[0].x, segment[0].y);
-          for (let i = 1; i < segment.length; i++) {
-            this.ctx.lineTo(segment[i].x, segment[i].y);
-          }
-          this.ctx.stroke();
-        }
-      }
-    }
+    return { rawPoints, clippedPoints };
   }
 
   destroy() {
