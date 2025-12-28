@@ -47,6 +47,7 @@ body::before {
 
 /* Left column: Title + Guillotine + Bucket Text */
 #left-panel {
+  position: relative;
   display: flex;
   flex-direction: column;
   width: 50%;
@@ -224,4 +225,15 @@ body::before {
 
 #gain-knobs .knob:last-child {
   margin-left: 40px;
+}
+
+/* Version tag */
+#version-tag {
+  position: fixed;
+  bottom: 0px;
+  left: 12px;
+  font-family: var(--cursive-font);
+  font-size: 10px;
+  color: var(--color-delta-text);
+  pointer-events: none;
 }
