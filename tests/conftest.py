@@ -39,9 +39,16 @@ def get_vst3_path():
         raise RuntimeError(f"Unsupported platform: {system}")
 
 
+def _skip_pedalboard_on_windows():
+    """Skip test if pedalboard can't load VST3 on this platform."""
+    if platform.system() == "Windows":
+        pytest.skip("pedalboard VST3 loading not supported on Windows CI")
+
+
 @pytest.fixture
 def plugin_path():
     """Path to the installed VST3 plugin."""
+    _skip_pedalboard_on_windows()
     path = get_vst3_path()
     if not path.exists():
         pytest.skip(f"Plugin not found at {path}. Build and install the plugin first.")
