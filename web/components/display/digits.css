@@ -1,8 +1,33 @@
 .digits {
+  position: relative;
   display: flex;
   align-items: flex-end;
   justify-content: center;
   gap: 0;
+}
+
+.digits__sprites {
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  gap: 0;
+}
+
+/* Text fallback - hidden by default, flows normally when shown */
+.digits__text {
+  display: none;
+  font-family: var(--readable-font);
+  color: inherit;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.readable-mode .digits__sprites {
+  display: none;
+}
+
+.readable-mode .digits__text {
+  display: block;
 }
 
 .digits__cell {
@@ -26,7 +51,7 @@
 }
 
 .digits__dot {
-  margin-bottom: 2px;
+  margin-bottom: 0.125em;
 }
 
 .digits__dash {
@@ -40,9 +65,13 @@
   background-color: var(--color-blood-threshold);
 }
 
+.digits--red .digits__text {
+  color: var(--color-blood-threshold);
+}
+
 /* Glow effect */
 .digits--glow .digits__digit,
 .digits--glow .digits__dot,
 .digits--glow .digits__dash {
-  filter: drop-shadow(0 0 2px var(--color-white-80));
+  filter: drop-shadow(0 0 0.125em var(--color-white-80));
 }

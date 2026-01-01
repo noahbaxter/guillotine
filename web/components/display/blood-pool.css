@@ -10,11 +10,11 @@
 
 .blood-pool__puddle {
   position: absolute;
-  bottom: 2px;
+  bottom: 0.125em;
   left: 50%;
   transform: translateX(-50%);
-  width: 150px;
-  height: 40px;
+  width: 9.375em;
+  height: 2.5em;
   /* Color set via delta-mode.css using var(--color-blood-puddle) */
   border-radius: 50%;
   opacity: 0;

@@ -4,27 +4,33 @@
 import { loadStyles } from '../../lib/component-loader.js';
 import { animateLever } from '../../lib/guillotine-utils.js';
 import { createBlurFilter, createJitteryLine, createRoundedRectOutline } from '../../lib/svg-utils.js';
+import { pxToEm } from '../../lib/utils.js';
 
 const DEFAULTS = {
   upAngle: 0,
   downAngle: -35
 };
 
-const BASE_CONFIG = {
+// Base dimensions in px (at 16px root font-size)
+const BASE_CONFIG_PX = {
   frontWidth: 30,
   frontHeight: 10,
-  topHeight: 4,   // depth going back
-  rightWidth: 3   // depth going right
+  topHeight: 4,
+  rightWidth: 3
 };
 
-function applyIsometricBox(front, top, right, config) {
-  const { frontWidth, frontHeight, topHeight, rightWidth } = config;
+function applyIsometricBox(front, top, right, configPx) {
+  // Convert px values to em for scaling
+  const frontWidth = pxToEm(configPx.frontWidth);
+  const frontHeight = pxToEm(configPx.frontHeight);
+  const topHeight = pxToEm(configPx.topHeight);
+  const rightWidth = pxToEm(configPx.rightWidth);
 
   // Front face - simple rectangle
   Object.assign(front.style, {
     position: 'absolute',
-    width: `${frontWidth}px`,
-    height: `${frontHeight}px`,
+    width: `${frontWidth}em`,
+    height: `${frontHeight}em`,
     bottom: '0',
     left: '0'
   });
@@ -32,30 +38,31 @@ function applyIsometricBox(front, top, right, config) {
   // Top face - parallelogram clipped to exact shape
   Object.assign(top.style, {
     position: 'absolute',
-    width: `${frontWidth + rightWidth}px`,
-    height: `${topHeight}px`,
-    bottom: `${frontHeight}px`,
+    width: `${frontWidth + rightWidth}em`,
+    height: `${topHeight}em`,
+    bottom: `${frontHeight}em`,
     left: '0',
-    clipPath: `polygon(0 100%, ${frontWidth}px 100%, 100% 0, ${rightWidth}px 0)`
+    clipPath: `polygon(0 100%, ${frontWidth}em 100%, 100% 0, ${rightWidth}em 0)`
   });
 
   // Right face - parallelogram clipped to exact shape
   Object.assign(right.style, {
     position: 'absolute',
-    width: `${rightWidth}px`,
-    height: `${frontHeight + topHeight}px`,
+    width: `${rightWidth}em`,
+    height: `${frontHeight + topHeight}em`,
     bottom: '0',
-    left: `${frontWidth}px`,
-    clipPath: `polygon(0 ${topHeight}px, 100% 0, 100% ${frontHeight}px, 0 100%)`
+    left: `${frontWidth}em`,
+    clipPath: `polygon(0 ${topHeight}em, 100% 0, 100% ${frontHeight}em, 0 100%)`
   });
 }
 
-function createBoxBorders(container, config) {
-  const { frontWidth, frontHeight, topHeight, rightWidth } = config;
+function createBoxBorders(container, configPx) {
+  // Use original pixel values for SVG internal coordinates (stroke-width, jitter are calibrated for these)
+  const { frontWidth, frontHeight, topHeight, rightWidth } = configPx;
   const totalWidth = frontWidth + rightWidth;
   const totalHeight = frontHeight + topHeight;
 
-  // 7 vertices of the 3D box (in SVG coords where Y=0 is top)
+  // 7 vertices of the 3D box (in SVG coords where Y=0 is top) - in px
   const V0 = [0, totalHeight];                           // front bottom-left
   const V1 = [frontWidth, totalHeight];                  // front bottom-right
   const V2 = [frontWidth, topHeight];                    // front top-right
@@ -78,8 +85,11 @@ function createBoxBorders(container, config) {
   ];
 
   const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
-  svg.setAttribute('width', totalWidth);
-  svg.setAttribute('height', totalHeight);
+  // Display size in em (scales with root font-size)
+  svg.style.width = `${pxToEm(totalWidth)}em`;
+  svg.style.height = `${pxToEm(totalHeight)}em`;
+  // ViewBox in original px values so stroke-width and jitter work correctly
+  svg.setAttribute('viewBox', `0 0 ${totalWidth} ${totalHeight}`);
   svg.style.position = 'absolute';
   svg.style.bottom = '0';
   svg.style.left = '0';
@@ -139,24 +149,35 @@ export class Lever {
     this.base.appendChild(baseRight);
 
     // Apply computed isometric positioning
-    applyIsometricBox(baseFront, baseTop, baseRight, BASE_CONFIG);
+    applyIsometricBox(baseFront, baseTop, baseRight, BASE_CONFIG_PX);
 
     // Draw SVG borders for all 9 edges
-    createBoxBorders(this.base, BASE_CONFIG);
+    createBoxBorders(this.base, BASE_CONFIG_PX);
+
+    // Store references for resize handling
+    this.baseFaces = { front: baseFront, top: baseTop, right: baseRight };
+
+    // Re-apply styles on resize to fix texture rendering after font-size changes
+    this.resizeObserver = new ResizeObserver(() => {
+      applyIsometricBox(this.baseFaces.front, this.baseFaces.top, this.baseFaces.right, BASE_CONFIG_PX);
+    });
+    this.resizeObserver.observe(document.body);
 
     // Lever arm with pivot at bottom, centered on top face
     this.arm = document.createElement('div');
     this.arm.className = 'lever__arm';
 
     // Position arm at center of top face (on the surface)
-    // Account for base being offset at bottom: -10px in CSS
-    const { frontWidth, frontHeight, rightWidth } = BASE_CONFIG;
-    const baseOffset = -10;
+    // Account for base being offset at bottom: -10px (0.625em) in CSS
+    const frontWidth = pxToEm(BASE_CONFIG_PX.frontWidth);
+    const frontHeight = pxToEm(BASE_CONFIG_PX.frontHeight);
+    const rightWidth = pxToEm(BASE_CONFIG_PX.rightWidth);
+    const baseOffset = pxToEm(-10);
     const armX = (frontWidth + rightWidth) / 2;
     const armY = frontHeight + baseOffset;
     this.arm.style.position = 'absolute';
-    this.arm.style.bottom = `${armY}px`;
-    this.arm.style.left = `${armX}px`;
+    this.arm.style.bottom = `${armY}em`;
+    this.arm.style.left = `${armX}em`;
     this.arm.style.transform = 'translateX(-50%)';
 
     // Add jittery white outline to arm
@@ -211,13 +232,14 @@ export class Lever {
   }
 
   createArmOutline(armElement) {
-    const armWidth = 7;
-    const armHeight = 95;
+    const armWidthPx = 7;
+    const armHeightPx = 95;
     const cornerRadius = 4;
 
     const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
-    svg.setAttribute('width', armWidth);
-    svg.setAttribute('height', armHeight);
+    svg.style.width = `${pxToEm(armWidthPx)}em`;
+    svg.style.height = `${pxToEm(armHeightPx)}em`;
+    svg.setAttribute('viewBox', `0 0 ${armWidthPx} ${armHeightPx}`);
     svg.style.position = 'absolute';
     svg.style.top = '0';
     svg.style.left = '0';
@@ -225,7 +247,7 @@ export class Lever {
     svg.style.overflow = 'visible';
 
     svg.appendChild(createBlurFilter('arm-blur'));
-    svg.appendChild(createRoundedRectOutline(armWidth, armHeight, cornerRadius));
+    svg.appendChild(createRoundedRectOutline(armWidthPx, armHeightPx, cornerRadius));
 
     armElement.appendChild(svg);
   }
@@ -238,6 +260,7 @@ export class Lever {
 
   destroy() {
     if (this.cancelAnimation) this.cancelAnimation();
+    if (this.resizeObserver) this.resizeObserver.disconnect();
     if (this.element) this.element.remove();
   }
 }

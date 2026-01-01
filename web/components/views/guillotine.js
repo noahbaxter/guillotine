@@ -5,13 +5,16 @@ import { loadStyles } from '../../lib/component-loader.js';
 import { GUILLOTINE_CONFIG, animateValue } from '../../lib/guillotine-utils.js';
 import { getBloodColors, onDeltaModeChange } from '../../lib/theme.js';
 
+// Blood line endpoints as percentages of the BLADE IMAGE (not container)
+// Original px values: P1(100, 63), P2(180, 98) on the blade image
+// Blade image natural size: 300x344
+const BLADE_NATURAL = { width: 300, height: 344 };
+const BLOOD_LINE_P1 = { x: 108, y: 63 };
+const BLOOD_LINE_P2 = { x: 188, y: 98 };
+
 const DEFAULTS = {
   maxBladeTravel: 0.35,
   ropeClipOffset: 0.25,
-  bloodLineMaxJitter: 8,
-  // Blood line endpoints (x, y) - relative to guillotine container
-  bloodLineP1: { x: 100, y: 63 },   // Left point (upper)
-  bloodLineP2: { x: 180, y: 98 },  // Right point (lower)
   ...GUILLOTINE_CONFIG,
   images: {
     rope: 'assets/rope.png',
@@ -19,6 +22,30 @@ const DEFAULTS = {
     base: 'assets/base.png'
   }
 };
+
+// Calculate rendered image bounds for object-fit: contain
+function getContainedImageBounds(containerWidth, containerHeight, imageWidth, imageHeight) {
+  const containerRatio = containerWidth / containerHeight;
+  const imageRatio = imageWidth / imageHeight;
+
+  let renderedWidth, renderedHeight, offsetX, offsetY;
+
+  if (imageRatio > containerRatio) {
+    // Image is wider - constrained by width
+    renderedWidth = containerWidth;
+    renderedHeight = containerWidth / imageRatio;
+    offsetX = 0;
+    offsetY = (containerHeight - renderedHeight) / 2;
+  } else {
+    // Image is taller - constrained by height
+    renderedHeight = containerHeight;
+    renderedWidth = containerHeight * imageRatio;
+    offsetX = (containerWidth - renderedWidth) / 2;
+    offsetY = 0;
+  }
+
+  return { renderedWidth, renderedHeight, offsetX, offsetY };
+}
 
 export class Guillotine {
   static stylesLoaded = false;
@@ -73,6 +100,13 @@ export class Guillotine {
 
     this.setupBloodLine();
     this.updateVisuals();
+
+    // Re-setup on resize to fix canvas size and positions
+    this.resizeObserver = new ResizeObserver(() => {
+      this.setupBloodLine();
+      this.updateVisuals();
+    });
+    this.resizeObserver.observe(document.body);
   }
 
   setActive(active) {
@@ -136,6 +170,7 @@ export class Guillotine {
 
   destroy() {
     if (this.cancelAnimation) this.cancelAnimation();
+    if (this.resizeObserver) this.resizeObserver.disconnect();
     if (this.element) this.element.remove();
     this.elements = {};
   }
@@ -162,13 +197,11 @@ export class Guillotine {
   }
 
   generateBloodPattern() {
-    const { bloodLineP1, bloodLineP2 } = this.options;
-    const dx = bloodLineP2.x - bloodLineP1.x;
-    const dy = bloodLineP2.y - bloodLineP1.y;
-    const lineLength = Math.sqrt(dx * dx + dy * dy);
-
+    // Generate a fixed number of random points for the jitter pattern
+    // This will be interpolated along the line at any size
+    const patternLength = 50;
     this.bloodPattern = [];
-    for (let i = 0; i <= lineLength; i += 2) {
+    for (let i = 0; i <= patternLength; i++) {
       this.bloodPattern.push(Math.random() - 0.5);
     }
   }
@@ -178,12 +211,31 @@ export class Guillotine {
     if (!canvas || !this.bloodPattern.length) return;
 
     const ctx = canvas.getContext('2d');
-    const { bloodLineP1, bloodLineP2, bloodLineMaxJitter } = this.options;
+    const containerWidth = this.container.clientWidth;
+    const containerHeight = this.container.clientHeight;
     const offset = this.getBladeOffset();
 
-    // Apply blade offset to both points
-    const p1 = { x: bloodLineP1.x, y: bloodLineP1.y + offset };
-    const p2 = { x: bloodLineP2.x, y: bloodLineP2.y + offset };
+    // Scale jitter relative to window size (16px at 600px width)
+    const baseJitter = 16;
+    const baseWidth = 600;
+    const bloodLineMaxJitter = (baseJitter / baseWidth) * containerWidth;
+
+    // Calculate where the blade image actually renders (object-fit: contain)
+    const bounds = getContainedImageBounds(
+      containerWidth, containerHeight,
+      BLADE_NATURAL.width, BLADE_NATURAL.height
+    );
+    const scale = bounds.renderedWidth / BLADE_NATURAL.width;
+
+    // Transform blood line points from image coords to container coords
+    const p1 = {
+      x: bounds.offsetX + BLOOD_LINE_P1.x * scale,
+      y: bounds.offsetY + BLOOD_LINE_P1.y * scale + offset
+    };
+    const p2 = {
+      x: bounds.offsetX + BLOOD_LINE_P2.x * scale,
+      y: bounds.offsetY + BLOOD_LINE_P2.y * scale + offset
+    };
 
     ctx.setTransform(this.bloodDpr, 0, 0, this.bloodDpr, 0, 0);
     ctx.clearRect(0, 0, canvas.width / this.bloodDpr, canvas.height / this.bloodDpr);
