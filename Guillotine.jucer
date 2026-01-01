@@ -29,6 +29,29 @@
       <FILE id="Text2Png" name="text-2.png" compile="0" resource="1" file="assets/text/text-2.png"/>
       <FILE id="TextLockslipPng" name="text-lockslip.png" compile="0" resource="1"
             file="assets/text/text-lockslip.png"/>
+      <FILE id="TextAndyPng" name="andy.png" compile="0" resource="1" file="assets/text/controls/andy.png"/>
+      <FILE id="TextBladePng" name="blade.png" compile="0" resource="1" file="assets/text/controls/blade.png"/>
+      <FILE id="TextCeilingPng" name="ceiling.png" compile="0" resource="1" file="assets/text/controls/ceiling.png"/>
+      <FILE id="TextDbPng" name="dB.png" compile="0" resource="1" file="assets/text/controls/dB.png"/>
+      <FILE id="TextInputPng" name="input.png" compile="0" resource="1" file="assets/text/controls/input.png"/>
+      <FILE id="TextOutputPng" name="output.png" compile="0" resource="1" file="assets/text/controls/output.png"/>
+      <FILE id="TextOversamplePng" name="oversample.png" compile="0" resource="1"
+            file="assets/text/controls/oversample.png"/>
+      <FILE id="TextMultiplyPng" name="x.png" compile="0" resource="1" file="assets/text/controls/x.png"/>
+      <FILE id="TextBladeAtanPng" name="atan.png" compile="0" resource="1"
+            file="assets/text/controls/blades/atan.png"/>
+      <FILE id="TextBladeCubicPng" name="cubic.png" compile="0" resource="1"
+            file="assets/text/controls/blades/cubic.png"/>
+      <FILE id="TextBladeHardPng" name="hard.png" compile="0" resource="1"
+            file="assets/text/controls/blades/hard.png"/>
+      <FILE id="TextBladeKneePng" name="knee.png" compile="0" resource="1"
+            file="assets/text/controls/blades/knee.png"/>
+      <FILE id="TextBladeQuintPng" name="quint.png" compile="0" resource="1"
+            file="assets/text/controls/blades/quint.png"/>
+      <FILE id="TextBladeT2Png" name="t2.png" compile="0" resource="1"
+            file="assets/text/controls/blades/t2.png"/>
+      <FILE id="TextBladeTanhPng" name="tanh.png" compile="0" resource="1"
+            file="assets/text/controls/blades/tanh.png"/>
       <FILE id="Wood1Png" name="wood-1.png" compile="0" resource="1" file="assets/original/wood-1.png"/>
       <FILE id="Wood2Png" name="wood-2.png" compile="0" resource="1" file="assets/original/wood-2.png"/>
       <FILE id="Wood3Png" name="wood-3.png" compile="0" resource="1" file="assets/original/wood-3.png"/>
@@ -55,6 +78,7 @@
       <FILE id="WebSaturationCurves" name="saturation-curves.js" compile="0" resource="1"
             file="web/lib/saturation-curves.js"/>
       <FILE id="WebConfig" name="config.js" compile="0" resource="1" file="web/lib/config.js"/>
+      <FILE id="WebUtils" name="utils.js" compile="0" resource="1" file="web/lib/utils.js"/>
       <FILE id="WebDeltaModeCss" name="delta-mode.css" compile="0" resource="1"
             file="web/lib/delta-mode.css"/>
       <FILE id="WebJuceLibIndex" name="index.js" compile="0" resource="1"

@@ -77,7 +77,11 @@ GuillotineEditor::GuillotineEditor(GuillotineProcessor& p)
 {
     addAndMakeVisible(webView);
 
-    setSize(600, 500);
+    // Enable resizing with aspect ratio lock (1.2:1 = 600x500)
+    setResizable(true, true);
+    getConstrainer()->setFixedAspectRatio(600.0 / 500.0);
+    setResizeLimits(480, 400, 1200, 1000);
+    setSize(1200, 1000);
 
     // Delay navigation to allow WebView2 async initialization on Windows
     juce::MessageManager::callAsync([safeThis = juce::Component::SafePointer<GuillotineEditor>(this)]() {
@@ -211,6 +215,7 @@ std::optional<juce::WebBrowserComponent::Resource> GuillotineEditor::getResource
         { "lib/theme.js",            BinaryData::theme_js,          BinaryData::theme_jsSize,          "text/javascript" },
         { "lib/saturation-curves.js", BinaryData::saturationcurves_js, BinaryData::saturationcurves_jsSize, "text/javascript" },
         { "lib/config.js",            BinaryData::config_js,         BinaryData::config_jsSize,         "text/javascript" },
+        { "lib/utils.js",             BinaryData::utils_js,          BinaryData::utils_jsSize,          "text/javascript" },
         { "lib/delta-mode.css",      BinaryData::deltamode_css,     BinaryData::deltamode_cssSize,     "text/css" },
         // JUCE frontend library
         { "lib/juce/index.js",       BinaryData::index_js,        BinaryData::index_jsSize,        "text/javascript" },
@@ -258,6 +263,23 @@ std::optional<juce::WebBrowserComponent::Resource> GuillotineEditor::getResource
         { "assets/text/text-1.png",     BinaryData::text1_png,      BinaryData::text1_pngSize,      "image/png" },
         { "assets/text/text-2.png",     BinaryData::text2_png,      BinaryData::text2_pngSize,      "image/png" },
         { "assets/text/text-lockslip.png", BinaryData::textlockslip_png, BinaryData::textlockslip_pngSize, "image/png" },
+        // Control labels (replacing font-rendered text)
+        { "assets/text/controls/andy.png",      BinaryData::andy_png,        BinaryData::andy_pngSize,        "image/png" },
+        { "assets/text/controls/blade.png",     BinaryData::blade_png2,      BinaryData::blade_png2Size,      "image/png" },
+        { "assets/text/controls/ceiling.png",   BinaryData::ceiling_png,     BinaryData::ceiling_pngSize,     "image/png" },
+        { "assets/text/controls/dB.png",        BinaryData::dB_png,          BinaryData::dB_pngSize,          "image/png" },
+        { "assets/text/controls/input.png",     BinaryData::input_png,       BinaryData::input_pngSize,       "image/png" },
+        { "assets/text/controls/output.png",    BinaryData::output_png,      BinaryData::output_pngSize,      "image/png" },
+        { "assets/text/controls/oversample.png", BinaryData::oversample_png, BinaryData::oversample_pngSize, "image/png" },
+        { "assets/text/controls/x.png",         BinaryData::x_png,           BinaryData::x_pngSize,           "image/png" },
+        // Curve type labels
+        { "assets/text/controls/blades/atan.png",  BinaryData::atan_png,   BinaryData::atan_pngSize,   "image/png" },
+        { "assets/text/controls/blades/cubic.png", BinaryData::cubic_png,  BinaryData::cubic_pngSize,  "image/png" },
+        { "assets/text/controls/blades/hard.png",  BinaryData::hard_png,   BinaryData::hard_pngSize,   "image/png" },
+        { "assets/text/controls/blades/knee.png",  BinaryData::knee_png,   BinaryData::knee_pngSize,   "image/png" },
+        { "assets/text/controls/blades/quint.png", BinaryData::quint_png,  BinaryData::quint_pngSize,  "image/png" },
+        { "assets/text/controls/blades/t2.png",    BinaryData::t2_png,     BinaryData::t2_pngSize,     "image/png" },
+        { "assets/text/controls/blades/tanh.png",  BinaryData::tanh_png,   BinaryData::tanh_pngSize,   "image/png" },
         // Wood textures
         { "assets/original/wood-1.png", BinaryData::wood1_png,      BinaryData::wood1_pngSize,      "image/png" },
         { "assets/original/wood-2.png", BinaryData::wood2_png,      BinaryData::wood2_pngSize,      "image/png" },
