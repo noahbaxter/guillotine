@@ -48,7 +48,7 @@
   z-index: 10;
   pointer-events: auto;
   overflow: visible;
-  transition: box-shadow 0.15s ease;
+  transition: box-shadow 0.2s ease;
   touch-action: none;
 }
 
@@ -85,7 +85,7 @@
   align-items: center;
   gap: 0.125em;
   opacity: 0;
-  transition: opacity 0.15s ease;
+  transition: opacity 0.2s ease;
 }
 
 .microscope__threshold-line:hover .microscope__threshold-label,
@@ -113,11 +113,12 @@
   left: -0.25em;
   bottom: 0.125em;
   height: 0.75em;
-  width: auto;
-  object-fit: contain;
+  width: 1.5em;
   pointer-events: none;
-  /* Colorize to blood red - matches --color-blood-threshold (#c24a4a) */
-  filter: brightness(0) saturate(100%) invert(40%) sepia(80%) saturate(1000%) hue-rotate(330deg) brightness(100%);
+  -webkit-mask-position: left center;
+  mask-position: left center;
+  /* Mask technique - exact color control */
+  background-color: var(--color-blood-threshold);
 }
 
 .readable-mode .microscope__db-suffix__text {

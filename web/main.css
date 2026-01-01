@@ -13,6 +13,24 @@ body.readable-mode {
 }
 
 /* ==========================================================================
+   Text Mask - PNG as mask, background-color defines color (no hue-rotate)
+   Usage: <div class="text-mask" style="--mask-src: url(image.png)"></div>
+   ========================================================================== */
+.text-mask {
+  display: inline-block;
+  background-color: var(--text-mask-color, var(--color-text-primary));
+  -webkit-mask-image: var(--mask-src);
+  mask-image: var(--mask-src);
+  -webkit-mask-size: contain;
+  mask-size: contain;
+  -webkit-mask-repeat: no-repeat;
+  mask-repeat: no-repeat;
+  -webkit-mask-position: center;
+  mask-position: center;
+  transition: background-color 0.2s ease;
+}
+
+/* ==========================================================================
    Image/Text Toggle Helper (createImageText)
    Text takes up space, image overlays absolutely - neither mode causes reflow
    ========================================================================== */
@@ -33,9 +51,11 @@ body.readable-mode {
   position: absolute;
   left: 0;
   height: 1.5em;
-  width: auto;
-  object-fit: contain;
+  width: 1.5em;
   pointer-events: none;
+  -webkit-mask-position: left center;
+  mask-position: left center;
+  background-color: var(--color-text-tertiary);
 }
 
 .readable-mode .image-text__text {
@@ -111,9 +131,7 @@ body::before {
 
 #plugin-logo {
   height: 100%;
-  width: auto;
-  max-width: 100%;
-  object-fit: contain;
+  width: 100%;
   opacity: 0.8;
   margin-top: 1.875em;
   margin-left: -1.5625em;
@@ -122,13 +140,13 @@ body::before {
 #lockslip-text {
   position: absolute;
   top: 6.0em;
-  left: 4.0em;
+  left: 3.0em;
 }
 
-#lockslip-text img {
+#lockslip-text .text-mask {
   height: 2.5em;
-  width: auto;
-  opacity: 1.0;
+  width: 8em;
+  background-color: var(--color-text-tertiary);
 }
 
 #guillotine-container {
@@ -159,10 +177,11 @@ body::before {
   transform: translateY(-1.2em);
 }
 
-#delta-text img {
+#delta-text .text-mask {
   height: 100%;
-  width: auto;
+  width: 100%;
   opacity: 1.0;
+  background-color: var(--color-text-tertiary);
 }
 
 /* Right column: Microscope + Knobs */
@@ -272,16 +291,16 @@ body::before {
   left: 0.75em;
   font-family: var(--cursive-font);
   font-size: 0.625em;
-  color: var(--color-delta-text);
+  color: var(--color-text-primary);
   pointer-events: none;
 }
 
 #andy-sig {
   position: fixed;
   bottom: 0.25em;
-  left: 2em;
+  left: 2.2em;
   height: 1.25em;
-  width: auto;
+  width: 4em;
   opacity: 0.7;
   pointer-events: none;
 }

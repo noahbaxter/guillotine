@@ -61,9 +61,9 @@
 .knob__label__image {
   position: absolute;
   height: 1.2em;
-  width: auto;
-  object-fit: contain;
+  width: 6em;
   pointer-events: none;
+  background-color: var(--color-text-tertiary);
 }
 
 .knob__label--text-only {
@@ -133,9 +133,11 @@
   left: -0.125em;
   top: 0.3em;
   height: 0.625em;
-  width: auto;
-  object-fit: contain;
+  width: 1.25em;
   pointer-events: none;
+  -webkit-mask-position: left center;
+  mask-position: left center;
+  background-color: var(--color-text-tertiary);
 }
 
 .knob__suffix--text-only {
@@ -171,9 +173,9 @@
 .knob__value__image {
   position: absolute;
   height: 1.5em;
-  width: auto;
-  object-fit: contain;
+  width: 4em;
   pointer-events: none;
+  background-color: var(--color-text-tertiary);
 }
 
 .readable-mode .knob__value__text { visibility: visible; }

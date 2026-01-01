@@ -13,7 +13,7 @@
 
 .delta-clickable {
   cursor: pointer;
-  transition: filter 0.15s ease;
+  transition: filter 0.2s ease;
 }
 
 /* ==========================================================================
@@ -46,27 +46,27 @@ body.delta-mode #guillotine-side {
 .blood-pool.delta-clickable.blood-pool--hover-glow .blood-pool__puddle {
   opacity: 1.5;
   filter: brightness(1.35) drop-shadow(0 0 6px var(--color-blood-glow));
-  transition: opacity 0.1s ease, filter 0.1s ease;
+  transition: opacity 0.2s ease, filter 0.2s ease;
 }
 
 /* ==========================================================================
-   Bucket Text (La Monte-à-Regret)
+   Bucket Text (La Monte-à-Regret) - uses mask technique for exact color
    ========================================================================== */
 
-#delta-text img {
-  transition: filter 0.1s ease;
+/* Non-delta mode: gray default, dark red on hover (hints at delta mode) */
+#delta-text.delta-clickable:hover .text-mask {
+  background-color: var(--color-blood-accent);
 }
 
-#delta-text.delta-clickable:hover img {
-  filter: brightness(0) saturate(100%) invert(20%) sepia(100%) saturate(4000%) hue-rotate(355deg) brightness(1.0);
+/* Delta mode: dark red default, bright red on hover */
+body.delta-mode #delta-text .text-mask {
+  background-color: var(--color-blood-accent);
+  opacity: 1;
+  filter: none !important;
 }
 
-body.delta-mode #delta-text img {
-  filter: brightness(0) saturate(100%) invert(18%) sepia(100%) saturate(7000%) hue-rotate(355deg) brightness(1.0);
-}
-
-body.delta-mode #delta-text.delta-clickable:hover img {
-  filter: brightness(0) saturate(100%) invert(22%) sepia(100%) saturate(8000%) hue-rotate(355deg) brightness(1.3);
+body.delta-mode #delta-text.delta-clickable:hover .text-mask {
+  background-color: var(--color-delta-text);
 }
 
 /* ==========================================================================
@@ -79,11 +79,19 @@ body.delta-mode .knob-wrapper:not(.knob-wrapper--disabled) {
 
 body.delta-mode .knob-wrapper:not(.knob-wrapper--disabled) .knob__label,
 body.delta-mode .knob-wrapper:not(.knob-wrapper--disabled) .knob__value,
-body.delta-mode .knob-wrapper:not(.knob-wrapper--disabled) .knob__suffix {
+body.delta-mode .knob-wrapper:not(.knob-wrapper--disabled) .knob__suffix,
+body.delta-mode .knob-wrapper:not(.knob-wrapper--disabled) .knob__value__text {
   color: var(--color-delta-text) !important;
   opacity: 1 !important;
   filter: none !important;
   transition: color 0.2s ease;
+}
+
+/* Mask-based text images in knobs also need background-color */
+body.delta-mode .knob-wrapper:not(.knob-wrapper--disabled) .text-mask {
+  background-color: var(--color-delta-text) !important;
+  opacity: 1 !important;
+  filter: none !important;
 }
 
 /* ==========================================================================
@@ -104,12 +112,20 @@ body.delta-mode .digits__dash {
 }
 
 /* ==========================================================================
-   Logo & Labels - Red in Delta Mode
+   Logo & Labels - Red in Delta Mode (mask technique for exact color)
    ========================================================================== */
 
 body.delta-mode #plugin-logo {
-  filter: brightness(0) saturate(100%) invert(18%) sepia(100%) saturate(7000%) hue-rotate(355deg) brightness(1.0);
-  opacity: 0.8;
+  background-color: var(--color-delta-text);
+  opacity: 1;
+  filter: none !important;
+}
+
+/* Lockslip and other deltable text-masks turn red */
+body.delta-mode #lockslip-text .text-mask {
+  background-color: var(--color-delta-text);
+  opacity: 1;
+  filter: none !important;
 }
 
 body.delta-mode #microscope-labels,
@@ -118,4 +134,27 @@ body.delta-mode #microscope-labels span {
   opacity: 1 !important;
   filter: none !important;
   transition: color 0.2s ease;
+}
+
+/* Microscope dB suffix uses mask */
+body.delta-mode .microscope__db-suffix__image {
+  background-color: var(--color-delta-text) !important;
+}
+
+/* dB labels in microscope sidebar */
+body.delta-mode .image-text__image.text-mask {
+  background-color: var(--color-delta-text) !important;
+  filter: none !important;
+}
+
+/* Andy signature */
+body.delta-mode #andy-sig {
+  background-color: var(--color-delta-text);
+  opacity: 1;
+  filter: none !important;
+}
+
+/* Version text */
+body.delta-mode #version-tag {
+  color: var(--color-delta-text);
 }

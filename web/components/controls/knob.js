@@ -136,8 +136,8 @@ export class Knob {
       this.valueTextEl.className = 'knob__value__text';
       this.valueDisplayEl.appendChild(this.valueTextEl);
 
-      this.valueImgEl = document.createElement('img');
-      this.valueImgEl.className = 'knob__value__image';
+      this.valueImgEl = document.createElement('div');
+      this.valueImgEl.className = 'knob__value__image text-mask';
       this.valueDisplayEl.appendChild(this.valueImgEl);
     }
 
@@ -356,9 +356,8 @@ export class Knob {
       const valueData = this.options.values[index];
       if (valueData) {
         const text = valueData.text || displayText;
-        if (valueData.src && this.valueImgEl.src !== valueData.src) {
-          this.valueImgEl.src = valueData.src;
-          this.valueImgEl.alt = text;
+        if (valueData.src) {
+          this.valueImgEl.style.setProperty('--mask-src', `url(${valueData.src})`);
         }
         if (this.valueTextEl) {
           this.valueTextEl.textContent = text;

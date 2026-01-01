@@ -55,10 +55,9 @@ export function createImageText(textOrObj, srcOrClassName, maybeClassName) {
   textEl.textContent = text;
   container.appendChild(textEl);
 
-  const imgEl = document.createElement('img');
-  imgEl.className = `${className}__image`;
-  imgEl.src = src;
-  imgEl.alt = text;
+  const imgEl = document.createElement('div');
+  imgEl.className = `${className}__image text-mask`;
+  imgEl.style.setProperty('--mask-src', `url(${src})`);
   container.appendChild(imgEl);
 
   return { container, textEl, imgEl };
