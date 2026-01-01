@@ -6,6 +6,7 @@ import { Waveform } from '../display/waveform.js';
 import { Digits } from '../display/digits.js';
 import { getThresholdColor, onDeltaModeChange } from '../../lib/theme.js';
 import { SCALE_PRESETS, DISPLAY_CONFIG, DISPLAY_DB_RANGE } from '../../lib/config.js';
+import { pxToEm, createDbSuffix } from '../../lib/utils.js';
 
 const MAX_JITTER = 20;
 
@@ -46,9 +47,17 @@ export class Microscope {
     this.waveformArea.className = 'microscope__waveform';
     this.container.appendChild(this.waveformArea);
 
-    // Scale button
+    // Scale button with image-based dB suffix
     this.scaleButton = document.createElement('button');
     this.scaleButton.className = 'microscope__scale-btn';
+
+    this.scaleButtonNum = document.createElement('span');
+    this.scaleButtonNum.className = 'microscope__scale-num';
+    this.scaleButton.appendChild(this.scaleButtonNum);
+
+    const { container: scaleSuffix } = createDbSuffix();
+    this.scaleButton.appendChild(scaleSuffix);
+
     this.container.appendChild(this.scaleButton);
 
     // Threshold line container with canvas, label, and drag handle
@@ -82,16 +91,17 @@ export class Microscope {
     await this.thresholdLabel.ready;
 
     // Add dB suffix as sibling to digits (appended to container so it won't be cleared by render)
-    this.dbSuffix = document.createElement('span');
-    this.dbSuffix.className = 'microscope__db-suffix';
-    this.dbSuffix.textContent = 'dB';
-    this.thresholdLabelContainer.appendChild(this.dbSuffix);
+    const { container: dbSuffix } = createDbSuffix('microscope__db-suffix');
+    this.thresholdLabelContainer.appendChild(dbSuffix);
 
     // External scale labels (in HTML, outside microscope)
+    // Labels have structure: <span class="microscope-label__num">X</span><span class="microscope-label__suffix">...</span>
     this.labelTop = document.getElementById('label-top');
     this.labelBottom = document.getElementById('label-bottom');
-    if (this.labelBottom) {
-      this.labelBottom.textContent = this.options.displayMinDb + 'dB';
+    this.labelTopNum = this.labelTop?.querySelector('.microscope-label__num');
+    this.labelBottomNum = this.labelBottom?.querySelector('.microscope-label__num');
+    if (this.labelBottomNum) {
+      this.labelBottomNum.textContent = this.options.displayMinDb;
     }
 
     // Add deltable class for DELTA mode transitions
@@ -109,7 +119,7 @@ export class Microscope {
 
   updateScaleButtonText() {
     const preset = SCALE_PRESETS[this.currentPresetIndex];
-    this.scaleButton.textContent = preset.label + 'dB';
+    this.scaleButtonNum.textContent = preset.label;
   }
 
   yFracToDb(yFrac) {
@@ -152,8 +162,8 @@ export class Microscope {
 
   setScale(minDb) {
     this.options.displayMinDb = minDb;
-    if (this.labelBottom) {
-      this.labelBottom.textContent = minDb + 'dB';
+    if (this.labelBottomNum) {
+      this.labelBottomNum.textContent = minDb;
     }
     this.waveform.options.displayMinDb = minDb;
 
@@ -231,13 +241,13 @@ export class Microscope {
 
   setupBladeCanvas(width) {
     const dpr = window.devicePixelRatio || 1;
-    const height = MAX_JITTER * 2;  // Tall enough for max jitter
+    const heightPx = MAX_JITTER * 2;  // Tall enough for max jitter (40px at base)
     this.bladeCanvas.width = width * dpr;
-    this.bladeCanvas.height = height * dpr;
-    this.bladeCanvas.style.width = width + 'px';
-    this.bladeCanvas.style.height = height + 'px';
+    this.bladeCanvas.height = heightPx * dpr;
+    this.bladeCanvas.style.width = '100%';
+    this.bladeCanvas.style.height = pxToEm(heightPx) + 'em';
     this.bladeWidth = width;
-    this.bladeHeight = height;
+    this.bladeHeight = heightPx;
     this.bladeDpr = dpr;
     this.generateBasePattern();
     this.drawJitteryBlade();

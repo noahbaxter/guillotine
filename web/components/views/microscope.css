@@ -6,28 +6,43 @@
 
 .microscope__scale-btn {
   position: absolute;
-  top: 4px;
-  right: 4px;
-  padding: 2px 6px;
-  font-size: 9px;
+  top: 0.25em;
+  right: 0.25em;
+  padding: 0.125em 0.375em;
+  font-size: 0.5625em;
   font-family: monospace;
   background: var(--color-white-10);
-  border: 1px solid var(--color-white-20);
-  border-radius: 3px;
+  border: 0.0625em solid var(--color-white-20);
+  border-radius: 0.1875em;
   color: var(--color-white-70);
   cursor: pointer;
   z-index: 20;
+  display: flex;
+  align-items: center;
 }
 
 .microscope__scale-btn:hover {
   background: var(--color-white-15);
 }
 
+/* Scale button uses monospace text, not image */
+.microscope__scale-btn .image-text {
+  font-family: monospace;
+}
+
+.microscope__scale-btn .image-text__text {
+  visibility: visible;
+}
+
+.microscope__scale-btn .image-text__image {
+  display: none;
+}
+
 .microscope__threshold-line {
   position: absolute;
   left: 0;
   right: 0;
-  height: 40px;
+  height: 2.5em;
   transform: translateY(-50%);
   cursor: grab;
   z-index: 10;
@@ -38,7 +53,7 @@
 }
 
 .microscope__threshold-line:hover {
-  box-shadow: 0 0 8px var(--color-blood-glow);
+  box-shadow: 0 0 0.5em var(--color-blood-glow);
 }
 
 .microscope__threshold-line:active {
@@ -48,26 +63,27 @@
 .microscope__blade-canvas {
   position: absolute;
   left: 0;
-  top: 0;
+  top: 50%;
+  transform: translateY(-50%);
   pointer-events: none;
 }
 
 .microscope__threshold-label {
   position: absolute;
-  left: 36px;
-  top: 15px;
+  left: 2.25em;
+  top: 0.9375em;
   transform: translateY(-50%);
   pointer-events: none;
   white-space: nowrap;
   background: var(--color-surface-overlay);
-  padding: 2px 6px;
-  border-radius: 3px;
-  border: 1px solid var(--color-blood-threshold);
-  box-shadow: 0 2px 8px var(--color-shadow-80);
+  padding: 0.125em 0.75em 0.125em 0.375em;
+  border-radius: 0.1875em;
+  border: 0.0625em solid var(--color-blood-threshold);
+  box-shadow: 0 0.125em 0.5em var(--color-shadow-80);
   overflow: visible;
   display: flex;
   align-items: center;
-  gap: 2px;
+  gap: 0.125em;
   opacity: 0;
   transition: opacity 0.15s ease;
 }
@@ -77,20 +93,47 @@
   opacity: 1;
 }
 
+/* Threshold label dB suffix - uses mask-based coloring like digits */
 .microscope__db-suffix {
+  position: relative;
+  display: inline-flex;
+  align-items: flex-end;
   font-family: var(--cursive-font);
-  font-size: 17px;
   color: var(--color-blood-threshold);
-  margin-left: 2px;
-  margin-bottom: -4px;
+  margin-left: 0.0625em;
+}
+
+.microscope__db-suffix__text {
+  visibility: hidden;
+  font-size: 0.625em;
+}
+
+.microscope__db-suffix__image {
+  position: absolute;
+  left: -0.25em;
+  bottom: 0.125em;
+  height: 0.75em;
+  width: auto;
+  object-fit: contain;
+  pointer-events: none;
+  /* Colorize to blood red - matches --color-blood-threshold (#c24a4a) */
+  filter: brightness(0) saturate(100%) invert(40%) sepia(80%) saturate(1000%) hue-rotate(330deg) brightness(100%);
+}
+
+.readable-mode .microscope__db-suffix__text {
+  visibility: visible;
+}
+
+.readable-mode .microscope__db-suffix__image {
+  display: none;
 }
 
 .microscope__drag-handle {
   position: absolute;
   left: 0;
   right: 0;
-  height: 16px;
-  transform: translateY(-7px);
+  height: 1em;
+  transform: translateY(-0.4375em);
   cursor: ns-resize;
   z-index: 11;
 }
