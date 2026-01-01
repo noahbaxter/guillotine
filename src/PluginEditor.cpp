@@ -81,7 +81,7 @@ GuillotineEditor::GuillotineEditor(GuillotineProcessor& p)
     setResizable(true, true);
     getConstrainer()->setFixedAspectRatio(600.0 / 500.0);
     setResizeLimits(480, 400, 1200, 1000);
-    setSize(1200, 1000);
+    setSize(600, 500);
 
     // Delay navigation to allow WebView2 async initialization on Windows
     juce::MessageManager::callAsync([safeThis = juce::Component::SafePointer<GuillotineEditor>(this)]() {
