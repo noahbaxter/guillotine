@@ -42,13 +42,13 @@ trap cleanup SIGINT SIGTERM
 
 # Initial build and launch
 echo -e "${CYAN}=== $PLUGIN_NAME Watch Mode ===${NC}"
-echo -e "Watching: src/, assets/, web/"
+echo -e "Watching: src/, assets/, web/, *.jucer"
 echo -e "Press Ctrl+C to stop\n"
 
 "$SCRIPT_DIR/standalone.sh"
 
 # Watch and rebuild
-fswatch -o "$PROJECT_ROOT/src" "$PROJECT_ROOT/assets" "$PROJECT_ROOT/web" | while read -r _; do
+fswatch -o "$PROJECT_ROOT/src" "$PROJECT_ROOT/assets" "$PROJECT_ROOT/web" "$PROJECT_ROOT/Guillotine.jucer" | while read -r _; do
     START=$(python3 -c 'import time; print(time.time())')
     echo -e "\n${YELLOW}Change detected, rebuilding...${NC}"
 
