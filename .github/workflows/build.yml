@@ -343,6 +343,8 @@ jobs:
     needs: [check-release]
     runs-on: ubuntu-latest
     if: needs.check-release.outputs.should_release == 'true'
+    permissions:
+      contents: write
 
     steps:
       - name: Download Windows artifacts
