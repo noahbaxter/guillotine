@@ -2,6 +2,7 @@
 // Phase 2: Microscope view with waveform and draggable threshold
 
 import { DISPLAY_DB_RANGE, DEFAULT_MIN_DB } from './lib/config.js';
+import { TEXT } from './lib/utils.js';
 import { Guillotine } from './components/views/guillotine.js';
 import { Microscope } from './components/views/microscope.js';
 import { BloodPool } from './components/display/blood-pool.js';
@@ -20,7 +21,7 @@ import {
   getBypassClipper,
   onBypassClipperChange
 } from './lib/juce-bridge.js';
-import { setDeltaMode } from './lib/theme.js';
+import { setDeltaMode, toggleReadableMode } from './lib/theme.js';
 
 // Load locally embedded fonts
 const fontStyles = document.createElement('style');
@@ -30,6 +31,15 @@ fontStyles.textContent = `
   @font-face { font-family: 'Dawning of a New Day'; src: url('assets/fonts/dawning.ttf') format('truetype'); }
 `;
 document.head.appendChild(fontStyles);
+
+// Dynamic root font-size for proportional scaling
+const BASE_WIDTH = 600;
+const BASE_FONT_SIZE = 16;
+const resizeObserver = new ResizeObserver(entries => {
+  const width = entries[0].contentRect.width;
+  document.documentElement.style.fontSize = (width / BASE_WIDTH) * BASE_FONT_SIZE + 'px';
+});
+resizeObserver.observe(document.body);
 
 // Utility for binding drag tracking to knobs (avoids repetition)
 function bindDragTracking(knob, paramName, app, extraStart, extraEnd) {
@@ -46,13 +56,14 @@ function bindDragTracking(knob, paramName, app, extraStart, extraEnd) {
 }
 
 // Utility for creating sprite-based knobs
+// label and suffix can be { text, src } objects or plain strings
 function createSpriteKnob(config) {
   const { label, suffix, formatter, parser, snap, spriteScale = 0.4, suffixVariant, sizeVariant, ...rest } = config;
   return {
     label,
+    suffix,
     useSprites: true,
     spriteScale,
-    spriteSuffix: suffix,
     formatValue: (v) => String(formatter(v)),
     parseValue: parser || null,
     snapValue: snap || null,
@@ -105,10 +116,13 @@ class GuillotineApp {
 
     // Blade knob (stepped: Hard, Quintic, Cubic, Tanh, Arctan, Knee, T2) - LEFT
     this.curveKnob = new Knob(this.mainKnobsContainer, {
-      label: 'Blade',
+      label: TEXT.labels.blade,
       min: 0, max: 6, value: 0, step: 1,
       size: 50,
-      formatValue: (v) => ['Hard', 'Quint', 'Cubic', 'Tanh', 'Atan', 'Knee', 'T2'][Math.round(v)],
+      allowTextEdit: false,
+      formatValue: (v) => TEXT.blades[Math.round(v)]?.text || '',
+      values: TEXT.blades,
+      wrapperClass: 'knob-wrapper--side',
       parseValue: (input) => {
         const mapping = { 'hard': 0, 'quint': 1, 'quintic': 1, 'cubic': 2, 'tanh': 3, 'atan': 4, 'arctan': 4, 'knee': 5, 't2': 6, 't^2': 6, 'tsquared': 6 };
         return mapping[input.toLowerCase()] ?? null;
@@ -131,13 +145,13 @@ class GuillotineApp {
     // Initial max must match default scale (-24dB -> threshold 0.4) to avoid showing full -60dB range
     const initialMaxThreshold = -DEFAULT_MIN_DB / DISPLAY_DB_RANGE;
     this.thresholdKnob = new Knob(this.mainKnobsContainer, createSpriteKnob({
-      label: 'Ceiling',
+      label: TEXT.labels.ceiling,
       min: 0,
       max: initialMaxThreshold,
       value: this.threshold,
       size: 60,
       spriteScale: 0.4,
-      suffix: 'dB',
+      suffix: TEXT.suffixes.dB,
       formatter: (v) => this.thresholdToDb(v).toFixed(1),
       parser: (input) => {
         const match = input.match(/-?\d+\.?\d*/);
@@ -159,11 +173,13 @@ class GuillotineApp {
 
     // Oversampling knob (stepped: 1x, 2x, 4x, 8x, 16x, 32x) - RIGHT
     this.oversamplingKnob = new Knob(this.mainKnobsContainer, createSpriteKnob({
-      label: 'Oversample',
+      label: TEXT.labels.oversample,
       min: 0, max: 5, value: 0, step: 1,
       size: 50,
       spriteScale: 0.35,
-      suffix: 'x',
+      suffix: TEXT.suffixes.x,
+      allowTextEdit: false,
+      wrapperClass: 'knob-wrapper--side',
       formatter: (v) => [1, 2, 4, 8, 16, 32][Math.round(v)],
       parser: (input) => {
         const match = input.match(/\d+/);
@@ -176,11 +192,11 @@ class GuillotineApp {
 
     // Input Gain knob
     this.inputGainKnob = new Knob(this.gainKnobsContainer, createSpriteKnob({
-      label: 'Input',
+      label: TEXT.labels.input,
       min: -24, max: 24, value: 0,
       size: 32,
       spriteScale: 0.25,
-      suffix: 'dB',
+      suffix: TEXT.suffixes.dB,
       formatter: (v) => v.toFixed(1),
       snap: (v) => Math.round(v * 10) / 10,  // 0.1dB steps
       wrapperClass: 'knob-wrapper--side'
@@ -188,11 +204,11 @@ class GuillotineApp {
 
     // Output Gain knob
     this.outputGainKnob = new Knob(this.gainKnobsContainer, createSpriteKnob({
-      label: 'Output',
+      label: TEXT.labels.output,
       min: -24, max: 24, value: 0,
       size: 32,
       spriteScale: 0.25,
-      suffix: 'dB',
+      suffix: TEXT.suffixes.dB,
       formatter: (v) => v.toFixed(1),
       snap: (v) => Math.round(v * 10) / 10,  // 0.1dB steps
       wrapperClass: 'knob-wrapper--side'
@@ -336,10 +352,14 @@ class GuillotineApp {
       if (e.key === 'f' || e.key === 'F') {
         this.cycleFont();
       }
+      // Toggle readable mode with R key
+      if (e.key === 'r' || e.key === 'R') {
+        toggleReadableMode();
+      }
     });
 
-    // Disable browser context menu
-    document.addEventListener('contextmenu', e => e.preventDefault());
+    // Disable browser context menu (commented out for dev tools access)
+    // document.addEventListener('contextmenu', e => e.preventDefault());
   }
 
   cycleFont() {

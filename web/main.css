@@ -2,6 +2,52 @@
 
 :root {
   --cursive-font: 'Zeyada', cursive;
+  --readable-font: ui-monospace, 'SF Mono', SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace;
+}
+
+/* ==========================================================================
+   Readable Mode - Clear fonts for accessibility
+   ========================================================================== */
+body.readable-mode {
+  --cursive-font: var(--readable-font);
+}
+
+/* ==========================================================================
+   Image/Text Toggle Helper (createImageText)
+   Text takes up space, image overlays absolutely - neither mode causes reflow
+   ========================================================================== */
+.image-text {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  min-width: 1.5em;
+  min-height: 1em;
+}
+
+/* Text flows normally in fixed container, image absolutely positioned */
+.image-text__text {
+  visibility: hidden;
+}
+
+.image-text__image {
+  position: absolute;
+  left: 0;
+  height: 1.5em;
+  width: auto;
+  object-fit: contain;
+  pointer-events: none;
+}
+
+.readable-mode .image-text__text {
+  visibility: visible;
+}
+
+.readable-mode .image-text__image {
+  visibility: hidden;
+}
+
+html {
+  height: 100%;
 }
 
 * {
@@ -21,8 +67,8 @@ body {
   color: var(--color-text-primary);
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
   overflow: hidden;
-  width: 600px;
-  height: 500px;
+  width: 100%;
+  height: 100%;
   position: relative;
 }
 
@@ -39,8 +85,8 @@ body::before {
   display: flex;
   flex-direction: row;
   height: 100%;
-  padding: 8px;
-  gap: 8px;
+  padding: 0.5em;
+  gap: 0.5em;
   position: relative;
   z-index: 1;
 }
@@ -51,11 +97,13 @@ body::before {
   display: flex;
   flex-direction: column;
   width: 50%;
-  gap: 4px;
+  height: 100%;
+  min-height: 0;
+  gap: 0.25em;
 }
 
 #plugin-title {
-  height: 90px;
+  height: 5.625em;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -67,18 +115,18 @@ body::before {
   max-width: 100%;
   object-fit: contain;
   opacity: 0.8;
-  margin-top: 30px;
-  margin-left: -25px;
+  margin-top: 1.875em;
+  margin-left: -1.5625em;
 }
 
 #lockslip-text {
   position: absolute;
-  top: 100px;
-  left: 70px;
+  top: 6.0em;
+  left: 4.0em;
 }
 
 #lockslip-text img {
-  height: 40px;
+  height: 2.5em;
   width: auto;
   opacity: 1.0;
 }
@@ -86,30 +134,27 @@ body::before {
 #guillotine-container {
   position: relative;
   flex: 1;
+  min-height: 0;
   display: flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  padding: 30px 0 20px 0;
-}
-
-#guillotine-container {
-  position: relative;
+  padding: 1.875em 0 1.25em 0;
 }
 
 #guillotine-side {
   position: absolute;
-  left: 0px;
+  left: 0;
   top: 45%;
   transform: translateY(-50%);
-  height: 100px;
+  height: 6.25em;
   width: auto;
   pointer-events: none;
   opacity: 1.0;
 }
 
 #bucket-text {
-  height: 50px;
+  height: 3.125em;
   text-align: center;
 }
 
@@ -124,116 +169,113 @@ body::before {
   display: flex;
   flex-direction: column;
   width: 50%;
-  gap: 8px;
+  height: 100%;
+  min-height: 0;
+  gap: 0.5em;
 }
 
 #microscope-wrapper {
   flex: 1;
+  min-height: 0;
   display: flex;
   flex-direction: row;
-  padding: 12px 12px 12px 0;
-  padding-top: 20px;
+  padding: 0.75em 0.75em 0.75em 0;
+  padding-top: 1.25em;
   position: relative;
 }
 
 #microscope-labels {
   position: absolute;
-  left: -40px;
-  top: 20px;
-  bottom: 12px;
+  left: -2.5em;
+  top: 1.25em;
+  bottom: 0.75em;
   display: flex;
   flex-direction: column;
   justify-content: space-between;
-  font-size: 18px;
+  font-size: 1.125em;
   line-height: 1;
   font-family: var(--cursive-font);
   color: var(--color-delta-text);
-  padding-right: 6px;
+  padding-right: 0.375em;
   text-align: right;
-  width: 40px;
+  width: 2.5em;
   transition: color 0.2s ease;
 }
 
-#microscope-labels span {
+.microscope-label {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+}
+
+#label-top {
+  transform: translateY(-50%);
+}
+
+#label-bottom {
   transform: translateY(50%);
 }
 
-#microscope-labels span:first-child {
-  transform: translateY(-50%);
+/* Microscope label suffix uses global .image-text helper styles */
+.microscope-label .image-text__image {
+  height: 0.75em;
+  top: -0.10em;
 }
 
 #microscope-container {
   flex: 1;
   background: var(--color-surface-panel);
-  border: 1px solid var(--color-white-15);
-  border-radius: 4px;
+  border: 0.0625em solid var(--color-white-15);
+  border-radius: 0.25em;
   position: relative;
   overflow: visible;
-  overflow-clip-margin: 100px;
+  overflow-clip-margin: 6.25em;
 }
 
 #main-knobs {
+  margin-left: -6em;
   position: relative;
-  display: grid;
-  grid-template-columns: auto auto auto;
-  grid-template-rows: auto auto;
+  display: flex;
   justify-content: center;
-  gap: 30px;
-  padding: 8px 0;
-  align-items: start;
-  row-gap: 8px;
+  align-items: center;
+  gap: 1.5em;
+  padding: 0.5em 1em 0.5em 0;
 }
 
-/* Curve knob in column 1, row 1 */
-#main-knobs .knob-wrapper:nth-child(1) {
-  grid-column: 1;
-  grid-row: 1;
-}
-
-/* Exponent knob - positioned up and to the right of curve knob */
+/* Exponent knob - positioned absolutely relative to container */
 #main-knobs .knob-wrapper--exponent {
   position: absolute;
-  top: 10px;
-  left: 70px;
-  width: auto;
-}
-
-/* Ceiling in column 2 (spans both rows vertically centered) */
-#main-knobs .knob-wrapper:nth-child(3) {
-  grid-column: 2;
-  grid-row: 1 / 3;
-  align-self: center;
-}
-
-/* Oversampling in column 3 (spans both rows vertically centered) */
-#main-knobs .knob-wrapper:nth-child(4) {
-  grid-column: 3;
-  grid-row: 1 / 3;
-  align-self: center;
+  top: 2.5em;
+  left: 3em;
 }
 
 #gain-knobs {
   display: flex;
   justify-content: center;
-  gap: 60px;
-  padding: 8px 0;
+  gap: 3.75em;
+  padding: 0.5em 0;
 }
 
 #gain-knobs .knob:first-child {
-  margin-right: 40px;
+  margin-right: 4.5em;
 }
 
 #gain-knobs .knob:last-child {
-  margin-left: 40px;
+  margin-left: 2.5em;
 }
 
 /* Version tag */
 #version-tag {
   position: fixed;
-  bottom: 0px;
-  left: 12px;
+  bottom: 0;
+  left: 0.75em;
   font-family: var(--cursive-font);
-  font-size: 10px;
+  font-size: 0.625em;
   color: var(--color-delta-text);
   pointer-events: none;
+}
+
+.readable-mode #version-tag {
+  font-size: 0.5em;
+  bottom: 0.5em;
 }

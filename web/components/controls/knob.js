@@ -2,6 +2,7 @@
 // Drag-based rotary control for audio parameters
 
 import { loadStyles } from '../../lib/component-loader.js';
+import { pxToEm, createImageText } from '../../lib/utils.js';
 import { Digits } from '../display/digits.js';
 
 const DEFAULTS = {
@@ -10,15 +11,16 @@ const DEFAULTS = {
   value: 0,
   step: 0.01,
   sensitivity: 0.005,
-  label: '',
+  label: null,       // { text, src } object for label, or just string for text-only
   unit: '',
   formatValue: null,
   parseValue: null,  // Optional: parse typed input back to value (e.g., "50%" -> 0.5)
   snapValue: null,   // Optional: snap dragged values to nice increments (e.g., clean dB values)
-  size: 60,
+  size: 60,         // Size in px at base 16px font-size (will be converted to em)
   useSprites: false,
   spriteScale: 0.4,
-  spriteSuffix: ''  // Text suffix after sprite digits (e.g., 'dB')
+  suffix: null,      // { text, src } object for suffix, or just string for text-only
+  values: null       // Array of { text, src } for discrete values (index = rounded value)
 };
 
 export class Knob {
@@ -58,27 +60,34 @@ export class Knob {
       this.element.classList.add(this.options.wrapperClass);
     }
 
+    // Label: accepts { text, src } object or plain string
     if (label) {
-      const labelEl = document.createElement('label');
-      labelEl.className = 'knob__label';
-      labelEl.textContent = label;
-      this.element.appendChild(labelEl);
+      if (typeof label === 'object' && label.src) {
+        const { container } = createImageText(label, 'knob__label');
+        this.element.appendChild(container);
+      } else {
+        const labelEl = document.createElement('label');
+        labelEl.className = 'knob__label knob__label--text-only';
+        labelEl.textContent = typeof label === 'object' ? label.text : label;
+        this.element.appendChild(labelEl);
+      }
     }
 
     this.knobEl = document.createElement('div');
     this.knobEl.className = 'knob__dial';
-    this.knobEl.style.width = `${size}px`;
-    this.knobEl.style.height = `${size}px`;
+    const sizeEm = pxToEm(size);
+    this.knobEl.style.width = `${sizeEm}em`;
+    this.knobEl.style.height = `${sizeEm}em`;
 
     this.indicatorEl = document.createElement('div');
     this.indicatorEl.className = 'knob__indicator';
-    const indicatorHeight = size * 0.3;
-    const indicatorTop = size * 0.15;
-    const knobCenter = size * 0.5;
+    const indicatorHeightEm = sizeEm * 0.3;
+    const indicatorTopEm = sizeEm * 0.15;
+    const knobCenterEm = sizeEm * 0.5;
     // Transform-origin Y as percentage of indicator height, measured from indicator top
-    const originY = ((knobCenter - indicatorTop) / indicatorHeight) * 100;
-    this.indicatorEl.style.height = `${indicatorHeight}px`;
-    this.indicatorEl.style.top = `${indicatorTop}px`;
+    const originY = ((knobCenterEm - indicatorTopEm) / indicatorHeightEm) * 100;
+    this.indicatorEl.style.height = `${indicatorHeightEm}em`;
+    this.indicatorEl.style.top = `${indicatorTopEm}em`;
     this.indicatorEl.style.transformOrigin = `center ${originY}%`;
     this.knobEl.appendChild(this.indicatorEl);
 
@@ -95,18 +104,41 @@ export class Knob {
 
     if (this.options.useSprites) {
       this.digits = new Digits(this.valueDisplayEl, { scale: this.options.spriteScale });
-      if (this.options.spriteSuffix) {
-        this.suffixEl = document.createElement('span');
-        this.suffixEl.className = 'knob__suffix';
-        if (this.options.suffixVariant) {
-          this.suffixEl.classList.add(`knob__suffix--${this.options.suffixVariant}`);
+
+      // Suffix: accepts { text, src } object or plain string
+      const { suffix } = this.options;
+      if (suffix) {
+        if (typeof suffix === 'object' && suffix.src) {
+          const { container } = createImageText(suffix, 'knob__suffix');
+          if (this.options.suffixVariant) {
+            container.classList.add(`knob__suffix--${this.options.suffixVariant}`);
+          }
+          this.suffixEl = container;
+        } else {
+          this.suffixEl = document.createElement('span');
+          this.suffixEl.className = 'knob__suffix knob__suffix--text-only';
+          if (this.options.suffixVariant) {
+            this.suffixEl.classList.add(`knob__suffix--${this.options.suffixVariant}`);
+          }
+          this.suffixEl.textContent = typeof suffix === 'object' ? suffix.text : suffix;
         }
-        this.suffixEl.textContent = this.options.spriteSuffix;
-        // Append suffix after digits are ready
+
         this.digits.ready.then(() => {
           this.valueDisplayEl.appendChild(this.suffixEl);
         });
       }
+    }
+
+    // Value images for discrete choice knobs (e.g., blade type)
+    // Uses { text, src } array - text element hidden, image overlays
+    if (this.options.values) {
+      this.valueTextEl = document.createElement('span');
+      this.valueTextEl.className = 'knob__value__text';
+      this.valueDisplayEl.appendChild(this.valueTextEl);
+
+      this.valueImgEl = document.createElement('img');
+      this.valueImgEl.className = 'knob__value__image';
+      this.valueDisplayEl.appendChild(this.valueImgEl);
     }
 
     this.bindEvents();
@@ -169,14 +201,20 @@ export class Knob {
 
     this.knobEl.addEventListener('mousedown', onMouseDown);
     this.knobEl.addEventListener('dblclick', onDoubleClick);
-    this.valueDisplayEl.addEventListener('dblclick', onValueDoubleClick);
+    // Only enable text editing if explicitly allowed (default: true)
+    const allowTextEdit = this.options.allowTextEdit !== false;
+    if (allowTextEdit) {
+      this.valueDisplayEl.addEventListener('dblclick', onValueDoubleClick);
+    }
     document.addEventListener('mousemove', onMouseMove);
     document.addEventListener('mouseup', onMouseUp);
 
     this.cleanup = () => {
       this.knobEl.removeEventListener('mousedown', onMouseDown);
       this.knobEl.removeEventListener('dblclick', onDoubleClick);
-      this.valueDisplayEl.removeEventListener('dblclick', onValueDoubleClick);
+      if (allowTextEdit) {
+        this.valueDisplayEl.removeEventListener('dblclick', onValueDoubleClick);
+      }
       document.removeEventListener('mousemove', onMouseMove);
       document.removeEventListener('mouseup', onMouseUp);
     };
@@ -312,6 +350,20 @@ export class Knob {
     if (this.digits) {
       const numericOnly = displayText.replace(/[^0-9.\-]/g, '');
       this.digits.setValue(numericOnly);
+    } else if (this.options.values && this.valueImgEl) {
+      // Discrete value with { text, src } pairs (e.g., blade type)
+      const index = Math.round(this.value);
+      const valueData = this.options.values[index];
+      if (valueData) {
+        const text = valueData.text || displayText;
+        if (valueData.src && this.valueImgEl.src !== valueData.src) {
+          this.valueImgEl.src = valueData.src;
+          this.valueImgEl.alt = text;
+        }
+        if (this.valueTextEl) {
+          this.valueTextEl.textContent = text;
+        }
+      }
     } else if (this.valueDisplayEl) {
       this.valueDisplayEl.textContent = displayText;
     }

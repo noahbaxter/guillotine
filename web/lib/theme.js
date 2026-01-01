@@ -2,7 +2,9 @@
 // Single source of truth - injects CSS variables and provides JS getters
 
 let deltaMode = false;
+let readableMode = false;
 const listeners = [];
+const readableListeners = [];
 
 // All colors defined here - CSS variables are injected from these
 const COLORS = {
@@ -167,6 +169,30 @@ export function onDeltaModeChange(callback) {
   return () => {
     const idx = listeners.indexOf(callback);
     if (idx !== -1) listeners.splice(idx, 1);
+  };
+}
+
+// Readable mode - swaps stylized images for clean text
+export function isReadableMode() {
+  return readableMode;
+}
+
+export function setReadableMode(enabled) {
+  if (readableMode === enabled) return;
+  readableMode = enabled;
+  document.body.classList.toggle('readable-mode', enabled);
+  readableListeners.forEach(fn => fn(enabled));
+}
+
+export function toggleReadableMode() {
+  setReadableMode(!readableMode);
+}
+
+export function onReadableModeChange(callback) {
+  readableListeners.push(callback);
+  return () => {
+    const idx = readableListeners.indexOf(callback);
+    if (idx !== -1) readableListeners.splice(idx, 1);
   };
 }
 
