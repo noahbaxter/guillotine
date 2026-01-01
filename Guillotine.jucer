@@ -2,10 +2,10 @@
 
 <JUCERPROJECT id="Gltn01" name="Guillotine" projectType="audioplug" useAppConfig="0"
               addUsingNamespaceToJuceHeader="0" displaySplashScreen="1" jucerFormatVersion="1"
-              version="0.1.0"
+              version="1.0.0"
               companyName="Dichotic Studios" pluginVST3Category="Fx" cppLanguageStandard="17"
               pluginFormats="buildVST3,buildAU,buildStandalone" pluginName="Guillotine"
-              pluginDesc="A clipping plugin with guillotine visualization">
+              pluginDesc="A hard clipper plugin">
   <MAINGROUP id="vNZlKl" name="Guillotine">
     <GROUP id="{A55E7D30-1234-5678-9ABC-DEF012345678}" name="assets">
       <FILE id="BasePng" name="base.png" compile="0" resource="1" file="assets/base.png"/>
