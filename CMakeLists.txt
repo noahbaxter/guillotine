@@ -98,6 +98,7 @@ juce_add_binary_data(GuillotineData
         web/lib/saturation-curves.js
         web/lib/config.js
         web/lib/delta-mode.css
+        web/lib/utils.js
         # Web - JUCE frontend lib
         web/lib/juce/index.js
         web/lib/juce/check_native_interop.js
@@ -144,6 +145,23 @@ juce_add_binary_data(GuillotineData
         assets/text/text-1.png
         assets/text/text-2.png
         assets/text/text-lockslip.png
+        # Assets - text/controls
+        assets/text/controls/andy.png
+        assets/text/controls/blade.png
+        assets/text/controls/ceiling.png
+        assets/text/controls/dB.png
+        assets/text/controls/input.png
+        assets/text/controls/output.png
+        assets/text/controls/oversample.png
+        assets/text/controls/x.png
+        # Assets - text/controls/blades
+        assets/text/controls/blades/atan.png
+        assets/text/controls/blades/cubic.png
+        assets/text/controls/blades/hard.png
+        assets/text/controls/blades/knee.png
+        assets/text/controls/blades/quint.png
+        assets/text/controls/blades/t2.png
+        assets/text/controls/blades/tanh.png
         # Assets - wood textures
         assets/original/wood-1.png
         assets/original/wood-2.png
