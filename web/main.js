@@ -411,7 +411,7 @@ class GuillotineApp {
   }
 
   setupDeltaModeHandlers() {
-    const bucketText = document.getElementById('bucket-text');
+    const bucketText = document.getElementById('delta-text');
     const bloodPoolEl = this.bloodPool.getElement();
 
     const toggleDelta = (e) => {
@@ -448,7 +448,7 @@ class GuillotineApp {
   }
 
   updateDeltaClickable() {
-    const bucketText = document.getElementById('bucket-text');
+    const bucketText = document.getElementById('delta-text');
     const bloodPoolEl = this.bloodPool.getElement();
     const active = !this.bypass;
 

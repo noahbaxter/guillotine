@@ -53,19 +53,19 @@ body.delta-mode #guillotine-side {
    Bucket Text (La Monte-à-Regret)
    ========================================================================== */
 
-#bucket-text img {
+#delta-text img {
   transition: filter 0.1s ease;
 }
 
-#bucket-text.delta-clickable:hover img {
+#delta-text.delta-clickable:hover img {
   filter: brightness(0) saturate(100%) invert(20%) sepia(100%) saturate(4000%) hue-rotate(355deg) brightness(1.0);
 }
 
-body.delta-mode #bucket-text img {
+body.delta-mode #delta-text img {
   filter: brightness(0) saturate(100%) invert(18%) sepia(100%) saturate(7000%) hue-rotate(355deg) brightness(1.0);
 }
 
-body.delta-mode #bucket-text.delta-clickable:hover img {
+body.delta-mode #delta-text.delta-clickable:hover img {
   filter: brightness(0) saturate(100%) invert(22%) sepia(100%) saturate(8000%) hue-rotate(355deg) brightness(1.3);
 }
 

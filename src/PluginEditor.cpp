@@ -119,8 +119,8 @@ void GuillotineEditor::pushVersionOnce()
     if (versionPushed) return;
 
     // Only mark as pushed if the element exists (page is loaded)
-    juce::String js = "if (document.getElementById('version-tag')) { "
-                      "document.getElementById('version-tag').textContent = 'v" JucePlugin_VersionString "'; "
+    juce::String js = "if (document.getElementById('version-num')) { "
+                      "document.getElementById('version-num').textContent = 'v" JucePlugin_VersionString "'; "
                       "true; } else { false; }";
     webView.evaluateJavascript(js, [this](juce::WebBrowserComponent::EvaluationResult result) {
         if (result.getResult() && result.getResult()->toString() == "true") {
