@@ -3,24 +3,28 @@
  * Colors come from CSS variables in theme.js
  */
 
+:root {
+  --delta-transition: 0.4s ease;
+}
+
 /* ==========================================================================
    Base Transitions
    ========================================================================== */
 
 .deltable {
-  transition: opacity 0.2s ease, filter 0.2s ease;
+  transition: opacity var(--delta-transition), filter var(--delta-transition);
 }
 
 .delta-clickable {
   cursor: pointer;
-  transition: filter 0.2s ease;
+  transition: filter var(--delta-transition);
 }
 
 /* ==========================================================================
    Dimming Non-Red Elements
    ========================================================================== */
 
-body.delta-mode .deltable:not(.knob-wrapper) {
+body.delta-mode .deltable:not(.knob-wrapper):not(.microscope-label) {
   opacity: 0.3;
   filter: grayscale(0.7) brightness(0.6);
 }
@@ -35,7 +39,7 @@ body.delta-mode #guillotine-side {
    ========================================================================== */
 
 .blood-pool__puddle {
-  transition: background 0.2s ease;
+  transition: background var(--delta-transition);
   background: radial-gradient(ellipse, var(--color-blood-puddle) 0%, transparent 70%);
 }
 
@@ -46,7 +50,7 @@ body.delta-mode #guillotine-side {
 .blood-pool.delta-clickable.blood-pool--hover-glow .blood-pool__puddle {
   opacity: 1.5;
   filter: brightness(1.35) drop-shadow(0 0 6px var(--color-blood-glow));
-  transition: opacity 0.2s ease, filter 0.2s ease;
+  transition: opacity var(--delta-transition), filter var(--delta-transition);
 }
 
 /* ==========================================================================
@@ -73,6 +77,13 @@ body.delta-mode #delta-text.delta-clickable:hover .text-mask {
    Knobs - Red Text in Delta Mode
    ========================================================================== */
 
+.knob__label,
+.knob__value,
+.knob__suffix,
+.knob__value__text {
+  transition: color var(--delta-transition);
+}
+
 body.delta-mode .knob-wrapper:not(.knob-wrapper--disabled) {
   filter: none !important;
 }
@@ -84,7 +95,6 @@ body.delta-mode .knob-wrapper:not(.knob-wrapper--disabled) .knob__value__text {
   color: var(--color-delta-text) !important;
   opacity: 1 !important;
   filter: none !important;
-  transition: color 0.2s ease;
 }
 
 /* Mask-based text images in knobs also need background-color */
@@ -98,6 +108,12 @@ body.delta-mode .knob-wrapper:not(.knob-wrapper--disabled) .text-mask {
    Digits - Red in Delta Mode
    ========================================================================== */
 
+.digits__digit,
+.digits__dot,
+.digits__dash {
+  transition: background-color var(--delta-transition);
+}
+
 body.delta-mode .digits {
   filter: none !important;
 }
@@ -108,7 +124,6 @@ body.delta-mode .digits__dash {
   background-color: var(--color-delta-text) !important;
   opacity: 1 !important;
   filter: none !important;
-  transition: background-color 0.2s ease;
 }
 
 /* ==========================================================================
@@ -128,13 +143,7 @@ body.delta-mode #lockslip-text .text-mask {
   filter: none !important;
 }
 
-body.delta-mode #microscope-labels,
-body.delta-mode #microscope-labels span {
-  color: var(--color-delta-text) !important;
-  opacity: 1 !important;
-  filter: none !important;
-  transition: color 0.2s ease;
-}
+/* Microscope scale labels use Digits component - delta styling handled by .digits rules above */
 
 /* Microscope dB suffix uses mask */
 body.delta-mode .microscope__db-suffix__image {
@@ -155,6 +164,10 @@ body.delta-mode #andy-sig {
 }
 
 /* Version text */
+#version-tag {
+  transition: color var(--delta-transition);
+}
+
 body.delta-mode #version-tag {
   color: var(--color-delta-text);
 }

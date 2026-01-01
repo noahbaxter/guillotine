@@ -27,7 +27,7 @@ body.readable-mode {
   mask-repeat: no-repeat;
   -webkit-mask-position: center;
   mask-position: center;
-  transition: background-color 0.2s ease;
+  transition: background-color var(--delta-transition);
 }
 
 /* ==========================================================================
@@ -215,11 +215,10 @@ body::before {
   font-size: 1.125em;
   line-height: 1;
   font-family: var(--cursive-font);
-  color: var(--color-delta-text);
+  color: var(--color-text-tertiary);
   padding-right: 0.375em;
   text-align: right;
   width: 2.5em;
-  transition: color 0.2s ease;
 }
 
 .microscope-label {
@@ -238,7 +237,7 @@ body::before {
 
 /* Microscope label suffix uses global .image-text helper styles */
 .microscope-label .image-text__image {
-  height: 0.75em;
+  height: 1em;
   top: -0.10em;
 }
 

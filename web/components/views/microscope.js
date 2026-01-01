@@ -94,20 +94,24 @@ export class Microscope {
     const { container: dbSuffix } = createDbSuffix('microscope__db-suffix');
     this.thresholdLabelContainer.appendChild(dbSuffix);
 
-    // External scale labels (in HTML, outside microscope)
-    // Labels have structure: <span class="microscope-label__num">X</span><span class="microscope-label__suffix">...</span>
+    // External scale labels (in HTML, outside microscope) - use Digits for consistent transitions
     this.labelTop = document.getElementById('label-top');
     this.labelBottom = document.getElementById('label-bottom');
-    this.labelTopNum = this.labelTop?.querySelector('.microscope-label__num');
-    this.labelBottomNum = this.labelBottom?.querySelector('.microscope-label__num');
-    if (this.labelBottomNum) {
-      this.labelBottomNum.textContent = this.options.displayMinDb;
+    const labelTopContainer = this.labelTop?.querySelector('.microscope-label__num');
+    const labelBottomContainer = this.labelBottom?.querySelector('.microscope-label__num');
+
+    if (labelTopContainer) {
+      this.labelTopDigits = new Digits(labelTopContainer, { scale: 0.35 });
+      this.labelTopDigits.ready.then(() => this.labelTopDigits.setValue('0'));
+    }
+    if (labelBottomContainer) {
+      this.labelBottomDigits = new Digits(labelBottomContainer, { scale: 0.35 });
+      this.labelBottomDigits.ready.then(() => this.labelBottomDigits.setValue(this.options.displayMinDb));
     }
 
     // Add deltable class for DELTA mode transitions
     this.scaleButton.classList.add('deltable');
-    if (this.labelTop) this.labelTop.classList.add('deltable');
-    if (this.labelBottom) this.labelBottom.classList.add('deltable');
+    // Labels don't need deltable - they turn red via color transition, not dimmed
 
     // Redraw blade when delta mode changes
     onDeltaModeChange(() => this.drawJitteryBlade());
@@ -162,8 +166,8 @@ export class Microscope {
 
   setScale(minDb) {
     this.options.displayMinDb = minDb;
-    if (this.labelBottomNum) {
-      this.labelBottomNum.textContent = minDb;
+    if (this.labelBottomDigits) {
+      this.labelBottomDigits.setValue(minDb);
     }
     this.waveform.options.displayMinDb = minDb;
 
@@ -385,6 +389,8 @@ export class Microscope {
     if (this.cleanup) this.cleanup();
     this.waveform.destroy();
     this.thresholdLabel.destroy();
+    if (this.labelTopDigits) this.labelTopDigits.destroy();
+    if (this.labelBottomDigits) this.labelBottomDigits.destroy();
     this.thresholdLine.remove();
     this.waveformArea.remove();
     this.scaleButton.remove();
