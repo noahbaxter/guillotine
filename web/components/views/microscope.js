@@ -8,7 +8,7 @@ import { getThresholdColor, onDeltaModeChange } from '../../lib/theme.js';
 import { SCALE_PRESETS, DISPLAY_CONFIG, DISPLAY_DB_RANGE } from '../../lib/config.js';
 import { pxToEm, createDbSuffix } from '../../lib/utils.js';
 
-const MAX_JITTER = 20;
+const MAX_JITTER = 25;
 
 const DEFAULTS = {
   displayMinDb: SCALE_PRESETS[DISPLAY_CONFIG.defaultScalePresetIndex].minDb,

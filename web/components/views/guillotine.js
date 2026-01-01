@@ -11,6 +11,7 @@ import { getBloodColors, onDeltaModeChange } from '../../lib/theme.js';
 const BLADE_NATURAL = { width: 300, height: 344 };
 const BLOOD_LINE_P1 = { x: 108, y: 63 };
 const BLOOD_LINE_P2 = { x: 188, y: 98 };
+const MAX_JITTER = 30;
 
 const DEFAULTS = {
   maxBladeTravel: 0.35,
@@ -215,10 +216,9 @@ export class Guillotine {
     const containerHeight = this.container.clientHeight;
     const offset = this.getBladeOffset();
 
-    // Scale jitter relative to window size (16px at 600px width)
-    const baseJitter = 16;
+    // Scale jitter relative to window size
     const baseWidth = 600;
-    const bloodLineMaxJitter = (baseJitter / baseWidth) * containerWidth;
+    const bloodLineMaxJitter = (MAX_JITTER / baseWidth) * containerWidth;
 
     // Calculate where the blade image actually renders (object-fit: contain)
     const bounds = getContainedImageBounds(
