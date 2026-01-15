@@ -77,6 +77,7 @@ GuillotineEditor::GuillotineEditor(GuillotineProcessor& p)
 {
     addAndMakeVisible(webView);
     webView.setWantsKeyboardFocus(false);
+    webView.setOpaque(false);  // Let parent's dark background show through during load
 
     // Enable resizing with aspect ratio lock (1.2:1 = 600x500)
     setResizable(true, true);
@@ -101,7 +102,7 @@ GuillotineEditor::~GuillotineEditor()
 
 void GuillotineEditor::paint(juce::Graphics& g)
 {
-    g.fillAll(juce::Colour(0xff1e1e1e));
+    g.fillAll(juce::Colour(0xff1a1a1a));  // Match web/main.css html background
 }
 
 void GuillotineEditor::resized()

@@ -56,6 +56,7 @@ export class Guillotine {
     this.container = container;
     this.position = 0;        // Current animated position (0 = up, 1 = down)
     this.active = false;      // Binary state: false = bypass (up), true = active (down)
+    this.initialized = false; // Skip animations until markInitialized() is called
     this.cancelAnimation = null;
     this.elements = {};
     this.sharpness = 1.0;     // 0 = dull/jittery, 1 = sharp/flat
@@ -116,6 +117,10 @@ export class Guillotine {
     this.animateTo(active ? 1 : 0);
   }
 
+  markInitialized() {
+    this.initialized = true;
+  }
+
   isActive() {
     return this.active;
   }
@@ -124,12 +129,19 @@ export class Guillotine {
     this.setActive(!this.active);
   }
 
-  animateTo(targetPosition) {
+  animateTo(target) {
+    // Skip animation before initialization
+    if (!this.initialized) {
+      this.position = target;
+      this.updateVisuals();
+      return;
+    }
+
     if (this.cancelAnimation) {
       this.cancelAnimation();
     }
 
-    this.cancelAnimation = animateValue(this.position, targetPosition, {
+    this.cancelAnimation = animateValue(this.position, target, {
       dropDuration: this.options.dropDuration,
       raiseDuration: this.options.raiseDuration,
       onFrame: (value) => {

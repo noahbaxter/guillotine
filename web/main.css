@@ -68,6 +68,7 @@ body.readable-mode {
 
 html {
   height: 100%;
+  background: #1a1a1a; /* Hardcoded to prevent white flash before JS loads */
 }
 
 * {
@@ -90,6 +91,17 @@ body {
   width: 100%;
   height: 100%;
   position: relative;
+  opacity: 0;
+  transition: opacity 0.1s ease-out;
+}
+
+body.ready {
+  opacity: 1;
+}
+
+/* Disable all transitions during initial load to prevent animation artifacts */
+body.loading * {
+  transition: none !important;
 }
 
 body::before {

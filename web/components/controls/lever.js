@@ -115,6 +115,7 @@ export class Lever {
     this.options = { ...DEFAULTS, ...options };
     this.container = container;
     this.active = false;
+    this.initialized = false;  // Skip animations until markInitialized() is called
     this.currentAngle = this.options.upAngle;
     this.cancelAnimation = null;
     this.onChange = null;
@@ -194,16 +195,14 @@ export class Lever {
     this.updateVisuals();
   }
 
-  setActive(active, animate = true) {
+  setActive(active) {
     if (this.active === active) return;
     this.active = active;
+    this.animateTo(active ? this.options.downAngle : this.options.upAngle);
+  }
 
-    if (animate) {
-      this.animateTo(active ? this.options.downAngle : this.options.upAngle);
-    } else {
-      this.currentAngle = active ? this.options.downAngle : this.options.upAngle;
-      this.updateVisuals();
-    }
+  markInitialized() {
+    this.initialized = true;
   }
 
   isActive() {
@@ -215,12 +214,19 @@ export class Lever {
     if (this.onChange) this.onChange(this.active);
   }
 
-  animateTo(targetAngle) {
+  animateTo(target) {
+    // Skip animation before initialization
+    if (!this.initialized) {
+      this.currentAngle = target;
+      this.updateVisuals();
+      return;
+    }
+
     if (this.cancelAnimation) {
       this.cancelAnimation();
     }
 
-    this.cancelAnimation = animateLever(this.currentAngle, targetAngle, {
+    this.cancelAnimation = animateLever(this.currentAngle, target, {
       onFrame: (value) => {
         this.currentAngle = value;
         this.updateVisuals();

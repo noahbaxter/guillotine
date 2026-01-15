@@ -16,6 +16,7 @@ import {
   parameterDragEnded,
   registerCallback,
   setDeltaMonitor,
+  getDeltaMonitor,
   onDeltaMonitorChange,
   setBypassClipper,
   getBypassClipper,
@@ -347,6 +348,10 @@ class GuillotineApp {
     // Initialize all UI state from C++ parameter values
     this.initializeFromParams();
 
+    // Mark animated components as initialized (enables animations for subsequent changes)
+    this.guillotine.markInitialized();
+    this.lever.markInitialized();
+
     // Font cycling with F key
     document.addEventListener('keydown', (e) => {
       if (e.key === 'f' || e.key === 'F') {
@@ -360,6 +365,15 @@ class GuillotineApp {
 
     // Disable browser context menu (commented out for dev tools access)
     // document.addEventListener('contextmenu', e => e.preventDefault());
+
+    // Remove loading class (re-enables transitions) and fade in
+    // Use double RAF to ensure DOM has settled with correct initial values
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        document.body.classList.remove('loading');
+        document.body.classList.add('ready');
+      });
+    });
   }
 
   cycleFont() {
@@ -408,6 +422,13 @@ class GuillotineApp {
 
     const outputGainNorm = getParameterNormalized('outputGain');
     this.outputGainKnob.setValue(this.normalizedToDb(outputGainNorm));
+
+    // Delta mode (only if blade is down)
+    const deltaEnabled = getDeltaMonitor();
+    if (deltaEnabled && !this.bypass) {
+      this.deltaMode = true;
+      setDeltaMode(true);
+    }
   }
 
   setupDeltaModeHandlers() {
