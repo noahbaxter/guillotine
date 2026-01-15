@@ -30,7 +30,15 @@ def get_vst3_path():
     """Get platform-specific VST3 install path."""
     system = platform.system()
     if system == "Darwin":
-        return Path.home() / "Library/Audio/Plug-Ins/VST3/Guillotine.vst3"
+        # Check system library first (where build.sh installs), then user library
+        paths = [
+            Path("/Library/Audio/Plug-Ins/VST3/Guillotine.vst3"),
+            Path.home() / "Library/Audio/Plug-Ins/VST3/Guillotine.vst3",
+        ]
+        for p in paths:
+            if p.exists():
+                return p
+        return paths[0]  # Return first for error message
     elif system == "Windows":
         return Path("C:/Program Files/Common Files/VST3/Guillotine.vst3")
     elif system == "Linux":
