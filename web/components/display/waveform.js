@@ -113,6 +113,28 @@ export class Waveform {
     this.animationId = requestAnimationFrame(this.render);
   }
 
+  drawGridlines(width, height) {
+    const { displayMinDb, displayMaxDb } = this.options;
+    const dbRange = displayMaxDb - displayMinDb;
+
+    this.ctx.strokeStyle = 'rgba(255, 255, 255, 0.2)';
+    this.ctx.lineWidth = 1;
+
+    // Draw line every 12dB from 0 down to -60
+    for (let db = 0; db >= -60; db -= 12) {
+      // Skip if outside current display range
+      if (db < displayMinDb || db > displayMaxDb) continue;
+
+      const yFrac = (displayMaxDb - db) / dbRange;
+      const y = Math.round(yFrac * height) + 0.5; // +0.5 for crisp 1px line
+
+      this.ctx.beginPath();
+      this.ctx.moveTo(0, y);
+      this.ctx.lineTo(width, y);
+      this.ctx.stroke();
+    }
+  }
+
   draw() {
     if (!this.data) return;
 
@@ -126,6 +148,9 @@ export class Waveform {
     const bufferSize = envelope.length;
 
     this.ctx.clearRect(0, 0, width, height);
+
+    // Draw gridlines behind waveform
+    this.drawGridlines(width, height);
 
     // Use fixed point count for consistent scroll speed at any window size
     const pointsToShow = Math.min(bufferSize, WAVEFORM_CONFIG.pointsToShow);
