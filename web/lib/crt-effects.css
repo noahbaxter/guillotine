@@ -42,10 +42,10 @@ body.crt-enabled .waveform {
   filter: url(#crt-aberration);
 }
 
-/* Phosphor glow/bloom */
+/* Phosphor glow/bloom - inset to stay inside container */
 body.crt-enabled #microscope-container {
   position: relative;
-  filter: drop-shadow(0 0 var(--crt-glow-radius, 4px) hsla(0, 0%, 60%, var(--crt-glow-opacity, 0.5)));
+  box-shadow: inset 0 0 var(--crt-glow-radius, 3px) hsla(0, 0%, 70%, var(--crt-glow-opacity, 0.35));
   border-radius: 6px;
 }
 

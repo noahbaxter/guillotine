@@ -18,12 +18,12 @@ const CONFIG = {
   scanlineOpacity: 0.25,      // Darkness of scanlines (0-1)
 
   // Phosphor glow / bloom
-  glowRadius: 6,              // Blur radius (px)
-  glowOpacity: 0.6,           // Glow intensity (0-1)
+  glowRadius: 3,              // Blur radius (px) - reduced
+  glowOpacity: 0.35,          // Glow intensity (0-1) - reduced
 
-  // Vignette (radial darkening/lightening at edges)
-  vignetteCenterOpacity: 0.22,  // Center opacity (lower = less effect)
-  vignetteEdgeOpacity: 0.62,    // Edge opacity (higher = more darkening)
+  // Vignette (radial darkening at edges)
+  vignetteCenterOpacity: 0.12,  // Center opacity - reduced for darker look
+  vignetteEdgeOpacity: 0.45,    // Edge opacity - reduced for darker look
 };
 // =============================================================================
 
