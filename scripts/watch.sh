@@ -10,7 +10,7 @@ SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 PROJECT_ROOT="$( cd "$SCRIPT_DIR/.." && pwd )"
 source "$SCRIPT_DIR/_common.sh"
 
-CMAKE_BUILD_DIR="$PROJECT_ROOT/build"
+CMAKE_BUILD_DIR="$PROJECT_ROOT/build-standalone"
 APP_PATH="$CMAKE_BUILD_DIR/Guillotine_artefacts/Debug/Standalone/$PLUGIN_NAME.app"
 APP_NAME="$PLUGIN_NAME"
 
@@ -48,10 +48,14 @@ echo -e "Press Ctrl+C to stop\n"
 
 "$SCRIPT_DIR/standalone.sh"
 
-# Watch and rebuild (no longer watching .jucer - CMake handles everything)
-fswatch -o "$PROJECT_ROOT/src" "$PROJECT_ROOT/assets" "$PROJECT_ROOT/web" | while read -r _; do
+# Watch and rebuild
+# -l 0.5 = 500ms latency (debounce rapid changes)
+fswatch -o -l 0.5 "$PROJECT_ROOT/src" "$PROJECT_ROOT/assets" "$PROJECT_ROOT/web" | while read -r _; do
     START=$(python3 -c 'import time; print(time.time())')
     echo -e "\n${YELLOW}Change detected, rebuilding...${NC}"
+
+    # Touch CMakeLists to force BinaryData regeneration (CMake misses web/ changes)
+    touch "$PROJECT_ROOT/CMakeLists.txt"
 
     # Build first, only kill/relaunch if successful
     if "$SCRIPT_DIR/standalone.sh" --no-launch; then

@@ -38,6 +38,9 @@ for arg in "$@"; do
         uninstall|Uninstall|UNINSTALL)
             MODE="Uninstall"
             ;;
+        reconfigure|Reconfigure|RECONFIGURE)
+            MODE="Reconfigure"
+            ;;
         --install)
             INSTALL=true
             ;;
@@ -48,10 +51,11 @@ for arg in "$@"; do
             echo "Usage: ./scripts/build.sh [mode] [options]"
             echo ""
             echo "Modes:"
-            echo "  debug     Build Debug configuration"
-            echo "  release   Build Release configuration (default)"
-            echo "  clean     Clean build artifacts"
-            echo "  uninstall Remove installed plugins"
+            echo "  debug       Build Debug configuration"
+            echo "  release     Build Release configuration (default)"
+            echo "  clean       Clean build artifacts"
+            echo "  reconfigure Force CMake reconfigure (use after adding files)"
+            echo "  uninstall   Remove installed plugins"
             echo ""
             echo "Options:"
             echo "  --install      Install plugins to system library (default, requires sudo)"
@@ -65,15 +69,20 @@ echo -e "${YELLOW}=== $PLUGIN_NAME Build Script (CMake) ===${NC}"
 echo "Project root: $PROJECT_ROOT"
 echo "Mode: $MODE"
 
-# Configure CMake if needed (or reconfigure if paths changed)
+# Configure CMake if needed (or reconfigure if paths/files changed)
 configure_cmake() {
     local need_configure=false
+    local cache_file="$CMAKE_BUILD_DIR/CMakeCache.txt"
+    local cmake_lists="$PROJECT_ROOT/CMakeLists.txt"
 
-    if [ ! -f "$CMAKE_BUILD_DIR/CMakeCache.txt" ]; then
+    if [ ! -f "$cache_file" ]; then
         need_configure=true
-    elif ! grep -q "CMAKE_HOME_DIRECTORY:INTERNAL=$PROJECT_ROOT" "$CMAKE_BUILD_DIR/CMakeCache.txt" 2>/dev/null; then
+    elif ! grep -q "CMAKE_HOME_DIRECTORY:INTERNAL=$PROJECT_ROOT" "$cache_file" 2>/dev/null; then
         echo -e "${YELLOW}Project path changed, reconfiguring...${NC}"
-        rm -rf "$CMAKE_BUILD_DIR"
+        need_configure=true
+    elif [ "$cmake_lists" -nt "$cache_file" ]; then
+        # CMakeLists.txt is newer than cache - files were added/removed
+        echo -e "${YELLOW}CMakeLists.txt changed, reconfiguring...${NC}"
         need_configure=true
     fi
 
@@ -89,6 +98,20 @@ configure_cmake() {
         }
         echo -e "${GREEN}✓ CMake configured${NC}"
     fi
+}
+
+# Force reconfigure CMake
+force_reconfigure() {
+    echo -e "${YELLOW}Forcing CMake reconfigure...${NC}"
+    CMAKE_OUTPUT=$(cmake -B "$CMAKE_BUILD_DIR" -G Xcode \
+        -DCMAKE_OSX_ARCHITECTURES="arm64;x86_64" \
+        -DCMAKE_OSX_DEPLOYMENT_TARGET=10.15 \
+        "$PROJECT_ROOT" 2>&1) || {
+        echo "$CMAKE_OUTPUT"
+        echo -e "${RED}CMake configuration failed${NC}"
+        exit 1
+    }
+    echo -e "${GREEN}✓ CMake reconfigured${NC}"
 }
 
 # Function to install plugins
@@ -169,6 +192,11 @@ case "$MODE" in
         rm -rf "$PROJECT_ROOT/Builds"
         rm -rf "$PROJECT_ROOT/JuceLibraryCode"
         echo -e "${GREEN}✓ Cleaned${NC}"
+        ;;
+
+    Reconfigure)
+        force_reconfigure
+        echo -e "${YELLOW}Run './scripts/build.sh' to build${NC}"
         ;;
 
     Uninstall)
