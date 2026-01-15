@@ -11,7 +11,8 @@ SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 PROJECT_ROOT="$( cd "$SCRIPT_DIR/.." && pwd )"
 source "$SCRIPT_DIR/_common.sh"
 
-APP_PATH="$BUILD_DIR/build/Debug/${PLUGIN_NAME}.app"
+CMAKE_BUILD_DIR="$PROJECT_ROOT/build"
+APP_PATH="$CMAKE_BUILD_DIR/Guillotine_artefacts/Debug/Standalone/${PLUGIN_NAME}.app"
 
 # Parse flags
 LAUNCH=true
@@ -36,18 +37,36 @@ done
 pkill -f "Guillotine.app" 2>/dev/null || true
 sleep 0.5
 
-# Always regenerate to pick up web file changes (BinaryData)
-force_regen
+# Configure CMake if needed (or reconfigure if paths changed)
+need_configure=false
+if [ ! -f "$CMAKE_BUILD_DIR/CMakeCache.txt" ]; then
+    need_configure=true
+elif ! grep -q "CMAKE_HOME_DIRECTORY:INTERNAL=$PROJECT_ROOT" "$CMAKE_BUILD_DIR/CMakeCache.txt" 2>/dev/null; then
+    echo -e "${YELLOW}Project path changed, reconfiguring...${NC}"
+    rm -rf "$CMAKE_BUILD_DIR"
+    need_configure=true
+fi
 
-# Build standalone (Debug, current arch only for speed)
+if [ "$need_configure" = true ]; then
+    echo -e "${YELLOW}Configuring CMake (first build takes ~30s)...${NC}"
+    CMAKE_OUTPUT=$(cmake -B "$CMAKE_BUILD_DIR" -G Xcode \
+        -DCMAKE_OSX_ARCHITECTURES="arm64" \
+        -DCMAKE_OSX_DEPLOYMENT_TARGET=10.15 \
+        "$PROJECT_ROOT" 2>&1) || {
+        echo "$CMAKE_OUTPUT"
+        echo -e "${RED}CMake configuration failed${NC}"
+        exit 1
+    }
+    echo -e "${GREEN}✓ CMake configured${NC}"
+fi
+
+# Build standalone (Debug for speed, quiet unless error)
 echo -e "${YELLOW}Building standalone app...${NC}"
-xcodebuild -project "$BUILD_DIR/$PLUGIN_NAME.xcodeproj" \
-    -scheme "$PLUGIN_NAME - Standalone Plugin" \
-    -configuration Debug \
-    ARCHS=arm64 \
-    ONLY_ACTIVE_ARCH=YES \
-    CODE_SIGNING_ALLOWED=NO \
-    -quiet
+BUILD_OUTPUT=$(cmake --build "$CMAKE_BUILD_DIR" --config Debug --target Guillotine_Standalone --parallel -- -quiet 2>&1) || {
+    echo "$BUILD_OUTPUT"
+    echo -e "${RED}Build failed${NC}"
+    exit 1
+}
 
 if [ ! -d "$APP_PATH" ]; then
     echo -e "${RED}Build failed - app not found at $APP_PATH${NC}"

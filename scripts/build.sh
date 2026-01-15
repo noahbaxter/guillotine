@@ -1,11 +1,10 @@
 #!/bin/bash
-# Build script for Guillotine
+# Build script for Guillotine (CMake-based)
 #
 # Usage:
 #   ./scripts/build.sh                 # Build Release (default)
 #   ./scripts/build.sh debug           # Build Debug
 #   ./scripts/build.sh clean           # Clean build artifacts
-#   ./scripts/build.sh regen           # Regenerate Xcode project from JUCE
 #   ./scripts/build.sh release         # Build Release and create distribution package
 #
 # Options:
@@ -19,6 +18,7 @@ PROJECT_ROOT="$( cd "$SCRIPT_DIR/.." && pwd )"
 source "$SCRIPT_DIR/_common.sh"
 
 RELEASE_DIR="$PROJECT_ROOT/releases"
+CMAKE_BUILD_DIR="$PROJECT_ROOT/build"
 
 # Parse arguments
 MODE="Release"
@@ -31,9 +31,6 @@ for arg in "$@"; do
             ;;
         clean|Clean|CLEAN)
             MODE="Clean"
-            ;;
-        regen|Regen|REGEN)
-            MODE="Regen"
             ;;
         release|Release|RELEASE)
             MODE="Release"
@@ -54,7 +51,6 @@ for arg in "$@"; do
             echo "  debug     Build Debug configuration"
             echo "  release   Build Release configuration (default)"
             echo "  clean     Clean build artifacts"
-            echo "  regen     Regenerate Xcode project from .jucer"
             echo "  uninstall Remove installed plugins"
             echo ""
             echo "Options:"
@@ -65,35 +61,64 @@ for arg in "$@"; do
     esac
 done
 
-echo -e "${YELLOW}=== $PLUGIN_NAME Build Script ===${NC}"
+echo -e "${YELLOW}=== $PLUGIN_NAME Build Script (CMake) ===${NC}"
 echo "Project root: $PROJECT_ROOT"
 echo "Mode: $MODE"
 
-# Regenerate Xcode project (verbose version for main build)
-regen_project() {
-    echo -e "\n${YELLOW}Regenerating Xcode project...${NC}"
-    ensure_projucer || return 1
-    echo "Using Projucer: $PROJUCER"
-    "$PROJUCER" --resave "$JUCER_FILE" || {
-        echo -e "${RED}Error: Projucer failed to regenerate project${NC}"
-        return 1
-    }
-    echo -e "${GREEN}✓ Xcode project regenerated${NC}"
+# Configure CMake if needed (or reconfigure if paths changed)
+configure_cmake() {
+    local need_configure=false
+
+    if [ ! -f "$CMAKE_BUILD_DIR/CMakeCache.txt" ]; then
+        need_configure=true
+    elif ! grep -q "CMAKE_HOME_DIRECTORY:INTERNAL=$PROJECT_ROOT" "$CMAKE_BUILD_DIR/CMakeCache.txt" 2>/dev/null; then
+        echo -e "${YELLOW}Project path changed, reconfiguring...${NC}"
+        rm -rf "$CMAKE_BUILD_DIR"
+        need_configure=true
+    fi
+
+    if [ "$need_configure" = true ]; then
+        echo -e "${YELLOW}Configuring CMake (first build takes ~30s)...${NC}"
+        CMAKE_OUTPUT=$(cmake -B "$CMAKE_BUILD_DIR" -G Xcode \
+            -DCMAKE_OSX_ARCHITECTURES="arm64;x86_64" \
+            -DCMAKE_OSX_DEPLOYMENT_TARGET=10.15 \
+            "$PROJECT_ROOT" 2>&1) || {
+            echo "$CMAKE_OUTPUT"
+            echo -e "${RED}CMake configuration failed${NC}"
+            exit 1
+        }
+        echo -e "${GREEN}✓ CMake configured${NC}"
+    fi
 }
 
 # Function to install plugins
+# CMake outputs to: $ARTIFACTS_DIR/{Config}/VST3/ and $ARTIFACTS_DIR/{Config}/AU/
 install_plugins() {
     local src_dir="$1"
     local vst3_dest="/Library/Audio/Plug-Ins/VST3"
     local au_dest="/Library/Audio/Plug-Ins/Components"
+    local user_vst3="$HOME/Library/Audio/Plug-Ins/VST3"
+    local user_au="$HOME/Library/Audio/Plug-Ins/Components"
+
+    # Clean user folder if present (shouldn't be with CMake, but just in case)
+    if [ -d "$user_vst3/$PLUGIN_NAME.vst3" ]; then
+        rm -rf "$user_vst3/$PLUGIN_NAME.vst3"
+    fi
+    if [ -d "$user_au/$PLUGIN_NAME.component" ]; then
+        rm -rf "$user_au/$PLUGIN_NAME.component"
+    fi
 
     echo -e "\n${YELLOW}Installing plugins to system library (requires sudo)...${NC}"
     sudo mkdir -p "$vst3_dest" "$au_dest"
 
+    # CMake artifact structure: {config}/VST3/ and {config}/AU/
+    local vst3_src="$src_dir/VST3/$PLUGIN_NAME.vst3"
+    local au_src="$src_dir/AU/$PLUGIN_NAME.component"
+
     # Install VST3
-    if [ -d "$src_dir/$PLUGIN_NAME.vst3" ]; then
+    if [ -d "$vst3_src" ]; then
         sudo rm -rf "$vst3_dest/$PLUGIN_NAME.vst3"
-        sudo ditto "$src_dir/$PLUGIN_NAME.vst3" "$vst3_dest/$PLUGIN_NAME.vst3"
+        sudo ditto "$vst3_src" "$vst3_dest/$PLUGIN_NAME.vst3"
 
         # Verify installation
         if [ -f "$vst3_dest/$PLUGIN_NAME.vst3/Contents/MacOS/$PLUGIN_NAME" ]; then
@@ -103,14 +128,14 @@ install_plugins() {
             exit 1
         fi
     else
-        echo -e "${RED}✗ VST3 not found at $src_dir/$PLUGIN_NAME.vst3${NC}"
+        echo -e "${RED}✗ VST3 not found at $vst3_src${NC}"
         exit 1
     fi
 
     # Install AU
-    if [ -d "$src_dir/$PLUGIN_NAME.component" ]; then
+    if [ -d "$au_src" ]; then
         sudo rm -rf "$au_dest/$PLUGIN_NAME.component"
-        sudo ditto "$src_dir/$PLUGIN_NAME.component" "$au_dest/$PLUGIN_NAME.component"
+        sudo ditto "$au_src" "$au_dest/$PLUGIN_NAME.component"
 
         # Verify installation
         if [ -f "$au_dest/$PLUGIN_NAME.component/Contents/MacOS/$PLUGIN_NAME" ]; then
@@ -120,7 +145,7 @@ install_plugins() {
             exit 1
         fi
     else
-        echo -e "${RED}✗ AU not found at $src_dir/$PLUGIN_NAME.component${NC}"
+        echo -e "${RED}✗ AU not found at $au_src${NC}"
         exit 1
     fi
 
@@ -133,25 +158,24 @@ install_plugins() {
     echo -e "  ${YELLOW}2. Or delete ~/Library/Audio/Cache/Ableton folder and restart Ableton${NC}"
 }
 
+# CMake artifact paths
+ARTIFACTS_DIR="$CMAKE_BUILD_DIR/Guillotine_artefacts"
+
 # Main logic
 case "$MODE" in
     Clean)
         echo -e "\n${YELLOW}Cleaning build artifacts...${NC}"
-        rm -rf "$BUILD_DIR/build"
+        rm -rf "$CMAKE_BUILD_DIR"
         rm -rf "$PROJECT_ROOT/Builds"
         rm -rf "$PROJECT_ROOT/JuceLibraryCode"
         echo -e "${GREEN}✓ Cleaned${NC}"
         ;;
 
-    Regen)
-        regen_project
-        ;;
-
     Uninstall)
         echo -e "\n${YELLOW}Uninstalling plugins (requires sudo)...${NC}"
-        local vst3_dest="/Library/Audio/Plug-Ins/VST3"
-        local au_dest="/Library/Audio/Plug-Ins/Components"
-        local cache_dir="$HOME/Library/Audio/Cache/Ableton"
+        vst3_dest="/Library/Audio/Plug-Ins/VST3"
+        au_dest="/Library/Audio/Plug-Ins/Components"
+        cache_dir="$HOME/Library/Audio/Cache/Ableton"
 
         if [ -d "$vst3_dest/$PLUGIN_NAME.vst3" ]; then
             sudo rm -rf "$vst3_dest/$PLUGIN_NAME.vst3"
@@ -175,70 +199,42 @@ case "$MODE" in
         echo -e "${YELLOW}Please restart your DAW${NC}"
         ;;
 
-
     Debug)
-        # Always regenerate to pick up web file changes (they're embedded in BinaryData)
-        regen_project
+        configure_cmake
 
         echo -e "\n${YELLOW}Building Debug...${NC}"
-        xcodebuild -project "$BUILD_DIR/$PLUGIN_NAME.xcodeproj" \
-            -scheme "$PLUGIN_NAME - VST3" \
-            -configuration Debug \
-            -destination "generic/platform=macOS" \
-            ARCHS="arm64" \
-            ONLY_ACTIVE_ARCH=YES \
-            MACOSX_DEPLOYMENT_TARGET=10.15 \
-            -quiet 2>&1 | grep -E "(error:|warning:)" || true
-
-        xcodebuild -project "$BUILD_DIR/$PLUGIN_NAME.xcodeproj" \
-            -scheme "$PLUGIN_NAME - AU" \
-            -configuration Debug \
-            -destination "generic/platform=macOS" \
-            ARCHS="arm64" \
-            ONLY_ACTIVE_ARCH=YES \
-            MACOSX_DEPLOYMENT_TARGET=10.15 \
-            -quiet 2>&1 | grep -E "(error:|warning:)" || true
+        BUILD_OUTPUT=$(cmake --build "$CMAKE_BUILD_DIR" --config Debug --parallel -- -quiet 2>&1) || {
+            echo "$BUILD_OUTPUT"
+            echo -e "${RED}Build Failed${NC}"
+            exit 1
+        }
 
         echo -e "${GREEN}✓ Debug build complete${NC}"
 
         if [ "$INSTALL" = true ]; then
-            install_plugins "$BUILD_DIR/build/Debug"
+            install_plugins "$ARTIFACTS_DIR/Debug"
         fi
         ;;
 
     Release)
-        # Always regenerate to pick up web file changes (they're embedded in BinaryData)
-        regen_project
+        configure_cmake
 
         echo -e "\n${YELLOW}Building Release (Universal Binary)...${NC}"
 
-        # Clean previous builds
-        rm -rf "$BUILD_DIR/build"
-
-        xcodebuild -project "$BUILD_DIR/$PLUGIN_NAME.xcodeproj" \
-            -scheme "$PLUGIN_NAME - VST3" \
-            -configuration Release \
-            -destination "generic/platform=macOS" \
-            ARCHS="arm64 x86_64" \
-            ONLY_ACTIVE_ARCH=NO \
-            MACOSX_DEPLOYMENT_TARGET=10.15 \
-            -quiet || { echo -e "${RED}VST3 Build Failed${NC}"; exit 1; }
-
-        xcodebuild -project "$BUILD_DIR/$PLUGIN_NAME.xcodeproj" \
-            -scheme "$PLUGIN_NAME - AU" \
-            -configuration Release \
-            -destination "generic/platform=macOS" \
-            ARCHS="arm64 x86_64" \
-            ONLY_ACTIVE_ARCH=NO \
-            MACOSX_DEPLOYMENT_TARGET=10.15 \
-            -quiet || { echo -e "${RED}AU Build Failed${NC}"; exit 1; }
+        BUILD_OUTPUT=$(cmake --build "$CMAKE_BUILD_DIR" --config Release --parallel -- -quiet 2>&1) || {
+            echo "$BUILD_OUTPUT"
+            echo -e "${RED}Build Failed${NC}"
+            exit 1
+        }
 
         # Verify builds
-        VST3_PATH="$BUILD_DIR/build/Release/$PLUGIN_NAME.vst3"
-        AU_PATH="$BUILD_DIR/build/Release/$PLUGIN_NAME.component"
+        VST3_PATH="$ARTIFACTS_DIR/Release/VST3/$PLUGIN_NAME.vst3"
+        AU_PATH="$ARTIFACTS_DIR/Release/AU/$PLUGIN_NAME.component"
 
         if [ ! -d "$VST3_PATH" ] || [ ! -d "$AU_PATH" ]; then
             echo -e "${RED}Error: Build artifacts missing${NC}"
+            echo "Expected: $VST3_PATH"
+            echo "Expected: $AU_PATH"
             exit 1
         fi
 
@@ -255,12 +251,12 @@ case "$MODE" in
         echo -e "${GREEN}✓ Release build complete${NC}"
 
         if [ "$INSTALL" = true ]; then
-            install_plugins "$BUILD_DIR/build/Release"
+            install_plugins "$ARTIFACTS_DIR/Release"
         fi
 
         # Create Release Package
         echo -e "\n${YELLOW}Creating release package...${NC}"
-        VERSION=$(grep -o 'version="[^"]*"' "$JUCER_FILE" | head -1 | sed 's/version="//' | sed 's/"//' || echo "0.1.0")
+        VERSION=$(cat "$PROJECT_ROOT/VERSION" | tr -d '[:space:]')
         RELEASE_NAME="$PLUGIN_NAME-v${VERSION}-macOS"
         TEMP_DIR="/tmp/$RELEASE_NAME"
 

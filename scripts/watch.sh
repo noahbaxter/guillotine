@@ -1,6 +1,6 @@
 #!/bin/bash
 # Auto-reload development server
-# Watches src/ and assets/, rebuilds and relaunches on changes
+# Watches src/, assets/, web/ - rebuilds and relaunches on changes
 #
 # Usage: ./scripts/watch.sh
 
@@ -10,7 +10,8 @@ SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 PROJECT_ROOT="$( cd "$SCRIPT_DIR/.." && pwd )"
 source "$SCRIPT_DIR/_common.sh"
 
-APP_PATH="$BUILD_DIR/build/Debug/$PLUGIN_NAME.app"
+CMAKE_BUILD_DIR="$PROJECT_ROOT/build"
+APP_PATH="$CMAKE_BUILD_DIR/Guillotine_artefacts/Debug/Standalone/$PLUGIN_NAME.app"
 APP_NAME="$PLUGIN_NAME"
 
 # Check for fswatch
@@ -42,13 +43,13 @@ trap cleanup SIGINT SIGTERM
 
 # Initial build and launch
 echo -e "${CYAN}=== $PLUGIN_NAME Watch Mode ===${NC}"
-echo -e "Watching: src/, assets/, web/, *.jucer"
+echo -e "Watching: src/, assets/, web/"
 echo -e "Press Ctrl+C to stop\n"
 
 "$SCRIPT_DIR/standalone.sh"
 
-# Watch and rebuild
-fswatch -o "$PROJECT_ROOT/src" "$PROJECT_ROOT/assets" "$PROJECT_ROOT/web" "$PROJECT_ROOT/Guillotine.jucer" | while read -r _; do
+# Watch and rebuild (no longer watching .jucer - CMake handles everything)
+fswatch -o "$PROJECT_ROOT/src" "$PROJECT_ROOT/assets" "$PROJECT_ROOT/web" | while read -r _; do
     START=$(python3 -c 'import time; print(time.time())')
     echo -e "\n${YELLOW}Change detected, rebuilding...${NC}"
 

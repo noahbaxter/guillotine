@@ -9,25 +9,24 @@ Guillotine is a JUCE-based audio plugin (VST3/AU) implementing a clipping effect
 ## Build Commands
 
 ```bash
-./scripts/build.sh              # Build Release, install to ~/Library/Audio/Plug-Ins/
+./scripts/build.sh              # Build Release, install to /Library/Audio/Plug-Ins/ (requires sudo)
 ./scripts/build.sh debug        # Debug build
 ./scripts/build.sh clean        # Clean build artifacts
-./scripts/build.sh regen        # Regenerate Xcode project from .jucer file
 ./scripts/build.sh --no-install # Build without installing
-./scripts/standalone.sh        # Quick UI preview - builds standalone app and launches it
-./scripts/watch.sh             # Auto-reload: watches src/ and assets/, rebuilds on change
+./scripts/standalone.sh         # Quick UI preview - builds standalone app and launches it
+./scripts/watch.sh              # Auto-reload: watches src/, assets/, web/ and rebuilds on change
 ```
 
-**Note:** When `watch.sh` is running, it handles all builds automatically including Xcode project regeneration from `.jucer` changes. Don't manually trigger builds or regen - just save files and watch will rebuild.
+**Build system:** CMake with Xcode generator. First build runs `cmake -B build -G Xcode` automatically.
 
-Build outputs: `Builds/MacOSX/build/Release/Guillotine.vst3` and `.component`
+Build outputs: `build/Guillotine_artefacts/Release/VST3/Guillotine.vst3` and `AU/Guillotine.component`
 
 ## Testing
 
 ```bash
 # Setup (one time)
 python3 -m venv .venv && source .venv/bin/activate
-pip install -r tests/requirements.txt
+pip install -r requirements.txt
 
 # Run all tests
 pytest tests/ -v
@@ -37,39 +36,48 @@ pytest tests/integration/test_integration.py -v
 ```
 
 Test types:
-- `tests/integration/` - Plugin DSP tests using pedalboard library
+- `tests/clipper/` - Clipper DSP tests (delta, hard clip, oversampling, intersample)
+- `tests/integration/` - Plugin-level tests (gain, bypass, NaN defense, invariance)
 - `tests/compliance/` - pluginval DAW compatibility checks
-- `tests/unit/` - C++ unit tests (CMake-based)
+- `tests/unit/` - C++ unit tests (CMake-based, Catch2)
 
 ## Architecture
 
 **DSP Layer:**
-- `src/PluginProcessor.cpp` - Audio processing, gain parameter, envelope ring buffer (400 points, ~2s history)
+- `src/PluginProcessor.cpp` - Audio processing, envelope ring buffer, parameter management
+- `src/dsp/ClipperEngine.cpp` - Main DSP chain: gain → M/S → oversample → clip → downsample
+- `src/dsp/Clipper.cpp` - Saturation curve implementations (hard, tanh, arctan, etc.)
+- `src/dsp/Oversampler.cpp` - Polyphase oversampling with configurable filter types
+- `src/dsp/StereoProcessor.cpp` - M/S encoding, stereo link
 
-**UI Layer:**
-- `src/PluginEditor.cpp` - Plugin window, hosts GuillotineComponent + clip slider
-- `src/gui/GuillotineComponent.cpp` - Main visual: 60Hz timer, layered PNG rendering (rope→blade→waveform→base→side)
-- `src/gui/WaveformComponent.cpp` - EnvelopeRenderer for scrolling waveform with clip visualization (white=normal, red=clipped)
+**UI Layer (WebView):**
+- `src/PluginEditor.cpp` - JUCE WebBrowserComponent, serves web resources via `getResource()`
+- `web/index.html` - Entry point, loads main.js
+- `web/main.js` - App initialization, JUCE parameter binding
+- `web/lib/juce-bridge.js` - C++/JS communication bridge
+
+**Web Components:**
+- `web/components/controls/` - knob.js, lever.js, toggle.js (interactive controls)
+- `web/components/display/` - waveform.js, digits.js, blood-pool.js (visualizations)
+- `web/components/views/` - guillotine.js, microscope.js (main views)
+- `web/lib/` - Utilities: config.js, theme.js, guillotine-utils.js, saturation-curves.js
 
 **Assets:**
-- `assets/*.png` - Embedded via JUCE BinaryData (base, blade, rope, side)
-
-**WebView UI:**
-- `web/` - HTML/JS/CSS for the plugin UI, served via WebView
-- `web/components/` - Modular JS components (knob.js, visualizer.js, etc.)
+- `assets/*.png` - Guillotine graphics (blade, rope, base, lever, digits)
+- `web/assets/` - Web-specific assets (textures)
 
 ## Adding New Web Assets
 
 When adding new files to the web UI (JS, CSS, images), you must:
 
-1. **Add to `.jucer`** - Add a `<FILE>` entry with `resource="1"` to embed as BinaryData
+1. **Add to `CMakeLists.txt`** - Add file path to the `juce_add_binary_data(GuillotineData ...)` section
 2. **Register in `PluginEditor.cpp`** - Add entry to the `resources[]` table in `getResource()`
-3. **Rebuild** - Run `./scripts/build.sh regen` to regenerate BinaryData
+3. **Rebuild** - CMake will regenerate BinaryData on next build
 
 Example for adding `web/components/foo.js`:
-```xml
-<!-- In Guillotine.jucer, under the web GROUP -->
-<FILE id="WebFoo" name="foo.js" compile="0" resource="1" file="web/components/foo.js"/>
+```cmake
+# In CMakeLists.txt, under juce_add_binary_data(GuillotineData SOURCES ...)
+web/components/foo.js
 ```
 ```cpp
 // In PluginEditor.cpp getResource()
@@ -103,10 +111,41 @@ This ensures consistent alignment across layered images (e.g., guillotine blade/
 - Use `requestAnimationFrame` with cleanup functions that can be cancelled
 - Each component should have `animateTo()` methods that accept options from utils
 
+## Windows WebView2 Build Notes
+
+The plugin uses JUCE's WebBrowserComponent for its UI. On Windows, this requires WebView2 (Edge Chromium).
+
+**Key CMakeLists.txt settings:**
+```cmake
+target_compile_definitions(Guillotine PUBLIC JUCE_USE_WIN_WEBVIEW2_WITH_STATIC_LINKING=1)
+```
+
+This flag:
+- Enables WebView2 backend (required for `withResourceProvider` API)
+- Statically links the WebView2 loader (no `WebView2Loader.dll` to distribute)
+
+**Without WebView2, Windows falls back to IE which doesn't support:**
+- `Options::withResourceProvider()` - our custom resource serving
+- Modern web features the UI depends on
+
+**Runtime requirements:**
+- Windows 10 (mid-2022+) and Windows 11 have WebView2 pre-installed
+- Older systems need Edge or the WebView2 Runtime installed
+
 ## Key Details
 
 - JUCE framework lives in `third_party/JUCE/` (git submodule)
-- Project config in `Guillotine.jucer` - edit this for build settings, then run `./scripts/build.sh regen`
+- Build config in `CMakeLists.txt` - VERSION is read from `VERSION` file automatically
 - Envelope buffer: 220 samples/point at 44.1kHz, atomic write position for thread safety
 - Blade position 0.0-1.0 maps to 35% vertical travel
 - **Blade travel multiplier (1.25x):** Accounts for `object-fit: contain` constraining rendered image size; scales travel distance to match visual size
+
+## Workflow Rules
+
+**Building:**
+- NEVER run build commands yourself - always ask the user to build and test
+- Propose changes, then say "build and test when ready"
+
+**Versioning:**
+- NEVER increment or commit changes to the `VERSION` file - only the user can do that
+- DO remind the user to bump the version when shipping a release if they haven't already
