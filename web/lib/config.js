@@ -4,13 +4,15 @@
 // Scale presets for microscope zoom cycling
 // Each preset shows a different minimum dB while maintaining 0dB as max
 const SCALE_PRESETS = [
+  { label: '-12', minDb: -12 },
   { label: '-24', minDb: -24 },
+  { label: '-36', minDb: -36 },
   { label: '-48', minDb: -48 },
   { label: '-60', minDb: -60 }
 ];
 
 // Default preset index (which zoom level starts active)
-const DEFAULT_PRESET_INDEX = 0;
+const DEFAULT_PRESET_INDEX = 2;
 
 // Derive config from presets
 const defaultPreset = SCALE_PRESETS[DEFAULT_PRESET_INDEX];

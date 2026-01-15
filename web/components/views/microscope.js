@@ -4,6 +4,7 @@ import { loadStyles } from '../../lib/component-loader.js';
 import { animateValue } from '../../lib/guillotine-utils.js';
 import { Waveform } from '../display/waveform.js';
 import { Digits } from '../display/digits.js';
+import { Dropdown } from '../controls/dropdown.js';
 import { getThresholdColor, onDeltaModeChange } from '../../lib/theme.js';
 import { SCALE_PRESETS, DISPLAY_CONFIG, DISPLAY_DB_RANGE } from '../../lib/config.js';
 import { pxToEm, createDbSuffix } from '../../lib/utils.js';
@@ -47,18 +48,16 @@ export class Microscope {
     this.waveformArea.className = 'microscope__waveform';
     this.container.appendChild(this.waveformArea);
 
-    // Scale button with image-based dB suffix
-    this.scaleButton = document.createElement('button');
-    this.scaleButton.className = 'microscope__scale-btn';
+    // Scale dropdown
+    this.scaleDropdownContainer = document.createElement('div');
+    this.scaleDropdownContainer.className = 'microscope__scale-dropdown';
+    this.container.appendChild(this.scaleDropdownContainer);
 
-    this.scaleButtonNum = document.createElement('span');
-    this.scaleButtonNum.className = 'microscope__scale-num';
-    this.scaleButton.appendChild(this.scaleButtonNum);
-
-    const { container: scaleSuffix } = createDbSuffix();
-    this.scaleButton.appendChild(scaleSuffix);
-
-    this.container.appendChild(this.scaleButton);
+    this.scaleDropdown = new Dropdown(this.scaleDropdownContainer, {
+      options: SCALE_PRESETS.map(p => ({ label: `${Math.abs(p.minDb)}dB`, value: p.minDb })),
+      value: this.currentPresetIndex,
+      onChange: (idx) => this.setScale(SCALE_PRESETS[idx].minDb)
+    });
 
     // Threshold line container with canvas, label, and drag handle
     this.thresholdLine = document.createElement('div');
@@ -110,20 +109,18 @@ export class Microscope {
     }
 
     // Add deltable class for DELTA mode transitions
-    this.scaleButton.classList.add('deltable');
-    // Labels don't need deltable - they turn red via color transition, not dimmed
+    this.scaleDropdownContainer.classList.add('deltable');
 
     // Redraw blade when delta mode changes
     onDeltaModeChange(() => this.drawJitteryBlade());
 
-    this.updateScaleButtonText();
+    this.updateScaleDropdown();
     this.bindEvents();
     this.updateFromThreshold();
   }
 
-  updateScaleButtonText() {
-    const preset = SCALE_PRESETS[this.currentPresetIndex];
-    this.scaleButtonNum.textContent = preset.label;
+  updateScaleDropdown() {
+    this.scaleDropdown.setValue(this.currentPresetIndex);
   }
 
   yFracToDb(yFrac) {
@@ -173,14 +170,15 @@ export class Microscope {
 
     const idx = SCALE_PRESETS.findIndex(p => p.minDb === minDb);
     if (idx !== -1) this.currentPresetIndex = idx;
-    this.updateScaleButtonText();
+    this.updateScaleDropdown();
 
     this.updateFromThreshold();
     if (this.onScaleChange) this.onScaleChange(minDb);
   }
 
-  cycleScale() {
-    this.currentPresetIndex = (this.currentPresetIndex + 1) % SCALE_PRESETS.length;
+  cycleScale(direction = 1) {
+    const len = SCALE_PRESETS.length;
+    this.currentPresetIndex = (this.currentPresetIndex + direction + len) % len;
     this.setScale(SCALE_PRESETS[this.currentPresetIndex].minDb);
   }
 
@@ -222,7 +220,18 @@ export class Microscope {
     document.addEventListener('mousemove', onMouseMove);
     document.addEventListener('mouseup', onMouseUp);
 
-    this.scaleButton.addEventListener('click', () => this.cycleScale());
+    // Scroll wheel to change scale (scroll up = zoom in = tighter range)
+    const onWheel = (e) => {
+      e.preventDefault();
+      // Scroll up (negative deltaY) = zoom in = go to smaller range (e.g. -12)
+      // Scroll down (positive deltaY) = zoom out = go to larger range (e.g. -60)
+      const direction = e.deltaY > 0 ? 1 : -1;
+      const newIndex = Math.max(0, Math.min(SCALE_PRESETS.length - 1, this.currentPresetIndex + direction));
+      if (newIndex !== this.currentPresetIndex) {
+        this.setScale(SCALE_PRESETS[newIndex].minDb);
+      }
+    };
+    this.container.addEventListener('wheel', onWheel, { passive: false });
 
     this.resizeObserver = new ResizeObserver(() => this.handleResize());
     this.resizeObserver.observe(this.container);
@@ -232,6 +241,7 @@ export class Microscope {
       this.dragHandle.removeEventListener('mousedown', onMouseDown);
       document.removeEventListener('mousemove', onMouseMove);
       document.removeEventListener('mouseup', onMouseUp);
+      this.container.removeEventListener('wheel', onWheel);
       this.resizeObserver.disconnect();
     };
   }
@@ -420,8 +430,9 @@ export class Microscope {
     this.thresholdLabel.destroy();
     if (this.labelTopDigits) this.labelTopDigits.destroy();
     if (this.labelBottomDigits) this.labelBottomDigits.destroy();
+    this.scaleDropdown.destroy();
     this.thresholdLine.remove();
     this.waveformArea.remove();
-    this.scaleButton.remove();
+    this.scaleDropdownContainer.remove();
   }
 }

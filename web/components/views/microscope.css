@@ -4,38 +4,18 @@
   overflow: visible;
 }
 
-.microscope__scale-btn {
+.microscope__scale-dropdown {
   position: absolute;
-  top: 0.25em;
-  right: 0.25em;
-  padding: 0.125em 0.375em;
+  top: 0.5em;
+  right: 0.5em;
   font-size: 0.5625em;
-  font-family: monospace;
-  background: var(--color-white-10);
-  border: 0.0625em solid var(--color-white-20);
-  border-radius: 0.1875em;
-  color: var(--color-white-70);
-  cursor: pointer;
   z-index: 20;
-  display: flex;
-  align-items: center;
+  opacity: 0.5;
+  transition: opacity 0.15s;
 }
 
-.microscope__scale-btn:hover {
-  background: var(--color-white-15);
-}
-
-/* Scale button uses monospace text, not image */
-.microscope__scale-btn .image-text {
-  font-family: monospace;
-}
-
-.microscope__scale-btn .image-text__text {
-  visibility: visible;
-}
-
-.microscope__scale-btn .image-text__image {
-  display: none;
+.microscope__scale-dropdown:hover {
+  opacity: 1;
 }
 
 .microscope__threshold-line {
