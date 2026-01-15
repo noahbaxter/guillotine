@@ -6,6 +6,9 @@ import { getClippedColor, getClippedOutlineColor, getWaveformColors } from '../.
 import { CurveType, applyWithCeiling } from '../../lib/saturation-curves.js';
 import { DISPLAY_CONFIG, WAVEFORM_CONFIG } from '../../lib/config.js';
 
+// Small offset to avoid reading actively-written samples (prevents edge glitches)
+const READ_OFFSET = 4;
+
 // Scale-dependent smoothing - tighter zoom = more smoothing to reduce visual noise
 // Returns smoothed copy of envelope data
 function smoothEnvelope(envelope, writePos, pointsToShow, displayMinDb) {
@@ -20,7 +23,7 @@ function smoothEnvelope(envelope, writePos, pointsToShow, displayMinDb) {
   const smoothed = new Float32Array(bufferSize);
 
   // Only smooth the portion we're displaying
-  const startIdx = (writePos - pointsToShow + bufferSize) % bufferSize;
+  const startIdx = (writePos - pointsToShow - READ_OFFSET + bufferSize) % bufferSize;
 
   for (let i = 0; i < pointsToShow; i++) {
     const idx = (startIdx + i) % bufferSize;
@@ -285,19 +288,20 @@ export class Waveform {
     const clippedPoints = [];  // Soft-clipped signal (for WHITE)
 
     for (let i = 0; i < pointsToShow; i++) {
-      const bufIdx = (writePos - pointsToShow + i + bufferSize) % bufferSize;
+      const bufIdx = (writePos - pointsToShow - READ_OFFSET + i + bufferSize) % bufferSize;
       const env = envelope[bufIdx];
       const x = (i / (pointsToShow - 1)) * width;
 
       // Raw input point (for RED)
-      const rawDb = env > 0 ? 20 * Math.log10(env) : displayMinDb;
-      const rawY = height - Math.max(0, Math.min(1, (rawDb - displayMinDb) / dbRange)) * height;
+      // Use -100dB for silence so it goes well below visible area
+      const rawDb = env > 0 ? 20 * Math.log10(env) : -100;
+      const rawY = height - Math.min(1, (rawDb - displayMinDb) / dbRange) * height;
       rawPoints.push({ x, y: rawY });
 
       // Soft-clipped output point (for WHITE)
       const clippedEnv = applyWithCeiling(this.curveMode, env, this.ceilingLinear, this.curveExponent);
-      const clippedDb = clippedEnv > 0 ? 20 * Math.log10(clippedEnv) : displayMinDb;
-      const clippedY = height - Math.max(0, Math.min(1, (clippedDb - displayMinDb) / dbRange)) * height;
+      const clippedDb = clippedEnv > 0 ? 20 * Math.log10(clippedEnv) : -100;
+      const clippedY = height - Math.min(1, (clippedDb - displayMinDb) / dbRange) * height;
       clippedPoints.push({ x, y: clippedY });
     }
 

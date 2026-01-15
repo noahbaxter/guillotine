@@ -108,8 +108,6 @@ export class Microscope {
       this.labelBottomDigits.ready.then(() => this.labelBottomDigits.setValue(this.options.displayMinDb));
     }
 
-    // Add deltable class for DELTA mode transitions
-    this.scaleDropdownContainer.classList.add('deltable');
 
     // Redraw blade when delta mode changes
     onDeltaModeChange(() => this.drawJitteryBlade());
