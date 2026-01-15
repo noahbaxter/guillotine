@@ -22,6 +22,7 @@ import {
   onBypassClipperChange
 } from './lib/juce-bridge.js';
 import { setDeltaMode, toggleReadableMode } from './lib/theme.js';
+import './lib/crt-effect.js';  // Initialize CRT effects (scanlines, jitter, vignette)
 
 // Load locally embedded fonts
 const fontStyles = document.createElement('style');
@@ -347,8 +348,9 @@ class GuillotineApp {
     this.guillotine.markInitialized();
     this.lever.markInitialized();
 
-    // Font cycling with F key
+    // Keyboard shortcuts
     document.addEventListener('keydown', (e) => {
+      // Font cycling with F key
       if (e.key === 'f' || e.key === 'F') {
         this.cycleFont();
       }

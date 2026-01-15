@@ -1,79 +1,60 @@
 // Waveform Component - Envelope visualization with clipping display
-// Draws envelope with clipping visualization based on current threshold
 
 import { loadStyles } from '../../lib/component-loader.js';
 import { getClippedColor, getClippedOutlineColor, getWaveformColors } from '../../lib/theme.js';
-import { CurveType, applyWithCeiling } from '../../lib/saturation-curves.js';
+import { applyJitter } from '../../lib/crt-effect.js';
+import { applyWithCeiling } from '../../lib/saturation-curves.js';
 import { DISPLAY_CONFIG, WAVEFORM_CONFIG } from '../../lib/config.js';
 
-// Small offset to avoid reading actively-written samples (prevents edge glitches)
-const READ_OFFSET = 4;
+const READ_OFFSET = 4;  // Offset to avoid reading actively-written samples
 
-// Scale-dependent smoothing - tighter zoom = more smoothing to reduce visual noise
-// Returns smoothed copy of envelope data
+// Scale-dependent smoothing - tighter zoom = more smoothing
 function smoothEnvelope(envelope, writePos, pointsToShow, displayMinDb) {
-  // Calculate smoothing radius based on scale
-  // -12dB (tight) = radius 3, -60dB (wide) = radius 0
-  const t = Math.max(0, Math.min(1, (displayMinDb + 12) / -48)); // 0 at -12dB, 1 at -60dB
+  const t = Math.max(0, Math.min(1, (displayMinDb + 12) / -48));
   const radius = Math.round(3 * (1 - t));
-
   if (radius === 0) return envelope;
 
   const bufferSize = envelope.length;
   const smoothed = new Float32Array(bufferSize);
-
-  // Only smooth the portion we're displaying
   const startIdx = (writePos - pointsToShow - READ_OFFSET + bufferSize) % bufferSize;
 
   for (let i = 0; i < pointsToShow; i++) {
     const idx = (startIdx + i) % bufferSize;
     let sum = 0;
-    let count = 0;
-
     for (let r = -radius; r <= radius; r++) {
-      const sampleIdx = (startIdx + i + r + bufferSize) % bufferSize;
-      sum += envelope[sampleIdx];
-      count++;
+      sum += envelope[(startIdx + i + r + bufferSize) % bufferSize];
     }
-
-    smoothed[idx] = sum / count;
+    smoothed[idx] = sum / (radius * 2 + 1);
   }
 
   // Copy unsmoothed portions
   for (let i = 0; i < bufferSize; i++) {
-    if (smoothed[i] === 0 && envelope[i] !== 0) {
-      smoothed[i] = envelope[i];
-    }
+    if (smoothed[i] === 0 && envelope[i] !== 0) smoothed[i] = envelope[i];
   }
-
   return smoothed;
 }
-
-const DEFAULTS = {
-  displayMinDb: DISPLAY_CONFIG.defaultMinDb,
-  displayMaxDb: DISPLAY_CONFIG.maxCeilingDb
-};
 
 export class Waveform {
   static stylesLoaded = false;
 
   constructor(container, options = {}) {
-    this.options = { ...DEFAULTS, ...options };
+    this.options = {
+      displayMinDb: DISPLAY_CONFIG.defaultMinDb,
+      displayMaxDb: DISPLAY_CONFIG.maxCeilingDb,
+      ...options
+    };
     this.container = container;
     this.canvas = document.createElement('canvas');
     this.canvas.className = 'waveform';
     this.ctx = this.canvas.getContext('2d');
-    this.data = null;
-    this.threshold = 0;
-    this.thresholdY = 0;
-    this.bladeJitterFn = null;  // Function to get blade jitter offset at x
-    this.active = true;  // When false, skip drawing clipped regions
-    this.cutPosition = 1;  // 0 = cut at top (no clipping), 1 = cut at threshold (full clipping)
 
-    // Soft clipping simulation
-    this.curveMode = CurveType.Hard;  // 0=Hard, 1=Quintic, 2=Cubic, 3=Tanh, 4=Arctan, 5=Knee, 6=T2
-    this.ceilingLinear = 1.0;  // Threshold in linear amplitude
-    this.curveExponent = 2.0;  // For Knee/T2 modes: 1.0-4.0
+    // State
+    this.data = null;
+    this.active = true;
+    this.cutPosition = 1;
+    this.curveMode = 0;
+    this.ceilingLinear = 1.0;
+    this.curveExponent = 2.0;
 
     this.ready = this.init();
     this.render = this.render.bind(this);
@@ -88,89 +69,119 @@ export class Waveform {
     this.container.appendChild(this.canvas);
   }
 
+  // Setters
   setBounds(left, top, width, height) {
     const dpr = window.devicePixelRatio || 1;
     this.canvas.width = width * dpr;
     this.canvas.height = height * dpr;
-    this.canvas.style.left = left + 'px';
-    this.canvas.style.top = top + 'px';
-    this.canvas.style.width = width + 'px';
-    this.canvas.style.height = height + 'px';
+    Object.assign(this.canvas.style, {
+      left: left + 'px', top: top + 'px',
+      width: width + 'px', height: height + 'px'
+    });
     this.ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-    this.updateThresholdY();
   }
 
-  setThreshold(value) {
-    this.threshold = Math.max(0, Math.min(1, value));
-    this.updateThresholdY();
+  setActive(active) { this.active = active; }
+  setCutPosition(v) { this.cutPosition = Math.max(0, Math.min(1, v)); }
+  setCurveMode(mode) { this.curveMode = mode; }
+  setCeilingLinear(v) { this.ceilingLinear = Math.max(0.0001, v); }
+  setCurveExponent(v) { this.curveExponent = Math.max(1.0, Math.min(4.0, v)); }
+  updateData(data) { this.data = data; }
+
+  // Animation
+  start() { if (!this.animationId) this.animationId = requestAnimationFrame(this.render); }
+  stop() { if (this.animationId) { cancelAnimationFrame(this.animationId); this.animationId = null; } }
+  render() { this.draw(); this.animationId = requestAnimationFrame(this.render); }
+
+  // Path helper - builds closed waveform path from points
+  buildPath(points, width, height) {
+    this.ctx.beginPath();
+    this.ctx.moveTo(0, height);
+    for (const p of points) this.ctx.lineTo(p.x, p.y);
+    this.ctx.lineTo(width, height);
+    this.ctx.closePath();
   }
 
-  setBladeJitter(jitterFn) {
-    this.bladeJitterFn = jitterFn;
+  // Stroke helper - draws outline along points
+  strokePath(points) {
+    this.ctx.beginPath();
+    this.ctx.moveTo(points[0].x, points[0].y);
+    for (let i = 1; i < points.length; i++) this.ctx.lineTo(points[i].x, points[i].y);
+    this.ctx.stroke();
   }
 
-  setActive(active) {
-    this.active = active;
-  }
+  draw() {
+    if (!this.data) return;
 
-  setCutPosition(value) {
-    this.cutPosition = Math.max(0, Math.min(1, value));
-  }
-
-  setCurveMode(mode) {
-    this.curveMode = mode;
-  }
-
-  setCeilingLinear(value) {
-    this.ceilingLinear = Math.max(0.0001, value);
-  }
-
-  setCurveExponent(value) {
-    this.curveExponent = Math.max(1.0, Math.min(4.0, value));
-  }
-
-  updateThresholdY() {
-    const height = this.canvas.height / (window.devicePixelRatio || 1);
-    this.thresholdY = this.threshold * height;
-  }
-
-  updateData(data) {
-    this.data = data;
-  }
-
-  start() {
-    if (!this.animationId) {
-      this.animationId = requestAnimationFrame(this.render);
-    }
-  }
-
-  stop() {
-    if (this.animationId) {
-      cancelAnimationFrame(this.animationId);
-      this.animationId = null;
-    }
-  }
-
-  render() {
-    this.draw();
-    this.animationId = requestAnimationFrame(this.render);
-  }
-
-  drawGridlines(width, height) {
+    const { preClip: envelope, writePos } = this.data;
     const { displayMinDb, displayMaxDb } = this.options;
-    const dbRange = displayMaxDb - displayMinDb;
+    const width = this.canvas.width / (window.devicePixelRatio || 1);
+    const height = this.canvas.height / (window.devicePixelRatio || 1);
+    const bufferSize = envelope.length;
+    const pointsToShow = Math.min(bufferSize, WAVEFORM_CONFIG.pointsToShow);
 
+    this.ctx.clearRect(0, 0, width, height);
+    if (pointsToShow < 2) return;
+
+    // Draw gridlines
+    this.drawGridlines(width, height, displayMinDb, displayMaxDb);
+
+    // Compute points
+    const smoothed = smoothEnvelope(envelope, writePos, pointsToShow, displayMinDb);
+    const { rawPoints, clippedPoints } = this.computePoints(smoothed, writePos, pointsToShow, bufferSize, width, height);
+
+    // Apply jitter
+    const jitteredRaw = applyJitter(rawPoints);
+    const jitteredClipped = applyJitter(clippedPoints);
+
+    // Get colors
+    const colors = getWaveformColors(!this.active);
+    const clippedColor = getClippedColor();
+    const clippedOutline = getClippedOutlineColor();
+
+    // Draw red (raw input) ghost waveform behind white
+    if (this.cutPosition > 0) {
+      this.buildPath(jitteredRaw, width, height);
+      this.ctx.fillStyle = clippedColor;
+      this.ctx.fill();
+
+      if (clippedOutline) {
+        this.ctx.strokeStyle = clippedOutline;
+        this.ctx.lineWidth = 1.5;
+        this.strokePath(jitteredRaw);
+      }
+    }
+
+    // Draw white (clipped output) waveform
+    const points = this.active ? jitteredClipped : jitteredRaw;
+
+    // Black background to block red showing through
+    this.buildPath(points, width, height);
+    this.ctx.save();
+    this.ctx.clip();
+    this.ctx.fillStyle = '#000';
+    this.ctx.fillRect(0, 0, width, height);
+    this.ctx.restore();
+
+    // Solid fill
+    this.buildPath(points, width, height);
+    this.ctx.fillStyle = colors.gradientTop;
+    this.ctx.fill();
+
+    // Outline
+    this.ctx.strokeStyle = colors.outline;
+    this.ctx.lineWidth = 1.5;
+    this.strokePath(points);
+  }
+
+  drawGridlines(width, height, minDb, maxDb) {
+    const dbRange = maxDb - minDb;
     this.ctx.strokeStyle = 'rgba(255, 255, 255, 0.2)';
     this.ctx.lineWidth = 1;
 
-    // Draw line every 12dB from 0 down to -60
     for (let db = 0; db >= -60; db -= 12) {
-      // Skip if outside current display range
-      if (db < displayMinDb || db > displayMaxDb) continue;
-
-      const yFrac = (displayMaxDb - db) / dbRange;
-      const y = Math.round(yFrac * height) + 0.5; // +0.5 for crisp 1px line
-
+      if (db < minDb || db > maxDb) continue;
+      const y = Math.round((maxDb - db) / dbRange * height) + 0.5;
       this.ctx.beginPath();
       this.ctx.moveTo(0, y);
       this.ctx.lineTo(width, y);
@@ -178,127 +189,23 @@ export class Waveform {
     }
   }
 
-  draw() {
-    if (!this.data) return;
-
-    // Use preClip (input signal after input gain, before clipping) for display
-    // We simulate clipping in JS using the saturation curves
-    // Data is pre-smoothed in C++ before being sent
-    const { preClip: envelope, writePos } = this.data;
-
-    const width = this.canvas.width / (window.devicePixelRatio || 1);
-    const height = this.canvas.height / (window.devicePixelRatio || 1);
-    const bufferSize = envelope.length;
-
-    this.ctx.clearRect(0, 0, width, height);
-
-    // Draw gridlines behind waveform
-    this.drawGridlines(width, height);
-
-    // Use fixed point count for consistent scroll speed at any window size
-    const pointsToShow = Math.min(bufferSize, WAVEFORM_CONFIG.pointsToShow);
-    if (pointsToShow < 2) return;
-
-    // Apply scale-dependent smoothing (tighter zoom = more smoothing)
-    const smoothedEnvelope = smoothEnvelope(envelope, writePos, pointsToShow, this.options.displayMinDb);
-
-    // Compute both raw input and soft-clipped output points
-    const { rawPoints, clippedPoints } = this.computePoints(smoothedEnvelope, writePos, pointsToShow, bufferSize, width, height);
-
-    // Get current colors from theme (force normal white when bypassed/inactive)
-    const waveformColors = getWaveformColors(!this.active);
-    const clippedColor = getClippedColor();
-    const clippedOutlineColor = getClippedOutlineColor();
-
-    // Create gradient for waveform fill (fades from top to bottom)
-    const gradient = this.ctx.createLinearGradient(0, 0, 0, height);
-    gradient.addColorStop(0, waveformColors.gradientTop);
-    gradient.addColorStop(0.5, waveformColors.gradientMid);
-    gradient.addColorStop(1, waveformColors.gradientBottom);
-
-    // Draw RED (input/raw) as ghost waveform FIRST (behind white)
-    // Only when actively clipping (cutPosition > 0)
-    if (this.cutPosition > 0) {
-      this.ctx.beginPath();
-      this.ctx.moveTo(0, height);
-      for (let i = 0; i < rawPoints.length; i++) {
-        this.ctx.lineTo(rawPoints[i].x, rawPoints[i].y);
-      }
-      this.ctx.lineTo(width, height);
-      this.ctx.closePath();
-      this.ctx.fillStyle = clippedColor;
-      this.ctx.fill();
-
-      // Red outline on raw waveform edge (only in delta mode)
-      if (clippedOutlineColor) {
-        this.ctx.beginPath();
-        this.ctx.moveTo(rawPoints[0].x, rawPoints[0].y);
-        for (let i = 1; i < rawPoints.length; i++) {
-          this.ctx.lineTo(rawPoints[i].x, rawPoints[i].y);
-        }
-        this.ctx.strokeStyle = clippedOutlineColor;
-        this.ctx.lineWidth = 1.5;
-        this.ctx.stroke();
-      }
-    }
-
-    // When bypassed, show raw waveform; when active, show clipped waveform
-    const whitePoints = this.active ? clippedPoints : rawPoints;
-
-    // Draw opaque black background ONLY where white waveform will be (blocks red from showing through)
-    this.ctx.beginPath();
-    this.ctx.moveTo(0, height);
-    for (let i = 0; i < whitePoints.length; i++) {
-      this.ctx.lineTo(whitePoints[i].x, whitePoints[i].y);
-    }
-    this.ctx.lineTo(width, height);
-    this.ctx.closePath();
-    this.ctx.save();
-    this.ctx.clip();
-    this.ctx.fillStyle = 'rgba(0, 0, 0, 1)';
-    this.ctx.fillRect(0, 0, width, height);
-    this.ctx.restore();
-
-    // Draw WHITE waveform on top (clipped when active, raw when bypassed)
-    this.ctx.beginPath();
-    this.ctx.moveTo(0, height);
-    for (let i = 0; i < whitePoints.length; i++) {
-      this.ctx.lineTo(whitePoints[i].x, whitePoints[i].y);
-    }
-    this.ctx.lineTo(width, height);
-    this.ctx.closePath();
-    this.ctx.fillStyle = gradient;
-    this.ctx.fill();
-
-    // Draw white outline on upper edge
-    this.ctx.beginPath();
-    this.ctx.moveTo(whitePoints[0].x, whitePoints[0].y);
-    for (let i = 1; i < whitePoints.length; i++) {
-      this.ctx.lineTo(whitePoints[i].x, whitePoints[i].y);
-    }
-    this.ctx.strokeStyle = waveformColors.outline;
-    this.ctx.lineWidth = 1.5;
-    this.ctx.stroke();
-  }
-
   computePoints(envelope, writePos, pointsToShow, bufferSize, width, height) {
     const { displayMinDb, displayMaxDb } = this.options;
     const dbRange = displayMaxDb - displayMinDb;
-    const rawPoints = [];      // Input signal (for RED ghost)
-    const clippedPoints = [];  // Soft-clipped signal (for WHITE)
+    const rawPoints = [];
+    const clippedPoints = [];
 
     for (let i = 0; i < pointsToShow; i++) {
       const bufIdx = (writePos - pointsToShow - READ_OFFSET + i + bufferSize) % bufferSize;
       const env = envelope[bufIdx];
       const x = (i / (pointsToShow - 1)) * width;
 
-      // Raw input point (for RED)
-      // Use -100dB for silence so it goes well below visible area
+      // Raw input (red)
       const rawDb = env > 0 ? 20 * Math.log10(env) : -100;
       const rawY = height - Math.min(1, (rawDb - displayMinDb) / dbRange) * height;
       rawPoints.push({ x, y: rawY });
 
-      // Soft-clipped output point (for WHITE)
+      // Clipped output (white)
       const clippedEnv = applyWithCeiling(this.curveMode, env, this.ceilingLinear, this.curveExponent);
       const clippedDb = clippedEnv > 0 ? 20 * Math.log10(clippedEnv) : -100;
       const clippedY = height - Math.min(1, (clippedDb - displayMinDb) / dbRange) * height;

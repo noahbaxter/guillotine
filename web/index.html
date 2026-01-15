@@ -7,6 +7,44 @@
   <link rel="stylesheet" href="main.css">
 </head>
 <body class="loading">
+  <!-- SVG filters for CRT effects -->
+  <svg style="position: absolute; width: 0; height: 0;">
+    <defs>
+      <!-- Chromatic aberration: offset R and B channels -->
+      <filter id="crt-aberration" x="-10%" y="-10%" width="120%" height="120%">
+        <!-- Red channel - shift left -->
+        <feOffset in="SourceGraphic" dx="-1" dy="0" result="red-shift">
+          <animate attributeName="dx" values="-1;-1.5;-1" dur="4s" repeatCount="indefinite" />
+        </feOffset>
+        <feColorMatrix in="red-shift" type="matrix" result="red"
+          values="1 0 0 0 0
+                  0 0 0 0 0
+                  0 0 0 0 0
+                  0 0 0 1 0" />
+
+        <!-- Green channel - no shift -->
+        <feColorMatrix in="SourceGraphic" type="matrix" result="green"
+          values="0 0 0 0 0
+                  0 1 0 0 0
+                  0 0 0 0 0
+                  0 0 0 1 0" />
+
+        <!-- Blue channel - shift right -->
+        <feOffset in="SourceGraphic" dx="1" dy="0" result="blue-shift">
+          <animate attributeName="dx" values="1;1.5;1" dur="3s" repeatCount="indefinite" />
+        </feOffset>
+        <feColorMatrix in="blue-shift" type="matrix" result="blue"
+          values="0 0 0 0 0
+                  0 0 0 0 0
+                  0 0 1 0 0
+                  0 0 0 1 0" />
+
+        <!-- Combine RGB -->
+        <feBlend in="red" in2="green" mode="screen" result="rg" />
+        <feBlend in="rg" in2="blue" mode="screen" />
+      </filter>
+    </defs>
+  </svg>
   <div id="app">
     <!-- Left Panel: Title + Guillotine + Bucket Text -->
     <div id="left-panel">

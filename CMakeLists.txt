@@ -95,9 +95,11 @@ juce_add_binary_data(GuillotineData
         web/lib/guillotine-utils.js
         web/lib/svg-utils.js
         web/lib/theme.js
+        web/lib/crt-effect.js
         web/lib/saturation-curves.js
         web/lib/config.js
         web/lib/delta-mode.css
+        web/lib/crt-effects.css
         web/lib/utils.js
         # Web - JUCE frontend lib
         web/lib/juce/index.js

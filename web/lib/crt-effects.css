@@ -1,0 +1,70 @@
+/* ==========================================================================
+   CRT Effects - Scanlines, chromatic aberration, vignette (MONO HIGH preset)
+   Applied to microscope area when body.crt-enabled
+   CSS variables are set by crt-effect.js on init
+   ========================================================================== */
+
+/* Scanlines overlay - uses CSS vars set by crt-effect.js for size scaling */
+body.crt-enabled #microscope-container::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: repeating-linear-gradient(
+    to bottom,
+    transparent 0px,
+    transparent var(--crt-scanline-gap, 1px),
+    rgba(0, 0, 0, 0.25) var(--crt-scanline-gap, 1px),
+    rgba(0, 0, 0, 0.25) var(--crt-scanline-size, 3px)
+  );
+  pointer-events: none;
+  z-index: 100;
+}
+
+/* Vignette overlay */
+body.crt-enabled #microscope-container::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(
+    ellipse at center,
+    hsla(0, 0%, 50%, 0.22) 0%,
+    hsla(0, 0%, 20%, 0.62) 100%
+  );
+  mix-blend-mode: screen;
+  pointer-events: none;
+  z-index: 101;
+}
+
+/* Chromatic aberration on waveform */
+body.crt-enabled .waveform {
+  filter: url(#crt-aberration);
+}
+
+/* Phosphor glow/bloom */
+body.crt-enabled #microscope-container {
+  position: relative;
+  filter: drop-shadow(0 0 4px hsla(0, 0%, 60%, 0.5));
+  border-radius: 6px;
+}
+
+/* Chromatic aberration on threshold line */
+body.crt-enabled .microscope__threshold-line {
+  filter: url(#crt-aberration);
+}
+
+/* Color tint on waveform wrapper */
+body.crt-enabled #microscope-wrapper {
+  position: relative;
+  overflow: visible;
+}
+
+body.crt-enabled #microscope-wrapper::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: hsla(0, 0%, 50%, 0.066);
+  mix-blend-mode: overlay;
+  pointer-events: none;
+  z-index: 102;
+  border-radius: inherit;
+}

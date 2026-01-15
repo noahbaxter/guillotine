@@ -1,5 +1,5 @@
-// Centralized color system for Guillotine plugin
-// Single source of truth - injects CSS variables and provides JS getters
+// Theme Module - Color system for Guillotine plugin
+// Manages colors and CSS variables for normal/delta modes
 
 let deltaMode = false;
 let readableMode = false;
@@ -97,7 +97,7 @@ function injectCSSVariables() {
   }
 }
 
-// Initialize CSS variables on load
+// Initialize on load
 if (typeof document !== 'undefined') {
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', injectCSSVariables);
@@ -106,7 +106,7 @@ if (typeof document !== 'undefined') {
   }
 }
 
-// Getters for canvas components (return current values based on mode)
+// Color getters for canvas components
 export function getBloodColors() {
   return deltaMode
     ? { line1: DELTA_OVERRIDES.bloodLine1, line2: DELTA_OVERRIDES.bloodLine2 }
@@ -145,7 +145,7 @@ export function getWaveformColors() {
   };
 }
 
-// State management
+// Delta mode state
 export function isDeltaMode() {
   return deltaMode;
 }
@@ -153,14 +153,8 @@ export function isDeltaMode() {
 export function setDeltaMode(enabled) {
   if (deltaMode === enabled) return;
   deltaMode = enabled;
-
-  // Update CSS variables for DOM element transitions
   injectCSSVariables();
-
-  // Toggle CSS class on body for transition effects
   document.body.classList.toggle('delta-mode', enabled);
-
-  // Notify listeners (canvas components) to redraw
   listeners.forEach(fn => fn(enabled));
 }
 
@@ -196,5 +190,4 @@ export function onReadableModeChange(callback) {
   };
 }
 
-// Export color constants for direct access if needed
 export { COLORS, DELTA_OVERRIDES };

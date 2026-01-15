@@ -2,6 +2,7 @@
 
 import { loadStyles } from '../../lib/component-loader.js';
 import { animateValue } from '../../lib/guillotine-utils.js';
+import { setScale as setCrtScale } from '../../lib/crt-effect.js';
 import { Waveform } from '../display/waveform.js';
 import { Digits } from '../display/digits.js';
 import { Dropdown } from '../controls/dropdown.js';
@@ -155,8 +156,6 @@ export class Microscope {
 
     const db = this.yFracToDb(this.lineYFrac);
     this.thresholdLabel.setValue(db.toFixed(1));
-
-    this.waveform.setThreshold(this.lineYFrac);
   }
 
   setScale(minDb) {
@@ -249,6 +248,7 @@ export class Microscope {
     this.waveform.setBounds(0, 0, rect.width, rect.height);
     this.setupBladeCanvas(rect.width);
     this.updateVisuals();
+    setCrtScale(rect.height);  // Scale CRT effects with container size
   }
 
   setupBladeCanvas(width) {
@@ -270,17 +270,6 @@ export class Microscope {
     for (let x = 0; x <= this.bladeWidth; x += 2) {
       this.bladeBasePattern.push(Math.random() - 0.5);  // Normalized: -0.5 to 0.5
     }
-    this.updateWaveformJitter();
-  }
-
-  updateWaveformJitter() {
-    const pattern = this.bladeBasePattern;
-    const sharpness = this.sharpness;
-    this.waveform.setBladeJitter((x) => {
-      const i = Math.floor(x / 2);
-      const p = pattern[i] || 0;
-      return p * (1 - sharpness) * MAX_JITTER;
-    });
   }
 
   drawJitteryBlade() {
@@ -318,7 +307,6 @@ export class Microscope {
   setSharpness(value) {
     this.sharpness = Math.max(0, Math.min(1, value));
     this.drawJitteryBlade();
-    this.updateWaveformJitter();
   }
 
   setActive(active) {
