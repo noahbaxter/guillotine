@@ -91,7 +91,7 @@ GuillotineEditor::GuillotineEditor(GuillotineProcessor& p)
             safeThis->webView.goToURL(juce::WebBrowserComponent::getResourceProviderRoot());
     });
 
-    // Start timer to push envelope data at 60Hz
+    // Start timer for version injection (stops after first success)
     startTimerHz(60);
 }
 
@@ -113,7 +113,6 @@ void GuillotineEditor::resized()
 void GuillotineEditor::timerCallback()
 {
     pushVersionOnce();
-    pushEnvelopeData();
 }
 
 void GuillotineEditor::pushVersionOnce()
@@ -131,46 +130,6 @@ void GuillotineEditor::pushVersionOnce()
     });
 }
 
-void GuillotineEditor::pushEnvelopeData()
-{
-    const auto& preClip = audioProcessor.getEnvelopePreClip();
-    const auto& postClip = audioProcessor.getEnvelopePostClip();
-    const auto& thresholds = audioProcessor.getEnvelopeClipThresholds();
-    const int writePos = audioProcessor.getEnvelopeWritePosition().load();
-
-    // Build JSON arrays for envelope data
-    juce::String preClipJson = "[";
-    juce::String postClipJson = "[";
-    juce::String thresholdsJson = "[";
-
-    for (int i = 0; i < GuillotineProcessor::envelopeBufferSize; ++i)
-    {
-        if (i > 0)
-        {
-            preClipJson += ",";
-            postClipJson += ",";
-            thresholdsJson += ",";
-        }
-        preClipJson += juce::String(preClip[i], 6);
-        postClipJson += juce::String(postClip[i], 6);
-        thresholdsJson += juce::String(thresholds[i], 6);
-    }
-
-    preClipJson += "]";
-    postClipJson += "]";
-    thresholdsJson += "]";
-
-    // Call JavaScript function to update the waveform
-    // preClip = after input gain, before clipping (RED - what gets clipped off)
-    // postClip = after clipping, before output gain (WHITE - what you hear)
-    juce::String js = "if (window.updateEnvelope) { window.updateEnvelope({ "
-                      "preClip: " + preClipJson + ", "
-                      "postClip: " + postClipJson + ", "
-                      "thresholds: " + thresholdsJson + ", "
-                      "writePos: " + juce::String(writePos) + " }); }";
-
-    webView.evaluateJavascript(js, nullptr);
-}
 
 std::optional<juce::WebBrowserComponent::Resource> GuillotineEditor::getResource(const juce::String& url)
 {
@@ -202,6 +161,36 @@ std::optional<juce::WebBrowserComponent::Resource> GuillotineEditor::getResource
     // Handle empty path (root)
     if (urlToRetrieve.isEmpty())
         urlToRetrieve = "index.html";
+
+    // Dynamic endpoint: serve envelope data as binary (Float32 array + uint32 writePos)
+    // JS fetches this at 60Hz instead of C++ pushing JSON via evaluateJavascript
+    if (urlToRetrieve == "envelope.bin")
+    {
+        const auto& preClip = audioProcessor.getEnvelopePreClip();
+        const int writePos = audioProcessor.getEnvelopeWritePosition().load();
+        constexpr int bufSize = GuillotineProcessor::envelopeBufferSize;
+
+        // Apply 3-point moving average smoothing before sending
+        std::array<float, bufSize> smoothed;
+        for (int i = 0; i < bufSize; ++i)
+        {
+            const int prev = (i - 1 + bufSize) % bufSize;
+            const int next = (i + 1) % bufSize;
+            smoothed[i] = (preClip[prev] + preClip[i] + preClip[next]) / 3.0f;
+        }
+
+        // Binary format: 400 floats (smoothed preClip) + 1 uint32 (writePos) = 1604 bytes
+        constexpr size_t floatBytes = bufSize * sizeof(float);
+        constexpr size_t totalBytes = floatBytes + sizeof(uint32_t);
+
+        std::vector<std::byte> bytes(totalBytes);
+        std::memcpy(bytes.data(), smoothed.data(), floatBytes);
+
+        uint32_t writePosU32 = static_cast<uint32_t>(writePos);
+        std::memcpy(bytes.data() + floatBytes, &writePosU32, sizeof(uint32_t));
+
+        return juce::WebBrowserComponent::Resource { std::move(bytes), "application/octet-stream" };
+    }
 
     // Resource lookup table - add new web files here
     struct ResourceEntry { const char* path; const void* data; int size; const char* mime; };

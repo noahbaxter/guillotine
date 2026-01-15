@@ -14,7 +14,6 @@ import {
   onParameterChange,
   parameterDragStarted,
   parameterDragEnded,
-  registerCallback,
   setDeltaMonitor,
   getDeltaMonitor,
   onDeltaMonitorChange,
@@ -340,10 +339,6 @@ class GuillotineApp {
       this.setBypass(bypassed);
     });
 
-    // Register envelope data callback (from C++ timer)
-    registerCallback('updateEnvelope', (data) => {
-      this.microscope.updateData(data);
-    });
 
     // Initialize all UI state from C++ parameter values
     this.initializeFromParams();

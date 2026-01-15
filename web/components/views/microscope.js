@@ -358,10 +358,6 @@ export class Microscope {
     return this.thresholdToDb(this.threshold);
   }
 
-  updateData(data) {
-    this.waveform.updateData(data);
-  }
-
   setCurveMode(mode) {
     this.waveform.setCurveMode(mode);
   }
@@ -377,10 +373,43 @@ export class Microscope {
   start() {
     this.handleResize();
     this.waveform.start();
+    this.startEnvelopePolling();
   }
 
   stop() {
+    this.stopEnvelopePolling();
     this.waveform.stop();
+  }
+
+  startEnvelopePolling() {
+    if (this.envelopePollId) return;
+
+    const poll = async () => {
+      try {
+        const response = await fetch('envelope.bin');
+        if (!response.ok) return;
+
+        const buffer = await response.arrayBuffer();
+        // Binary format: 400 floats + 1 uint32 = 1604 bytes
+        const floats = new Float32Array(buffer, 0, 400);
+        const writePos = new DataView(buffer).getUint32(1600, true); // little-endian
+
+        this.waveform.updateData({ preClip: floats, writePos });
+      } catch {
+        // Ignore fetch errors (e.g., during page load)
+      }
+    };
+
+    // Poll at 60Hz (16.67ms)
+    this.envelopePollId = setInterval(poll, 16);
+    poll(); // Initial fetch
+  }
+
+  stopEnvelopePolling() {
+    if (this.envelopePollId) {
+      clearInterval(this.envelopePollId);
+      this.envelopePollId = null;
+    }
   }
 
   destroy() {

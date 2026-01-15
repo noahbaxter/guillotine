@@ -8,8 +8,7 @@ import { DISPLAY_CONFIG, WAVEFORM_CONFIG } from '../../lib/config.js';
 
 const DEFAULTS = {
   displayMinDb: DISPLAY_CONFIG.defaultMinDb,
-  displayMaxDb: DISPLAY_CONFIG.maxCeilingDb,
-  smoothingFactor: 0.3
+  displayMaxDb: DISPLAY_CONFIG.maxCeilingDb
 };
 
 export class Waveform {
@@ -119,8 +118,8 @@ export class Waveform {
 
     // Use preClip (input signal after input gain, before clipping) for display
     // We simulate clipping in JS using the saturation curves
+    // Data is pre-smoothed in C++ before being sent
     const { preClip: envelope, writePos } = this.data;
-    const { smoothingFactor } = this.options;
 
     const width = this.canvas.width / (window.devicePixelRatio || 1);
     const height = this.canvas.height / (window.devicePixelRatio || 1);
@@ -133,7 +132,7 @@ export class Waveform {
     if (pointsToShow < 2) return;
 
     // Compute both raw input and soft-clipped output points
-    const { rawPoints, clippedPoints } = this.computePoints(envelope, writePos, pointsToShow, bufferSize, width, height, smoothingFactor);
+    const { rawPoints, clippedPoints } = this.computePoints(envelope, writePos, pointsToShow, bufferSize, width, height);
 
     // Get current colors from theme (force normal white when bypassed/inactive)
     const waveformColors = getWaveformColors(!this.active);
@@ -211,36 +210,26 @@ export class Waveform {
     this.ctx.stroke();
   }
 
-  computePoints(envelope, writePos, pointsToShow, bufferSize, width, height, smoothingFactor) {
+  computePoints(envelope, writePos, pointsToShow, bufferSize, width, height) {
     const { displayMinDb, displayMaxDb } = this.options;
+    const dbRange = displayMaxDb - displayMinDb;
     const rawPoints = [];      // Input signal (for RED ghost)
     const clippedPoints = [];  // Soft-clipped signal (for WHITE)
-    const smoothWindow = Math.max(1, Math.floor(smoothingFactor * 10));
 
     for (let i = 0; i < pointsToShow; i++) {
-      let sum = 0;
-      let count = 0;
-      for (let offset = -smoothWindow; offset <= smoothWindow; offset++) {
-        const idx = Math.max(0, Math.min(pointsToShow - 1, i + offset));
-        const bufIdx = (writePos - pointsToShow + idx + bufferSize * 2) % bufferSize;
-        sum += envelope[bufIdx];
-        count++;
-      }
-      const env = sum / count;  // Raw input amplitude
-
+      const bufIdx = (writePos - pointsToShow + i + bufferSize) % bufferSize;
+      const env = envelope[bufIdx];
       const x = (i / (pointsToShow - 1)) * width;
 
       // Raw input point (for RED)
       const rawDb = env > 0 ? 20 * Math.log10(env) : displayMinDb;
-      const rawNormDb = (rawDb - displayMinDb) / (displayMaxDb - displayMinDb);
-      const rawY = height - Math.max(0, Math.min(1, rawNormDb)) * height;
+      const rawY = height - Math.max(0, Math.min(1, (rawDb - displayMinDb) / dbRange)) * height;
       rawPoints.push({ x, y: rawY });
 
       // Soft-clipped output point (for WHITE)
       const clippedEnv = applyWithCeiling(this.curveMode, env, this.ceilingLinear, this.curveExponent);
       const clippedDb = clippedEnv > 0 ? 20 * Math.log10(clippedEnv) : displayMinDb;
-      const clippedNormDb = (clippedDb - displayMinDb) / (displayMaxDb - displayMinDb);
-      const clippedY = height - Math.max(0, Math.min(1, clippedNormDb)) * height;
+      const clippedY = height - Math.max(0, Math.min(1, (clippedDb - displayMinDb) / dbRange)) * height;
       clippedPoints.push({ x, y: clippedY });
     }
 

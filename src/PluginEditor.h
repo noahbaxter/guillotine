@@ -15,7 +15,6 @@ public:
 private:
     void timerCallback() override;
     std::optional<juce::WebBrowserComponent::Resource> getResource(const juce::String& url);
-    void pushEnvelopeData();
     void pushVersionOnce();
 
     GuillotineProcessor& audioProcessor;
