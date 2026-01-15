@@ -6,6 +6,46 @@ import { getClippedColor, getClippedOutlineColor, getWaveformColors } from '../.
 import { CurveType, applyWithCeiling } from '../../lib/saturation-curves.js';
 import { DISPLAY_CONFIG, WAVEFORM_CONFIG } from '../../lib/config.js';
 
+// Scale-dependent smoothing - tighter zoom = more smoothing to reduce visual noise
+// Returns smoothed copy of envelope data
+function smoothEnvelope(envelope, writePos, pointsToShow, displayMinDb) {
+  // Calculate smoothing radius based on scale
+  // -12dB (tight) = radius 3, -60dB (wide) = radius 0
+  const t = Math.max(0, Math.min(1, (displayMinDb + 12) / -48)); // 0 at -12dB, 1 at -60dB
+  const radius = Math.round(3 * (1 - t));
+
+  if (radius === 0) return envelope;
+
+  const bufferSize = envelope.length;
+  const smoothed = new Float32Array(bufferSize);
+
+  // Only smooth the portion we're displaying
+  const startIdx = (writePos - pointsToShow + bufferSize) % bufferSize;
+
+  for (let i = 0; i < pointsToShow; i++) {
+    const idx = (startIdx + i) % bufferSize;
+    let sum = 0;
+    let count = 0;
+
+    for (let r = -radius; r <= radius; r++) {
+      const sampleIdx = (startIdx + i + r + bufferSize) % bufferSize;
+      sum += envelope[sampleIdx];
+      count++;
+    }
+
+    smoothed[idx] = sum / count;
+  }
+
+  // Copy unsmoothed portions
+  for (let i = 0; i < bufferSize; i++) {
+    if (smoothed[i] === 0 && envelope[i] !== 0) {
+      smoothed[i] = envelope[i];
+    }
+  }
+
+  return smoothed;
+}
+
 const DEFAULTS = {
   displayMinDb: DISPLAY_CONFIG.defaultMinDb,
   displayMaxDb: DISPLAY_CONFIG.maxCeilingDb
@@ -156,8 +196,11 @@ export class Waveform {
     const pointsToShow = Math.min(bufferSize, WAVEFORM_CONFIG.pointsToShow);
     if (pointsToShow < 2) return;
 
+    // Apply scale-dependent smoothing (tighter zoom = more smoothing)
+    const smoothedEnvelope = smoothEnvelope(envelope, writePos, pointsToShow, this.options.displayMinDb);
+
     // Compute both raw input and soft-clipped output points
-    const { rawPoints, clippedPoints } = this.computePoints(envelope, writePos, pointsToShow, bufferSize, width, height);
+    const { rawPoints, clippedPoints } = this.computePoints(smoothedEnvelope, writePos, pointsToShow, bufferSize, width, height);
 
     // Get current colors from theme (force normal white when bypassed/inactive)
     const waveformColors = getWaveformColors(!this.active);
