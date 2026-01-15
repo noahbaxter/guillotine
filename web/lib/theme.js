@@ -43,7 +43,7 @@ const COLORS = {
   bloodPuddle: 'rgba(100, 0, 0, 0.85)',
   bloodThreshold: 'rgba(220, 60, 60, 1)',
   bloodThresholdBypass: 'rgba(200, 60, 60, 0.75)',
-  bloodClipped: 'rgba(120, 20, 20, 0.25)',
+  bloodClipped: 'rgba(160, 30, 30, 0.4)',
   bloodGlow: 'rgba(180, 30, 30, 0.6)',
   bloodAccent: 'rgba(180, 30, 30, 1)',
 
