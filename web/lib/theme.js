@@ -73,10 +73,10 @@ const DELTA_OVERRIDES = {
   clippedOutline: 'rgba(255, 40, 40, 1)',
   deltaText: 'rgba(255, 40, 40, 1)',
 
-  waveformTop: 'rgba(255, 255, 255, 0.25)',
-  waveformMid: 'rgba(255, 255, 255, 0.12)',
-  waveformBottom: 'rgba(255, 255, 255, 0.05)',
-  waveformOutline: 'rgba(255, 255, 255, 0.35)',
+  waveformTop: 'rgba(140, 140, 140, 0.5)',      // Darker grey, more opaque to counter CRT lightening
+  waveformMid: 'rgba(100, 100, 100, 0.3)',
+  waveformBottom: 'rgba(80, 80, 80, 0.15)',
+  waveformOutline: 'rgba(180, 180, 180, 0.5)',
 };
 
 // Convert camelCase to kebab-case for CSS variable names
@@ -134,14 +134,16 @@ export function getWaveformColors() {
       gradientTop: DELTA_OVERRIDES.waveformTop,
       gradientMid: DELTA_OVERRIDES.waveformMid,
       gradientBottom: DELTA_OVERRIDES.waveformBottom,
-      outline: DELTA_OVERRIDES.waveformOutline
+      outline: DELTA_OVERRIDES.waveformOutline,
+      background: '#000'
     };
   }
   return {
     gradientTop: COLORS.waveformTop,
     gradientMid: COLORS.waveformMid,
     gradientBottom: COLORS.waveformBottom,
-    outline: COLORS.waveformOutline
+    outline: COLORS.waveformOutline,
+    background: '#000'
   };
 }
 

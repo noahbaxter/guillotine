@@ -155,13 +155,15 @@ export class Waveform {
     // Draw white (clipped output) waveform
     const points = this.active ? jitteredClipped : jitteredRaw;
 
-    // Black background to block red showing through
-    this.buildPath(points, width, height);
-    this.ctx.save();
-    this.ctx.clip();
-    this.ctx.fillStyle = '#000';
-    this.ctx.fillRect(0, 0, width, height);
-    this.ctx.restore();
+    // Background fill to block red (skipped in delta mode to let red show through)
+    if (colors.background) {
+      this.buildPath(points, width, height);
+      this.ctx.save();
+      this.ctx.clip();
+      this.ctx.fillStyle = colors.background;
+      this.ctx.fillRect(0, 0, width, height);
+      this.ctx.restore();
+    }
 
     // Solid fill
     this.buildPath(points, width, height);

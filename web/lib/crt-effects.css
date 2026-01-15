@@ -4,7 +4,7 @@
    CSS variables are set by crt-effect.js on init
    ========================================================================== */
 
-/* Scanlines overlay - uses CSS vars set by crt-effect.js for size scaling */
+/* Scanlines overlay - uses CSS vars from crt-effect.js */
 body.crt-enabled #microscope-container::before {
   content: '';
   position: absolute;
@@ -13,26 +13,28 @@ body.crt-enabled #microscope-container::before {
     to bottom,
     transparent 0px,
     transparent var(--crt-scanline-gap, 1px),
-    rgba(0, 0, 0, 0.25) var(--crt-scanline-gap, 1px),
-    rgba(0, 0, 0, 0.25) var(--crt-scanline-size, 3px)
+    rgba(0, 0, 0, var(--crt-scanline-opacity, 0.25)) var(--crt-scanline-gap, 1px),
+    rgba(0, 0, 0, var(--crt-scanline-opacity, 0.25)) var(--crt-scanline-size, 3px)
   );
   pointer-events: none;
   z-index: 100;
+  clip-path: inset(0);  /* Clip to container bounds */
 }
 
-/* Vignette overlay */
+/* Vignette overlay - uses CSS vars from crt-effect.js */
 body.crt-enabled #microscope-container::after {
   content: '';
   position: absolute;
   inset: 0;
   background: radial-gradient(
     ellipse at center,
-    hsla(0, 0%, 50%, 0.22) 0%,
-    hsla(0, 0%, 20%, 0.62) 100%
+    hsla(0, 0%, 50%, var(--crt-vignette-center-opacity, 0.22)) 0%,
+    hsla(0, 0%, 20%, var(--crt-vignette-edge-opacity, 0.62)) 100%
   );
   mix-blend-mode: screen;
   pointer-events: none;
   z-index: 101;
+  clip-path: inset(0);  /* Clip to container bounds */
 }
 
 /* Chromatic aberration on waveform */
@@ -43,28 +45,11 @@ body.crt-enabled .waveform {
 /* Phosphor glow/bloom */
 body.crt-enabled #microscope-container {
   position: relative;
-  filter: drop-shadow(0 0 4px hsla(0, 0%, 60%, 0.5));
+  filter: drop-shadow(0 0 var(--crt-glow-radius, 4px) hsla(0, 0%, 60%, var(--crt-glow-opacity, 0.5)));
   border-radius: 6px;
 }
 
-/* Chromatic aberration on threshold line */
+/* Threshold line: above CRT overlays, no filter */
 body.crt-enabled .microscope__threshold-line {
-  filter: url(#crt-aberration);
-}
-
-/* Color tint on waveform wrapper */
-body.crt-enabled #microscope-wrapper {
-  position: relative;
-  overflow: visible;
-}
-
-body.crt-enabled #microscope-wrapper::before {
-  content: '';
-  position: absolute;
-  inset: 0;
-  background: hsla(0, 0%, 50%, 0.066);
-  mix-blend-mode: overlay;
-  pointer-events: none;
-  z-index: 102;
-  border-radius: inherit;
+  z-index: 110;
 }
