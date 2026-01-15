@@ -221,6 +221,8 @@ std::optional<juce::WebBrowserComponent::Resource> GuillotineEditor::getResource
         { "components/controls/knob.css",  BinaryData::knob_css,  BinaryData::knob_cssSize,  "text/css" },
         { "components/controls/lever.js",  BinaryData::lever_js,  BinaryData::lever_jsSize,  "text/javascript" },
         { "components/controls/lever.css", BinaryData::lever_css, BinaryData::lever_cssSize, "text/css" },
+        { "components/controls/dropdown.js",  BinaryData::dropdown_js,  BinaryData::dropdown_jsSize,  "text/javascript" },
+        { "components/controls/dropdown.css", BinaryData::dropdown_css, BinaryData::dropdown_cssSize, "text/css" },
         { "components/controls/toggle.js", BinaryData::toggle_js, BinaryData::toggle_jsSize, "text/javascript" },
         // Components - display
         { "components/display/waveform.js",   BinaryData::waveform_js,   BinaryData::waveform_jsSize,   "text/javascript" },

@@ -112,6 +112,8 @@ juce_add_binary_data(GuillotineData
         web/components/controls/knob.css
         web/components/controls/lever.js
         web/components/controls/lever.css
+        web/components/controls/dropdown.js
+        web/components/controls/dropdown.css
         web/components/controls/toggle.js
         # Web - components/display
         web/components/display/waveform.js
