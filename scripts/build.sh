@@ -9,7 +9,7 @@
 #   ./scripts/build.sh release         # Build Release and create distribution package
 #
 # Options:
-#   --install                          # Install to user library (default: on)
+#   --install                          # Install to system library (default: on, requires sudo)
 #   --no-install                       # Skip installation
 
 set -e
@@ -58,7 +58,7 @@ for arg in "$@"; do
             echo "  uninstall Remove installed plugins"
             echo ""
             echo "Options:"
-            echo "  --install      Install plugins to user library (default)"
+            echo "  --install      Install plugins to system library (default, requires sudo)"
             echo "  --no-install   Skip installation"
             exit 0
             ;;
@@ -84,16 +84,16 @@ regen_project() {
 # Function to install plugins
 install_plugins() {
     local src_dir="$1"
-    local vst3_dest="$HOME/Library/Audio/Plug-Ins/VST3"
-    local au_dest="$HOME/Library/Audio/Plug-Ins/Components"
+    local vst3_dest="/Library/Audio/Plug-Ins/VST3"
+    local au_dest="/Library/Audio/Plug-Ins/Components"
 
-    echo -e "\n${YELLOW}Installing plugins to user library...${NC}"
-    mkdir -p "$vst3_dest" "$au_dest"
+    echo -e "\n${YELLOW}Installing plugins to system library (requires sudo)...${NC}"
+    sudo mkdir -p "$vst3_dest" "$au_dest"
 
     # Install VST3
     if [ -d "$src_dir/$PLUGIN_NAME.vst3" ]; then
-        rm -rf "$vst3_dest/$PLUGIN_NAME.vst3"
-        ditto "$src_dir/$PLUGIN_NAME.vst3" "$vst3_dest/$PLUGIN_NAME.vst3"
+        sudo rm -rf "$vst3_dest/$PLUGIN_NAME.vst3"
+        sudo ditto "$src_dir/$PLUGIN_NAME.vst3" "$vst3_dest/$PLUGIN_NAME.vst3"
 
         # Verify installation
         if [ -f "$vst3_dest/$PLUGIN_NAME.vst3/Contents/MacOS/$PLUGIN_NAME" ]; then
@@ -109,8 +109,8 @@ install_plugins() {
 
     # Install AU
     if [ -d "$src_dir/$PLUGIN_NAME.component" ]; then
-        rm -rf "$au_dest/$PLUGIN_NAME.component"
-        ditto "$src_dir/$PLUGIN_NAME.component" "$au_dest/$PLUGIN_NAME.component"
+        sudo rm -rf "$au_dest/$PLUGIN_NAME.component"
+        sudo ditto "$src_dir/$PLUGIN_NAME.component" "$au_dest/$PLUGIN_NAME.component"
 
         # Verify installation
         if [ -f "$au_dest/$PLUGIN_NAME.component/Contents/MacOS/$PLUGIN_NAME" ]; then
@@ -125,8 +125,8 @@ install_plugins() {
     fi
 
     # Touch bundles to update modification time (triggers DAW rescan)
-    touch "$vst3_dest/$PLUGIN_NAME.vst3"
-    touch "$au_dest/$PLUGIN_NAME.component"
+    sudo touch "$vst3_dest/$PLUGIN_NAME.vst3"
+    sudo touch "$au_dest/$PLUGIN_NAME.component"
 
     echo -e "${YELLOW}NOTE: If Ableton shows the old version, try:${NC}"
     echo -e "  ${YELLOW}1. File > Plug-In Manager > Rescan${NC}"
@@ -148,18 +148,18 @@ case "$MODE" in
         ;;
 
     Uninstall)
-        echo -e "\n${YELLOW}Uninstalling plugins...${NC}"
-        local vst3_dest="$HOME/Library/Audio/Plug-Ins/VST3"
-        local au_dest="$HOME/Library/Audio/Plug-Ins/Components"
+        echo -e "\n${YELLOW}Uninstalling plugins (requires sudo)...${NC}"
+        local vst3_dest="/Library/Audio/Plug-Ins/VST3"
+        local au_dest="/Library/Audio/Plug-Ins/Components"
         local cache_dir="$HOME/Library/Audio/Cache/Ableton"
 
         if [ -d "$vst3_dest/$PLUGIN_NAME.vst3" ]; then
-            rm -rf "$vst3_dest/$PLUGIN_NAME.vst3"
+            sudo rm -rf "$vst3_dest/$PLUGIN_NAME.vst3"
             echo -e "${GREEN}✓ Removed VST3${NC}"
         fi
 
         if [ -d "$au_dest/$PLUGIN_NAME.component" ]; then
-            rm -rf "$au_dest/$PLUGIN_NAME.component"
+            sudo rm -rf "$au_dest/$PLUGIN_NAME.component"
             echo -e "${GREEN}✓ Removed AU${NC}"
         fi
 
@@ -275,15 +275,16 @@ case "$MODE" in
 #!/bin/bash
 DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 PLUGIN_NAME="Guillotine"
-echo "Installing $PLUGIN_NAME..."
-mkdir -p "$HOME/Library/Audio/Plug-Ins/VST3"
-mkdir -p "$HOME/Library/Audio/Plug-Ins/Components"
-cp -R "$DIR/$PLUGIN_NAME.vst3" "$HOME/Library/Audio/Plug-Ins/VST3/"
-cp -R "$DIR/$PLUGIN_NAME.component" "$HOME/Library/Audio/Plug-Ins/Components/"
+VST3_DEST="/Library/Audio/Plug-Ins/VST3"
+AU_DEST="/Library/Audio/Plug-Ins/Components"
+echo "Installing $PLUGIN_NAME to system library (requires password)..."
+sudo mkdir -p "$VST3_DEST" "$AU_DEST"
+sudo cp -R "$DIR/$PLUGIN_NAME.vst3" "$VST3_DEST/"
+sudo cp -R "$DIR/$PLUGIN_NAME.component" "$AU_DEST/"
 echo ""
-echo "Removing Gatekeeper quarantine attributes (may require password)..."
-sudo xattr -cr "$HOME/Library/Audio/Plug-Ins/VST3/$PLUGIN_NAME.vst3"
-sudo xattr -cr "$HOME/Library/Audio/Plug-Ins/Components/$PLUGIN_NAME.component"
+echo "Removing Gatekeeper quarantine attributes..."
+sudo xattr -cr "$VST3_DEST/$PLUGIN_NAME.vst3"
+sudo xattr -cr "$AU_DEST/$PLUGIN_NAME.component"
 echo ""
 echo "Done! Please restart your DAW."
 read -p "Press any key to exit..."
@@ -300,10 +301,10 @@ This bundle contains:
 - Install.command (automatic installer script)
 
 Installation:
-1. Double-click Install.command for automatic installation
+1. Double-click Install.command for automatic installation (requires password)
 2. Or manually copy plugins to:
-   - VST3: ~/Library/Audio/Plug-Ins/VST3/
-   - AU: ~/Library/Audio/Plug-Ins/Components/
+   - VST3: /Library/Audio/Plug-Ins/VST3/
+   - AU: /Library/Audio/Plug-Ins/Components/
 
 Requirements: macOS 10.15 or later
 Built: $(date)

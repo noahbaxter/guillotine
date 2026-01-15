@@ -76,6 +76,7 @@ GuillotineEditor::GuillotineEditor(GuillotineProcessor& p)
           bypassClipperRelay, nullptr}
 {
     addAndMakeVisible(webView);
+    webView.setWantsKeyboardFocus(false);
 
     // Enable resizing with aspect ratio lock (1.2:1 = 600x500)
     setResizable(true, true);
