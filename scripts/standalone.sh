@@ -11,7 +11,7 @@ SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 PROJECT_ROOT="$( cd "$SCRIPT_DIR/.." && pwd )"
 source "$SCRIPT_DIR/_common.sh"
 
-CMAKE_BUILD_DIR="$PROJECT_ROOT/build"
+CMAKE_BUILD_DIR="$PROJECT_ROOT/build-standalone"
 APP_PATH="$CMAKE_BUILD_DIR/Guillotine_artefacts/Debug/Standalone/${PLUGIN_NAME}.app"
 
 # Parse flags
