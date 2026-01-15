@@ -85,6 +85,7 @@ class GuillotineApp {
     // State
     this.bypass = true;         // Start bypassed (blade up) - click to activate
     this.deltaMode = false;     // DELTA mode - intensifies red, dulls everything else
+    this.deltaModeStored = false;  // Remembers delta preference across bypass cycles
     this.threshold = 0;         // Display threshold (0-1 in current scale, 0 = 0dB)
     this.currentMinDb = DEFAULT_MIN_DB;  // Current microscope scale (matches default preset)
     this.currentCurve = 0;      // Current curve type (0=Hard, 1=Quintic, etc.)
@@ -440,6 +441,7 @@ class GuillotineApp {
       e.stopPropagation();
 
       this.deltaMode = !this.deltaMode;
+      this.deltaModeStored = false;  // Clear stored preference on manual toggle
       setDeltaMode(this.deltaMode);
       setDeltaMonitor(this.deltaMode);  // Sync to C++ param
     };
@@ -612,11 +614,18 @@ class GuillotineApp {
     // Lever UP + Blade UP = bypass (no processing)
     const active = !this.bypass;
 
-    // Exit delta mode when blade raises
     if (!active && this.deltaMode) {
+      // Blade going up: store delta preference and disable visually
+      this.deltaModeStored = true;
       this.deltaMode = false;
       setDeltaMode(false);
       setDeltaMonitor(false);
+    } else if (active && this.deltaModeStored) {
+      // Blade coming down: restore delta mode if it was on before
+      this.deltaMode = true;
+      this.deltaModeStored = false;
+      setDeltaMode(true);
+      setDeltaMonitor(true);
     }
 
     this.guillotine.setActive(active);

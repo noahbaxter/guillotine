@@ -2,9 +2,14 @@
 // Manages colors and CSS variables for normal/delta modes
 
 let deltaMode = false;
+let deltaTransition = 0;  // 0 = normal, 1 = delta (animated)
+let cancelDeltaAnimation = null;
 let readableMode = false;
 const listeners = [];
 const readableListeners = [];
+
+// Animation duration (matches guillotine blade)
+const DELTA_TRANSITION_MS = 150;
 
 // All colors defined here - CSS variables are injected from these
 const COLORS = {
@@ -128,8 +133,38 @@ export function getClippedOutlineColor() {
   return deltaMode ? DELTA_OVERRIDES.clippedOutline : COLORS.clippedOutline;
 }
 
+// Parse rgba string to [r, g, b, a] array
+function parseRgba(color) {
+  const match = color.match(/rgba?\((\d+),\s*(\d+),\s*(\d+)(?:,\s*([\d.]+))?\)/);
+  if (match) {
+    return [+match[1], +match[2], +match[3], match[4] !== undefined ? +match[4] : 1];
+  }
+  return [255, 255, 255, 1];
+}
+
+// Interpolate between two rgba colors
+function lerpColor(colorA, colorB, t) {
+  const a = parseRgba(colorA);
+  const b = parseRgba(colorB);
+  const r = Math.round(a[0] + (b[0] - a[0]) * t);
+  const g = Math.round(a[1] + (b[1] - a[1]) * t);
+  const bl = Math.round(a[2] + (b[2] - a[2]) * t);
+  const alpha = a[3] + (b[3] - a[3]) * t;
+  return `rgba(${r}, ${g}, ${bl}, ${alpha})`;
+}
+
 export function getWaveformColors() {
-  if (deltaMode) {
+  const t = deltaTransition;
+  if (t === 0) {
+    return {
+      gradientTop: COLORS.waveformTop,
+      gradientMid: COLORS.waveformMid,
+      gradientBottom: COLORS.waveformBottom,
+      outline: COLORS.waveformOutline,
+      background: '#000'
+    };
+  }
+  if (t === 1) {
     return {
       gradientTop: DELTA_OVERRIDES.waveformTop,
       gradientMid: DELTA_OVERRIDES.waveformMid,
@@ -138,11 +173,12 @@ export function getWaveformColors() {
       background: '#000'
     };
   }
+  // Interpolate during transition
   return {
-    gradientTop: COLORS.waveformTop,
-    gradientMid: COLORS.waveformMid,
-    gradientBottom: COLORS.waveformBottom,
-    outline: COLORS.waveformOutline,
+    gradientTop: lerpColor(COLORS.waveformTop, DELTA_OVERRIDES.waveformTop, t),
+    gradientMid: lerpColor(COLORS.waveformMid, DELTA_OVERRIDES.waveformMid, t),
+    gradientBottom: lerpColor(COLORS.waveformBottom, DELTA_OVERRIDES.waveformBottom, t),
+    outline: lerpColor(COLORS.waveformOutline, DELTA_OVERRIDES.waveformOutline, t),
     background: '#000'
   };
 }
@@ -155,6 +191,34 @@ export function isDeltaMode() {
 export function setDeltaMode(enabled) {
   if (deltaMode === enabled) return;
   deltaMode = enabled;
+
+  // Cancel any in-progress animation
+  if (cancelDeltaAnimation) cancelDeltaAnimation();
+
+  // Animate transition
+  const startValue = deltaTransition;
+  const targetValue = enabled ? 1 : 0;
+  const startTime = performance.now();
+  let animationId = null;
+
+  const animate = (currentTime) => {
+    const elapsed = currentTime - startTime;
+    const progress = Math.min(elapsed / DELTA_TRANSITION_MS, 1);
+    deltaTransition = startValue + (targetValue - startValue) * progress;
+
+    if (progress < 1) {
+      animationId = requestAnimationFrame(animate);
+    } else {
+      deltaTransition = targetValue;
+      cancelDeltaAnimation = null;
+    }
+  };
+
+  animationId = requestAnimationFrame(animate);
+  cancelDeltaAnimation = () => {
+    if (animationId) cancelAnimationFrame(animationId);
+  };
+
   injectCSSVariables();
   document.body.classList.toggle('delta-mode', enabled);
   listeners.forEach(fn => fn(enabled));
