@@ -34,6 +34,14 @@ export const DISPLAY_CONFIG = {
   defaultScalePresetIndex: DEFAULT_PRESET_INDEX
 };
 
+// Waveform display settings
+export const WAVEFORM_CONFIG = {
+  // Fixed number of envelope points to display (independent of window size)
+  // At 10ms per point: 300 points = 3 seconds of history
+  // This ensures consistent scroll speed regardless of UI scale
+  pointsToShow: 300
+};
+
 // Export individual values for convenience
 export const DEFAULT_MIN_DB = DISPLAY_CONFIG.defaultMinDb;
 export const MAX_CEILING_DB = DISPLAY_CONFIG.maxCeilingDb;

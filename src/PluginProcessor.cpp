@@ -307,11 +307,14 @@ void GuillotineProcessor::processBlock(juce::AudioBuffer<float>& buffer, juce::M
         postClipPeak = enginePostClipPeak;
 
     // Track samples and write to ring buffer at intervals
-    // Use 'if' not 'while' - only write one point per block to avoid writing
-    // zeros when multiple envelope points would be written from one block
     samplesSincePeak += buffer.getNumSamples();
 
-    if (samplesSincePeak >= samplesPerEnvelopePoint)
+    // Calculate threshold dynamically to handle sample rate changes mid-session
+    const int currentSamplesPerPoint = static_cast<int>(getSampleRate() * envelopePointDuration);
+
+    // Write as many points as needed (handles large buffers correctly)
+    bool wrotePoint = false;
+    while (samplesSincePeak >= currentSamplesPerPoint)
     {
         int writePos = envelopeWritePos.load();
         envelopePreClip[writePos] = preClipPeak;
@@ -320,9 +323,15 @@ void GuillotineProcessor::processBlock(juce::AudioBuffer<float>& buffer, juce::M
         writePos = (writePos + 1) % envelopeBufferSize;
         envelopeWritePos.store(writePos);
 
+        samplesSincePeak -= currentSamplesPerPoint;  // Keep leftover samples
+        wrotePoint = true;
+    }
+
+    // Only reset peaks after writing at least one point
+    if (wrotePoint)
+    {
         preClipPeak = 0.0f;
         postClipPeak = 0.0f;
-        samplesSincePeak = 0;  // Reset fully instead of subtracting
     }
 }
 

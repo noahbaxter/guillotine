@@ -4,7 +4,7 @@
 import { loadStyles } from '../../lib/component-loader.js';
 import { getClippedColor, getClippedOutlineColor, getWaveformColors } from '../../lib/theme.js';
 import { CurveType, applyWithCeiling } from '../../lib/saturation-curves.js';
-import { DISPLAY_CONFIG } from '../../lib/config.js';
+import { DISPLAY_CONFIG, WAVEFORM_CONFIG } from '../../lib/config.js';
 
 const DEFAULTS = {
   displayMinDb: DISPLAY_CONFIG.defaultMinDb,
@@ -128,7 +128,8 @@ export class Waveform {
 
     this.ctx.clearRect(0, 0, width, height);
 
-    const pointsToShow = Math.min(bufferSize, Math.floor(width));
+    // Use fixed point count for consistent scroll speed at any window size
+    const pointsToShow = Math.min(bufferSize, WAVEFORM_CONFIG.pointsToShow);
     if (pointsToShow < 2) return;
 
     // Compute both raw input and soft-clipped output points

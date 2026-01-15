@@ -12,9 +12,9 @@ public:
     static constexpr float displayDbRange = 60.0f;
 
     // Envelope buffer for waveform display
-    // ~400 points at 5ms intervals = 2 seconds of history
+    // 400 points at 10ms intervals = 4 seconds of history
     static constexpr int envelopeBufferSize = 400;
-    static constexpr int samplesPerEnvelopePoint = 220;  // ~5ms at 44.1kHz
+    static constexpr double envelopePointDuration = 0.01;  // 10ms per point (sample-rate independent)
     GuillotineProcessor();
     ~GuillotineProcessor() override;
 
