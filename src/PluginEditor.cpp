@@ -242,6 +242,10 @@ std::optional<juce::WebBrowserComponent::Resource> GuillotineEditor::getResource
         { "assets/side.png",         BinaryData::side_png,        BinaryData::side_pngSize,        "image/png" },
         { "assets/switch.png",       BinaryData::switch_png,      BinaryData::switch_pngSize,      "image/png" },
         { "assets/guillotine-logo.png", BinaryData::guillotinelogo_png, BinaryData::guillotinelogo_pngSize, "image/png" },
+        // Toggle SVGs
+        { "assets/switch-base.svg",    BinaryData::switchbase_svg,    BinaryData::switchbase_svgSize,    "image/svg+xml" },
+        { "assets/switch-stem-up.svg", BinaryData::switchstemup_svg,  BinaryData::switchstemup_svgSize,  "image/svg+xml" },
+        { "assets/switch-stem-mid.svg", BinaryData::switchstemmid_svg, BinaryData::switchstemmid_svgSize, "image/svg+xml" },
         // Numeric sprites
         { "assets/numeric/num-0.png",   BinaryData::num0_png,       BinaryData::num0_pngSize,       "image/png" },
         { "assets/numeric/num-1.png",   BinaryData::num1_png,       BinaryData::num1_pngSize,       "image/png" },

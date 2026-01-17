@@ -8,6 +8,7 @@ import { Microscope } from './components/views/microscope.js';
 import { BloodPool } from './components/display/blood-pool.js';
 import { Knob } from './components/controls/knob.js';
 import { Lever } from './components/controls/lever.js';
+import { Toggle } from './components/controls/toggle.js';
 import {
   setParameterNormalized,
   getParameterNormalized,
@@ -19,7 +20,19 @@ import {
   onDeltaMonitorChange,
   setBypassClipper,
   getBypassClipper,
-  onBypassClipperChange
+  onBypassClipperChange,
+  setEnforceCeiling,
+  getEnforceCeiling,
+  onEnforceCeilingChange,
+  setFilterType,
+  getFilterType,
+  onFilterTypeChange,
+  setChannelMode,
+  getChannelMode,
+  onChannelModeChange,
+  setStereoLink,
+  getStereoLink,
+  onStereoLinkChange
 } from './lib/juce-bridge.js';
 import { setDeltaMode, toggleReadableMode } from './lib/theme.js';
 import './lib/crt-effect.js';  // Initialize CRT effects (scanlines, jitter, vignette)
@@ -80,7 +93,9 @@ class GuillotineApp {
     this.guillotineContainer = document.getElementById('guillotine-container');
     this.microscopeContainer = document.getElementById('microscope-container');
     this.mainKnobsContainer = document.getElementById('main-knobs');
-    this.gainKnobsContainer = document.getElementById('gain-knobs');
+    this.inputKnobContainer = document.getElementById('input-knob-container');
+    this.settingsTogglesContainer = document.getElementById('settings-toggles');
+    this.outputKnobContainer = document.getElementById('output-knob-container');
 
     // State
     this.bypass = true;         // Start bypassed (blade up) - click to activate
@@ -193,7 +208,7 @@ class GuillotineApp {
     }));
 
     // Input Gain knob
-    this.inputGainKnob = new Knob(this.gainKnobsContainer, createSpriteKnob({
+    this.inputGainKnob = new Knob(this.inputKnobContainer, createSpriteKnob({
       label: TEXT.labels.input,
       min: -24, max: 24, value: 0,
       size: 32,
@@ -204,8 +219,29 @@ class GuillotineApp {
       wrapperClass: 'knob-wrapper--side'
     }));
 
+    // Settings toggles (hidden params)
+    this.filterTypeToggle = new Toggle(this.settingsTogglesContainer, {
+      value: false,  // 0 = Min Phase (off), 1 = Linear Phase (on)
+      tooltip: 'Filter: Min Phase / Linear Phase'
+    });
+
+    this.channelModeToggle = new Toggle(this.settingsTogglesContainer, {
+      value: false,  // 0 = L/R (off), 1 = M/S (on)
+      tooltip: 'Mode: L/R / M/S'
+    });
+
+    this.stereoLinkToggle = new Toggle(this.settingsTogglesContainer, {
+      value: true,  // Default linked
+      tooltip: 'Stereo Link'
+    });
+
+    this.trueclipToggle = new Toggle(this.settingsTogglesContainer, {
+      value: true,  // Default enforced
+      tooltip: 'True Clip (enforce ceiling)'
+    });
+
     // Output Gain knob
-    this.outputGainKnob = new Knob(this.gainKnobsContainer, createSpriteKnob({
+    this.outputGainKnob = new Knob(this.outputKnobContainer, createSpriteKnob({
       label: TEXT.labels.output,
       min: -24, max: 24, value: 0,
       size: 32,
@@ -227,7 +263,11 @@ class GuillotineApp {
       this.curveExponentKnob.ready,
       this.oversamplingKnob.ready,
       this.inputGainKnob.ready,
-      this.outputGainKnob.ready
+      this.outputGainKnob.ready,
+      this.filterTypeToggle.ready,
+      this.channelModeToggle.ready,
+      this.stereoLinkToggle.ready,
+      this.trueclipToggle.ready
     ]);
 
     // Start with exponent knob disabled (only enable for T²)
@@ -258,6 +298,12 @@ class GuillotineApp {
 
     this.outputGainKnob.onChange = (v) => this.setOutputGain(v);
     bindDragTracking(this.outputGainKnob, 'outputGain', this);
+
+    // Settings toggles
+    this.filterTypeToggle.onChange = (v) => setFilterType(v ? 1 : 0);
+    this.channelModeToggle.onChange = (v) => setChannelMode(v ? 1 : 0);
+    this.stereoLinkToggle.onChange = (v) => setStereoLink(v);
+    this.trueclipToggle.onChange = (v) => setEnforceCeiling(v);
 
     // Wire up threshold changes from microscope drag
     this.microscope.onThresholdChange = (value) => {
@@ -334,6 +380,23 @@ class GuillotineApp {
         const index = Math.round(normalized * 5);  // 0-5
         this.oversamplingKnob.setValue(index);
       }
+    });
+
+    // Listen for hidden param changes from C++ (DAW automation)
+    onFilterTypeChange((index) => {
+      this.filterTypeToggle.setValue(index === 1);
+    });
+
+    onChannelModeChange((index) => {
+      this.channelModeToggle.setValue(index === 1);
+    });
+
+    onStereoLinkChange((enabled) => {
+      this.stereoLinkToggle.setValue(enabled);
+    });
+
+    onEnforceCeilingChange((enabled) => {
+      this.trueclipToggle.setValue(enabled);
     });
 
     // Listen for bypass changes from C++ (DAW automation)
@@ -427,6 +490,12 @@ class GuillotineApp {
       this.deltaMode = true;
       setDeltaMode(true);
     }
+
+    // Hidden params (settings toggles)
+    this.filterTypeToggle.setValue(getFilterType() === 1);
+    this.channelModeToggle.setValue(getChannelMode() === 1);
+    this.stereoLinkToggle.setValue(getStereoLink());
+    this.trueclipToggle.setValue(getEnforceCeiling());
   }
 
   setupDeltaModeHandlers() {

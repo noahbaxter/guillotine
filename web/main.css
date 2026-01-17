@@ -285,16 +285,124 @@ body::before {
 #gain-knobs {
   display: flex;
   justify-content: center;
-  gap: 3.75em;
+  align-items: center;
+  gap: 0;
   padding: 0.5em 0;
 }
 
-#gain-knobs .knob:first-child {
-  margin-right: 4.5em;
+#input-knob-container,
+#output-knob-container {
+  flex-shrink: 0;
 }
 
-#gain-knobs .knob:last-child {
-  margin-left: 2.5em;
+#input-knob-container .knob-wrapper--side,
+#output-knob-container .knob-wrapper--side {
+  margin: 0;
+}
+
+#settings-toggles {
+  display: flex;
+  gap: 0;
+  padding: 0;
+}
+
+/* ==========================================================================
+   Toggle Switch Styles (layered SVG)
+   ========================================================================== */
+.toggle-wrapper {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.toggle-switch {
+  position: relative;
+  width: 2em;
+  height: 3em;
+  cursor: pointer;
+}
+
+.toggle-switch img {
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  transition: transform 0.1s ease;
+}
+
+.toggle-base {
+  bottom: 0;
+  width: 100%;
+  height: auto;
+}
+
+.toggle-stem {
+  bottom: 0.4em;
+  width: 70%;
+  height: auto;
+}
+
+/* ON state: stem points up */
+.toggle-switch--on .toggle-stem {
+  bottom: 0.4em;
+  transform: translateX(-50%) scaleY(1);
+}
+
+/* OFF state: stem flipped down */
+.toggle-switch--off .toggle-stem {
+  top: 1.5em;
+  transform: translateX(-50%) scaleY(-1);
+}
+
+/* MID state: centered circle */
+.toggle-switch--mid .toggle-stem {
+  bottom: 0em;
+  width: 50%;
+}
+
+.toggle-switch:hover {
+  filter: brightness(1.1);
+}
+
+.toggle-switch:active {
+  transform: scale(0.95);
+}
+
+.toggle-label {
+  font-size: 0.5em;
+  color: var(--color-text-tertiary);
+  margin-top: 0.25em;
+  text-align: center;
+  font-family: var(--cursive-font);
+}
+
+/* Tooltip - shows on hover */
+.toggle-tooltip {
+  position: absolute;
+  bottom: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 0.25em 0.5em;
+  background: rgba(0, 0, 0, 0.85);
+  color: var(--color-text-primary);
+  font-size: 0.5em;
+  font-family: var(--readable-font);
+  white-space: nowrap;
+  border-radius: 0.25em;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.15s ease;
+  z-index: 100;
+  margin-bottom: 0.25em;
+}
+
+.toggle-wrapper:hover .toggle-tooltip {
+  opacity: 1;
+}
+
+.toggle--disabled {
+  opacity: 0.4;
+  pointer-events: none;
 }
 
 /* Version tag */

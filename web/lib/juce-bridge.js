@@ -136,5 +136,71 @@ export function onEnforceCeilingChange(callback) {
     }
 }
 
+// Filter type helpers - 0 = Minimum Phase, 1 = Linear Phase
+export function setFilterType(index) {
+    const state = sliderStates.filterType;
+    if (state) {
+        state.setNormalisedValue(index);  // 0 or 1
+    }
+}
+
+export function getFilterType() {
+    const state = sliderStates.filterType;
+    return state ? Math.round(state.getNormalisedValue()) : 0;
+}
+
+export function onFilterTypeChange(callback) {
+    const state = sliderStates.filterType;
+    if (state) {
+        state.valueChangedEvent.addListener(() => {
+            callback(Math.round(state.getNormalisedValue()));
+        });
+    }
+}
+
+// Channel mode helpers - 0 = L/R, 1 = M/S
+export function setChannelMode(index) {
+    const state = sliderStates.channelMode;
+    if (state) {
+        state.setNormalisedValue(index);  // 0 or 1
+    }
+}
+
+export function getChannelMode() {
+    const state = sliderStates.channelMode;
+    return state ? Math.round(state.getNormalisedValue()) : 0;
+}
+
+export function onChannelModeChange(callback) {
+    const state = sliderStates.channelMode;
+    if (state) {
+        state.valueChangedEvent.addListener(() => {
+            callback(Math.round(state.getNormalisedValue()));
+        });
+    }
+}
+
+// Stereo link helpers - syncs UI toggle with C++ param
+export function setStereoLink(enabled) {
+    const state = sliderStates.stereoLink;
+    if (state) {
+        state.setNormalisedValue(enabled ? 1.0 : 0.0);
+    }
+}
+
+export function getStereoLink() {
+    const state = sliderStates.stereoLink;
+    return state ? state.getNormalisedValue() > 0.5 : true;
+}
+
+export function onStereoLinkChange(callback) {
+    const state = sliderStates.stereoLink;
+    if (state) {
+        state.valueChangedEvent.addListener(() => {
+            callback(state.getNormalisedValue() > 0.5);
+        });
+    }
+}
+
 // Export JUCE library for direct access if needed
 export { Juce };
