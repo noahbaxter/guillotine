@@ -23,7 +23,15 @@ void ClipperEngine::prepare(double sampleRate, int maxBlockSize, int numChannels
     inputGain.setRampDurationSeconds(0.002);  // 2ms smoothing
     outputGain.prepare(spec);
     outputGain.setRampDurationSeconds(0.002);  // 2ms smoothing
+    clipper.prepare(sampleRate, numChannels);
     oversampler.prepare(sampleRate, maxBlockSize, numChannels);
+
+    // Set up ceiling smoothing (only when sample rate changes to avoid interrupting ramp)
+    if (sampleRate != lastSampleRate)
+    {
+        lastSampleRate = sampleRate;
+        smoothedCeilingLinear.reset(sampleRate, 0.002);
+    }
 
     // Prepare dry buffer and oversampler for delta monitoring
     dryBuffer.setSize(numChannels, maxBlockSize);
@@ -50,8 +58,9 @@ void ClipperEngine::setOutputGain(float dB)
 
 void ClipperEngine::setCeiling(float dB)
 {
-    ceilingLinear = juce::Decibels::decibelsToGain(dB);
-    clipper.setCeiling(ceilingLinear);
+    float linear = juce::Decibels::decibelsToGain(dB);
+    smoothedCeilingLinear.setTargetValue(linear);
+    clipper.setCeiling(linear);
 }
 
 void ClipperEngine::setCurve(int curveIndex)
@@ -110,6 +119,12 @@ int ClipperEngine::getLatencyInSamples() const
     return oversampler.getLatencyInSamples();
 }
 
+void ClipperEngine::applyPendingChanges()
+{
+    oversampler.applyPendingChanges();
+    dryOversampler.applyPendingChanges();
+}
+
 void ClipperEngine::process(juce::AudioBuffer<float>& buffer)
 {
     int numSamples = buffer.getNumSamples();
@@ -120,24 +135,25 @@ void ClipperEngine::process(juce::AudioBuffer<float>& buffer)
     inputGain.process(juce::dsp::ProcessContextReplacing<float>(block));
 
     // Capture pre-clip peak (after input gain, before clipping)
-    lastPreClipPeak = 0.0f;
+    float preClipPeak = 0.0f;
     for (int ch = 0; ch < numChannels; ++ch)
     {
         const float* data = buffer.getReadPointer(ch);
         for (int i = 0; i < numSamples; ++i)
         {
             float absVal = std::abs(data[i]);
-            if (absVal > lastPreClipPeak)
-                lastPreClipPeak = absVal;
+            if (absVal > preClipPeak)
+                preClipPeak = absVal;
         }
     }
+    lastPreClipPeak.store(preClipPeak, std::memory_order_relaxed);
 
     // Skip clipping and makeup gain when bypassed
     // Input gain still applies so users can hear pre-clip level
     if (bypassed)
     {
         // When bypassed, post-clip = pre-clip (no clipping)
-        lastPostClipPeak = lastPreClipPeak;
+        lastPostClipPeak.store(preClipPeak, std::memory_order_relaxed);
 
         // Still sanitize NaN/Inf even when bypassed
         for (int ch = 0; ch < numChannels; ++ch)
@@ -195,17 +211,18 @@ void ClipperEngine::process(juce::AudioBuffer<float>& buffer)
         stereoProcessor.decodeFromMidSide(dryBuffer);
 
     // 7. Capture post-clip peak (after clipping, before output gain)
-    lastPostClipPeak = 0.0f;
+    float postClipPeak = 0.0f;
     for (int ch = 0; ch < numChannels; ++ch)
     {
         const float* data = buffer.getReadPointer(ch);
         for (int i = 0; i < numSamples; ++i)
         {
             float absVal = std::abs(data[i]);
-            if (absVal > lastPostClipPeak)
-                lastPostClipPeak = absVal;
+            if (absVal > postClipPeak)
+                postClipPeak = absVal;
         }
     }
+    lastPostClipPeak.store(postClipPeak, std::memory_order_relaxed);
 
     // 8. Delta monitor: output = dry - wet (what was clipped off)
     // Both signals have been through the same filter chain, so they're phase-aligned
@@ -224,11 +241,14 @@ void ClipperEngine::process(juce::AudioBuffer<float>& buffer)
     // This ensures true peak limiting regardless of mode, pre-output-gain
     if (enforceCeilingEnabled)
     {
-        for (int ch = 0; ch < numChannels; ++ch)
+        for (int i = 0; i < numSamples; ++i)
         {
-            float* data = buffer.getWritePointer(ch);
-            for (int i = 0; i < numSamples; ++i)
-                data[i] = std::clamp(data[i], -ceilingLinear, ceilingLinear);
+            float ceil = smoothedCeilingLinear.getNextValue();
+            for (int ch = 0; ch < numChannels; ++ch)
+            {
+                float* data = buffer.getWritePointer(ch);
+                data[i] = std::clamp(data[i], -ceil, ceil);
+            }
         }
     }
 

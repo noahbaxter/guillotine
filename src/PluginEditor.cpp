@@ -167,7 +167,7 @@ std::optional<juce::WebBrowserComponent::Resource> GuillotineEditor::getResource
     if (urlToRetrieve == "envelope.bin")
     {
         const auto& preClip = audioProcessor.getEnvelopePreClip();
-        const int writePos = audioProcessor.getEnvelopeWritePosition().load();
+        const int writePos = audioProcessor.getEnvelopeWritePosition();
         constexpr int bufSize = GuillotineProcessor::envelopeBufferSize;
 
         // Apply 3-point moving average smoothing before sending

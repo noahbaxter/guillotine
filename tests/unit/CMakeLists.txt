@@ -30,6 +30,7 @@ add_executable(unit_tests
     test_delta_monitor.cpp
     test_clipper_engine.cpp
     test_transient.cpp
+    test_envelope_buffer.cpp
     ${PROJECT_SRC_DIR}/dsp/Oversampler.cpp
     ${PROJECT_SRC_DIR}/dsp/Clipper.cpp
     ${PROJECT_SRC_DIR}/dsp/StereoProcessor.cpp

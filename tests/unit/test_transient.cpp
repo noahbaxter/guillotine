@@ -42,6 +42,7 @@ TEST_CASE("Diagnostic: measure actual group delay for min-phase", "[transient][d
     engine.setCurve(static_cast<int>(CurveType::Hard));
     engine.setOversamplingFactor(2);   // 4x
     engine.setFilterType(false);       // Minimum phase
+    engine.applyPendingChanges();
     engine.setInputGain(0.0f);
     engine.setOutputGain(0.0f);
     engine.setEnforceCeiling(false);
@@ -74,6 +75,7 @@ TEST_CASE("Diagnostic: measure actual latency for lin-phase", "[transient][diagn
     engine.setCurve(static_cast<int>(CurveType::Hard));
     engine.setOversamplingFactor(2);   // 4x
     engine.setFilterType(true);        // Linear phase
+    engine.applyPendingChanges();
     engine.setInputGain(0.0f);
     engine.setOutputGain(0.0f);
     engine.setEnforceCeiling(false);
@@ -108,6 +110,7 @@ TEST_CASE("Diagnostic: impulse response shape", "[transient][diagnostic]")
     engine.setCurve(static_cast<int>(CurveType::Hard));
     engine.setOversamplingFactor(2);
     engine.setFilterType(filterType);
+    engine.applyPendingChanges();
     engine.setInputGain(0.0f);
     engine.setOutputGain(0.0f);
     engine.setEnforceCeiling(false);
@@ -173,6 +176,7 @@ TEST_CASE("Transient: impulse timing preserved (lin-phase)", "[transient][unclip
     engine.setCurve(static_cast<int>(CurveType::Hard));
     engine.setOversamplingFactor(2);   // 4x
     engine.setFilterType(true);        // Linear phase
+    engine.applyPendingChanges();
     engine.setInputGain(0.0f);
     engine.setOutputGain(0.0f);
     engine.setEnforceCeiling(true);
@@ -202,6 +206,7 @@ TEST_CASE("Transient: min-phase is causal (no pre-ringing)", "[transient][unclip
     engine.setCurve(static_cast<int>(CurveType::Hard));
     engine.setOversamplingFactor(2);
     engine.setFilterType(false);       // Minimum phase
+    engine.applyPendingChanges();
     engine.setInputGain(0.0f);
     engine.setOutputGain(0.0f);
     engine.setEnforceCeiling(false);
@@ -236,6 +241,7 @@ TEST_CASE("Transient: lin-phase has symmetric pre/post ringing", "[transient][un
     engine.setCurve(static_cast<int>(CurveType::Hard));
     engine.setOversamplingFactor(2);
     engine.setFilterType(true);        // Linear phase
+    engine.applyPendingChanges();
     engine.setInputGain(0.0f);
     engine.setOutputGain(0.0f);
     engine.setEnforceCeiling(false);
@@ -289,6 +295,7 @@ TEST_CASE("Transient clipped: output never exceeds ceiling", "[transient][clippe
     engine.setCurve(static_cast<int>(CurveType::Hard));         // Hard clip
     engine.setOversamplingFactor(2);
     engine.setFilterType(filterType);
+    engine.applyPendingChanges();
     engine.setInputGain(0.0f);
     engine.setOutputGain(0.0f);
     engine.setEnforceCeiling(true);
@@ -317,6 +324,7 @@ TEST_CASE("Transient clipped: burst recovery", "[transient][clipped]")
     engine.setCurve(static_cast<int>(CurveType::Hard));
     engine.setOversamplingFactor(2);
     engine.setFilterType(false);
+    engine.applyPendingChanges();
     engine.setInputGain(0.0f);
     engine.setOutputGain(0.0f);
     engine.setEnforceCeiling(true);
@@ -353,6 +361,7 @@ TEST_CASE("Transient: both filters preserve timing after latency compensation", 
     minEngine.setCurve(static_cast<int>(CurveType::Hard));
     minEngine.setOversamplingFactor(2);
     minEngine.setFilterType(false);
+    minEngine.applyPendingChanges();
     minEngine.setInputGain(0.0f);
     minEngine.setOutputGain(0.0f);
     minEngine.setEnforceCeiling(false);
@@ -370,6 +379,7 @@ TEST_CASE("Transient: both filters preserve timing after latency compensation", 
     linEngine.setCurve(static_cast<int>(CurveType::Hard));
     linEngine.setOversamplingFactor(2);
     linEngine.setFilterType(true);
+    linEngine.applyPendingChanges();
     linEngine.setInputGain(0.0f);
     linEngine.setOutputGain(0.0f);
     linEngine.setEnforceCeiling(false);

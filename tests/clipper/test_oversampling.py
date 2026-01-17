@@ -12,7 +12,7 @@ import pytest
 import numpy as np
 from pedalboard import load_plugin
 from utils import (
-    generate_sine, generate_dc, peak, rms, db_to_linear, measure_latency
+    generate_sine, generate_dc, peak, rms, db_to_linear, measure_latency, settle_params
 )
 
 
@@ -43,6 +43,7 @@ class TestRoundTrip:
         plugin.output_gain_db = 0.0
 
         input_audio = generate_sine(amplitude=0.25, duration=0.2)
+        settle_params(plugin)
         output = plugin.process(input_audio, 44100)
 
         latency = measure_latency(plugin)
@@ -69,6 +70,7 @@ class TestRoundTrip:
 
         input_level = 0.25
         input_audio = generate_dc(level=input_level, duration=0.3)
+        settle_params(plugin)
         output = plugin.process(input_audio, 44100)
 
         steady_state = output[len(output)//2:]
@@ -165,6 +167,7 @@ class TestInstanceIndependence:
 
         ceiling = db_to_linear(-6.0)
         input_audio = generate_sine(amplitude=ceiling * 1.5, duration=0.2)
+        settle_params(plugin)
         delta = plugin.process(input_audio.copy(), 44100)
 
         delta_peak = peak(delta)

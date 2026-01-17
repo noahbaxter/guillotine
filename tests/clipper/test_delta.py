@@ -63,6 +63,7 @@ def delta_plugin(plugin_path, request):
     plugin.filter_type = filter_type
     plugin.delta = True
 
+    settle_params(plugin)
     return plugin, oversampling, filter_type
 
 
@@ -129,6 +130,7 @@ class TestDeltaOutputsClippedPortion:
         ceiling_linear = db_to_linear(-6.0)
         # Signal significantly above ceiling
         input_audio = generate_sine(amplitude=ceiling_linear * 2, duration=0.3)
+        settle_params(plugin)
         output = plugin.process(input_audio, 44100)
 
         delta_peak = peak(output)
@@ -148,6 +150,7 @@ class TestDeltaOutputsClippedPortion:
         ceiling_linear = db_to_linear(-6.0)
         dc_level = ceiling_linear * 1.5  # 50% above ceiling
         input_audio = generate_dc(level=dc_level, duration=0.3)
+        settle_params(plugin)
         output = plugin.process(input_audio, 44100)
 
         # Expected delta = input - clipped = dc_level - ceiling
@@ -177,6 +180,7 @@ class TestDeltaOutputsClippedPortion:
         ceiling_linear = db_to_linear(-6.0)
         # Signal at ceiling level, but +6dB input gain will push it to 2x ceiling
         input_audio = generate_dc(level=ceiling_linear, duration=0.3)
+        settle_params(plugin)
         output = plugin.process(input_audio, 44100)
 
         # After +6dB input gain: level = ceiling * 2
@@ -212,6 +216,7 @@ class TestSignalReconstruction:
 
         # Get wet (clipped) output
         plugin.delta = False
+        settle_params(plugin)
         wet = plugin.process(input_audio.copy(), 44100)
 
         # Get delta (dry - wet, i.e., what was clipped off)
@@ -252,6 +257,7 @@ class TestDeltaOff:
 
         ceiling_linear = db_to_linear(-6.0)
         input_audio = generate_sine(amplitude=ceiling_linear * 2, duration=0.3)
+        settle_params(plugin)
         output = plugin.process(input_audio, 44100)
 
         output_peak = peak(output)
@@ -272,6 +278,7 @@ class TestDeltaOff:
         input_audio = generate_sine(amplitude=ceiling_linear * 2, duration=0.3)
 
         plugin.delta = False
+        settle_params(plugin)
         output_wet = plugin.process(input_audio.copy(), 44100)
 
         plugin.delta = True
@@ -306,6 +313,7 @@ class TestDeltaStereo:
         right = generate_sine(amplitude=ceiling_linear * 0.3, duration=0.3, stereo=False)
         stereo_input = np.column_stack([left, right])
 
+        settle_params(plugin)
         output = plugin.process(stereo_input, 44100)
 
         left_delta = peak(output[:, 0])
@@ -336,6 +344,7 @@ class TestDeltaStereo:
         mono_signal = generate_sine(amplitude=ceiling_linear * 2, duration=0.3, stereo=False)
         stereo_input = np.column_stack([mono_signal, mono_signal])
 
+        settle_params(plugin)
         output = plugin.process(stereo_input, 44100)
 
         # In M/S mode with identical L/R, mid = L+R (clips), side = L-R = 0
@@ -368,6 +377,7 @@ class TestDeltaEdgeCases:
         plugin.ceiling_db = -6.0
 
         input_audio = generate_dc(level=0.0, duration=0.2)
+        settle_params(plugin)
         output = plugin.process(input_audio, 44100)
 
         assert peak(output) < EXACT_TOLERANCE, (
@@ -385,6 +395,7 @@ class TestDeltaEdgeCases:
         ceiling_linear = db_to_linear(-6.0)
         # Signal at exactly ceiling level
         input_audio = generate_sine(amplitude=ceiling_linear, duration=0.3)
+        settle_params(plugin)
         output = plugin.process(input_audio, 44100)
 
         # Should be near-silent since peaks just touch ceiling

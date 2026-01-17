@@ -13,7 +13,7 @@ These tests focus on:
 import pytest
 import numpy as np
 from pedalboard import load_plugin
-from utils import generate_sine, generate_dc, peak, db_to_linear, linear_to_db
+from utils import generate_sine, generate_dc, peak, db_to_linear, linear_to_db, settle_params
 from clipper.test_consts import (
     OVERSAMPLING_MODES,
     FILTER_TYPES,
@@ -42,6 +42,7 @@ class TestHardClipParameterBinding:
 
         ceiling_linear = db_to_linear(-6.0)
         input_audio = generate_sine(amplitude=ceiling_linear * 2, duration=0.1)
+        settle_params(plugin)
         output = plugin.process(input_audio, 44100)
 
         output_peak = peak(output)
@@ -55,6 +56,7 @@ class TestHardClipParameterBinding:
         plugin.oversampling = "1x"
 
         input_audio = generate_sine(amplitude=0.5, duration=0.1)
+        settle_params(plugin)
         output = plugin.process(input_audio, 44100)
 
         max_diff = np.max(np.abs(input_audio - output))
@@ -78,6 +80,7 @@ class TestEnforceCeiling:
 
         ceiling_linear = db_to_linear(-12.0)
         input_audio = generate_sine(amplitude=1.5, duration=0.3)
+        settle_params(plugin)
         output = plugin.process(input_audio, 44100)
 
         output_peak = peak(output)
@@ -93,6 +96,7 @@ class TestEnforceCeiling:
 
         ceiling_linear = db_to_linear(-12.0)
         input_audio = generate_sine(amplitude=1.5, duration=0.3)
+        settle_params(plugin)
         output = plugin.process(input_audio, 44100)
 
         output_peak = peak(output)
@@ -119,6 +123,7 @@ class TestOversampling:
 
         ceiling_linear = db_to_linear(-6.0)
         input_audio = generate_sine(amplitude=ceiling_linear * 2, duration=0.2)
+        settle_params(plugin)
         output = plugin.process(input_audio, 44100)
 
         output_peak = peak(output)
@@ -137,6 +142,7 @@ class TestOversampling:
 
         ceiling_linear = db_to_linear(-6.0)
         input_audio = generate_sine(amplitude=ceiling_linear * 2, duration=0.2)
+        settle_params(plugin)
         output = plugin.process(input_audio, 44100)
 
         output_peak = peak(output)
@@ -162,6 +168,7 @@ class TestFilterOvershoot:
 
         ceiling_linear = db_to_linear(-6.0)
         input_audio = generate_sine(amplitude=ceiling_linear * 2, duration=0.3)
+        settle_params(plugin)
         output = plugin.process(input_audio, 44100)
 
         overshoot_db = linear_to_db(peak(output) / ceiling_linear)
@@ -181,6 +188,7 @@ class TestFilterOvershoot:
 
         ceiling_linear = db_to_linear(-6.0)
         input_audio = generate_sine(amplitude=ceiling_linear * 2, duration=0.3)
+        settle_params(plugin)
         output = plugin.process(input_audio, 44100)
 
         overshoot_db = linear_to_db(peak(output) / ceiling_linear)
@@ -206,6 +214,7 @@ class TestCeilingRange:
 
         ceiling_linear = db_to_linear(ceiling_db)
         input_audio = generate_sine(amplitude=1.5, duration=0.2)
+        settle_params(plugin)
         output = plugin.process(input_audio, 44100)
 
         output_peak = peak(output)
@@ -234,11 +243,13 @@ class TestGainInteraction:
 
         # Without gain - should pass through
         plugin.input_gain_db = 0.0
+        settle_params(plugin)
         output_no_gain = plugin.process(input_audio.copy(), 44100)
         peak_no_gain = peak(output_no_gain)
 
         # With +12dB gain - should clip
         plugin.input_gain_db = 12.0
+        settle_params(plugin)
         output_with_gain = plugin.process(input_audio.copy(), 44100)
         peak_with_gain = peak(output_with_gain)
 
@@ -268,6 +279,7 @@ class TestStereo:
         right = generate_sine(amplitude=ceiling_linear * 0.3, duration=0.2, stereo=False)
         stereo_input = np.column_stack([left, right])
 
+        settle_params(plugin)
         output = plugin.process(stereo_input, 44100)
 
         left_peak = peak(output[:, 0])
@@ -291,6 +303,7 @@ class TestStereo:
         right = generate_sine(amplitude=ceiling_linear * 0.3, duration=0.2, stereo=False)
         stereo_input = np.column_stack([left, right])
 
+        settle_params(plugin)
         output = plugin.process(stereo_input, 44100)
 
         right_output = output[:, 1]
