@@ -68,6 +68,9 @@ void Oversampler::prepare(double /*sampleRate*/, int maxBlock, int channels)
     numChannels_ = channels;
     maxBlockSize_ = maxBlock;
 
+    // Pre-allocate channel pointer array to avoid allocation in processSamplesUp
+    channelPtrs.resize(static_cast<size_t>(channels));
+
     // Initialize pending values to match current (avoids spurious rebuild on first process)
     pendingFactorIndex.store(currentFactorIndex, std::memory_order_relaxed);
     pendingFilterType.store((currentFilterType == FilterType::LinearPhase) ? 1 : 0, std::memory_order_relaxed);
