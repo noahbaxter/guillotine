@@ -7,9 +7,9 @@
 
 namespace dsp {
 
-    // NOTE: Currently using JUCE's built-in oversampling. Consider investigating
-    // alternative filter implementations (e.g., direct HIIR integration) for
-    // potentially better performance in the future.
+// NOTE: Currently using JUCE's built-in oversampling. Consider investigating
+// alternative filter implementations (e.g., direct HIIR integration) for
+// potentially better performance in the future.
 
 class Oversampler
 {
@@ -31,6 +31,7 @@ public:
     int getOversamplingFactor() const;
     int getLatencyInSamples() const;
     int getCurrentFactorIndex() const { return currentFactorIndex; }
+    void applyPendingChanges();  // Force rebuild if pending (call from message thread only)
     FilterType getCurrentFilterType() const { return currentFilterType; }
 
     // Process up: returns pointer to oversampled data and sets numOversampledSamples
@@ -48,6 +49,12 @@ private:
     int numChannels_ = 2;
     int maxBlockSize_ = 512;
     bool isPrepared = false;
+
+    // Deferred rebuild: setters store pending values, audio thread applies them
+    // This avoids destroying the oversampler while it's being used
+    std::atomic<bool> needsRebuild{false};
+    std::atomic<int> pendingFactorIndex{0};
+    std::atomic<int> pendingFilterType{0};  // 0=MinPhase, 1=LinearPhase
 
     // Per-instance buffer for channel pointers
     std::vector<float*> channelPtrs;

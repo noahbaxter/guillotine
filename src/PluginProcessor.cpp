@@ -185,6 +185,10 @@ void GuillotineProcessor::prepareToPlay(double newSampleRate, int samplesPerBloc
     clipperEngine.setOversamplingFactor(oversamplingChoice);
     clipperEngine.setFilterType(filterType == 1);
 
+    // Force rebuild now so latency is correct before first process call
+    // (deferred rebuild pattern normally waits until process, but hosts query latency at load)
+    clipperEngine.applyPendingChanges();
+
     // Report initial latency
     int initialLatency = clipperEngine.getLatencyInSamples();
     setLatencySamples(initialLatency);

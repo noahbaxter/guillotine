@@ -119,6 +119,12 @@ int ClipperEngine::getLatencyInSamples() const
     return oversampler.getLatencyInSamples();
 }
 
+void ClipperEngine::applyPendingChanges()
+{
+    oversampler.applyPendingChanges();
+    dryOversampler.applyPendingChanges();
+}
+
 void ClipperEngine::process(juce::AudioBuffer<float>& buffer)
 {
     int numSamples = buffer.getNumSamples();

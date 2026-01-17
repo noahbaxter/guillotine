@@ -2,7 +2,6 @@
 
 #include <juce_audio_basics/juce_audio_basics.h>
 #include <juce_dsp/juce_dsp.h>
-#include <atomic>
 
 #include "Clipper.h"
 #include "Oversampler.h"
@@ -34,12 +33,13 @@ public:
     void setBypass(bool enabled);
 
     int getLatencyInSamples() const;
+    void applyPendingChanges();  // Force oversampler rebuild if pending (call from message thread)
 
     // Envelope peaks for display (captured during processing)
     // PreClip = after input gain, before clipping (RED)
     // PostClip = after clipping, before output gain (WHITE)
-    float getLastPreClipPeak() const { return lastPreClipPeak.load(std::memory_order_relaxed); }
-    float getLastPostClipPeak() const { return lastPostClipPeak.load(std::memory_order_relaxed); }
+    float getLastPreClipPeak() const { return lastPreClipPeak; }
+    float getLastPostClipPeak() const { return lastPostClipPeak; }
 
 private:
     // DSP blocks
@@ -56,8 +56,8 @@ private:
     bool deltaMonitorEnabled = false;
 
     // Envelope peaks for display (updated each process call)
-    std::atomic<float> lastPreClipPeak{0.0f};
-    std::atomic<float> lastPostClipPeak{0.0f};
+    float lastPreClipPeak = 0.0f;
+    float lastPostClipPeak = 0.0f;
 
     // Enforce ceiling (final hard limiter after downsampling)
     bool enforceCeilingEnabled = true;

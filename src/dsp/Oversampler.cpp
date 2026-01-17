@@ -68,8 +68,10 @@ void Oversampler::prepare(double /*sampleRate*/, int maxBlock, int channels)
     numChannels_ = channels;
     maxBlockSize_ = maxBlock;
 
-    // Pre-allocate channel pointer array to avoid allocation in process
-    channelPtrs.resize(static_cast<size_t>(channels));
+    // Initialize pending values to match current (avoids spurious rebuild on first process)
+    pendingFactorIndex.store(currentFactorIndex, std::memory_order_relaxed);
+    pendingFilterType.store((currentFilterType == FilterType::LinearPhase) ? 1 : 0, std::memory_order_relaxed);
+    needsRebuild.store(false, std::memory_order_relaxed);
 
     rebuildOversampler();
     isPrepared = true;
@@ -84,21 +86,22 @@ void Oversampler::reset()
 void Oversampler::setOversamplingFactor(int factorIndex)
 {
     int newIndex = std::clamp(factorIndex, 0, NumFactors - 1);
-    if (currentFactorIndex != newIndex)
+    if (currentFactorIndex != newIndex || pendingFactorIndex.load(std::memory_order_relaxed) != newIndex)
     {
-        currentFactorIndex = newIndex;
-        if (isPrepared)
-            rebuildOversampler();
+        // Defer rebuild to audio thread to avoid race condition
+        pendingFactorIndex.store(newIndex, std::memory_order_relaxed);
+        needsRebuild.store(true, std::memory_order_release);
     }
 }
 
 void Oversampler::setFilterType(FilterType type)
 {
-    if (currentFilterType != type)
+    int typeInt = (type == FilterType::LinearPhase) ? 1 : 0;
+    if (currentFilterType != type || pendingFilterType.load(std::memory_order_relaxed) != typeInt)
     {
-        currentFilterType = type;
-        if (isPrepared)
-            rebuildOversampler();
+        // Defer rebuild to audio thread to avoid race condition
+        pendingFilterType.store(typeInt, std::memory_order_relaxed);
+        needsRebuild.store(true, std::memory_order_release);
     }
 }
 
@@ -117,8 +120,30 @@ int Oversampler::getLatencyInSamples() const
     return static_cast<int>(std::round(oversampler->getLatencyInSamples()));
 }
 
+void Oversampler::applyPendingChanges()
+{
+    if (needsRebuild.load(std::memory_order_acquire))
+    {
+        currentFactorIndex = pendingFactorIndex.load(std::memory_order_relaxed);
+        currentFilterType = (pendingFilterType.load(std::memory_order_relaxed) == 1)
+            ? FilterType::LinearPhase : FilterType::MinimumPhase;
+        needsRebuild.store(false, std::memory_order_relaxed);
+        rebuildOversampler();
+    }
+}
+
 float* const* Oversampler::processSamplesUp(juce::AudioBuffer<float>& inputBuffer, int& numOversampledSamples)
 {
+    // Apply any pending parameter changes (deferred from setters to audio thread)
+    if (needsRebuild.load(std::memory_order_acquire))
+    {
+        currentFactorIndex = pendingFactorIndex.load(std::memory_order_relaxed);
+        currentFilterType = (pendingFilterType.load(std::memory_order_relaxed) == 1)
+            ? FilterType::LinearPhase : FilterType::MinimumPhase;
+        needsRebuild.store(false, std::memory_order_relaxed);
+        rebuildOversampler();
+    }
+
     if (currentFactorIndex == 0 || !oversampler || !isPrepared)
     {
         numOversampledSamples = inputBuffer.getNumSamples();
@@ -134,7 +159,7 @@ float* const* Oversampler::processSamplesUp(juce::AudioBuffer<float>& inputBuffe
     numOversampledSamples = static_cast<int>(oversampledBlock.getNumSamples());
 
     // Build array of channel pointers for compatibility with existing API
-    channelPtrs.resize(static_cast<size_t>(numChannels_));
+    // (channelPtrs pre-allocated in prepare() to avoid audio-thread allocation)
     for (int ch = 0; ch < numChannels_; ++ch)
         channelPtrs[static_cast<size_t>(ch)] = oversampledBlock.getChannelPointer(static_cast<size_t>(ch));
 
