@@ -12,6 +12,7 @@ class Clipper
 public:
     Clipper() = default;
 
+    void prepare(double sampleRate);
     void process(juce::AudioBuffer<float>& buffer);
     void process(juce::dsp::AudioBlock<float>& block);
     void processInternal(float* const* channelData, int numChannels, int numSamples);
@@ -22,13 +23,16 @@ public:
     void setStereoLink(bool enabled);
 
 private:
-    float processSample(float sample) const;
-    float calculateGainReduction(float peakLevel) const;
+    float processSample(float sample, float ceilVal, float expVal) const;
+    float calculateGainReduction(float peakLevel, float ceilVal, float expVal) const;
 
-    float ceiling = 1.0f;
-    float curveExponent = 2.0f;
     CurveType curveType = CurveType::Hard;
     bool stereoLinkEnabled = false;
+
+    // Parameter smoothing (2ms ramp to match input/output gain)
+    juce::SmoothedValue<float, juce::ValueSmoothingTypes::Linear> smoothedCeiling{1.0f};
+    juce::SmoothedValue<float, juce::ValueSmoothingTypes::Linear> smoothedExponent{2.0f};
+    double lastSampleRate = 0.0;  // Track sample rate to avoid unnecessary reset()
 };
 
 } // namespace dsp

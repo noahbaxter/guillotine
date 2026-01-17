@@ -60,7 +60,8 @@ private:
 
     // Enforce ceiling (final hard limiter after downsampling)
     bool enforceCeilingEnabled = true;
-    float ceilingLinear = 1.0f;
+    juce::SmoothedValue<float, juce::ValueSmoothingTypes::Linear> smoothedCeilingLinear{1.0f};
+    double lastSampleRate = 0.0;  // Track to avoid unnecessary reset()
 
     // Bypass clipper (still applies input/output gain)
     bool bypassed = false;

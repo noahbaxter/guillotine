@@ -2,7 +2,14 @@ import pytest
 import sys
 import platform
 from pathlib import Path
+import numpy as np
 from pedalboard import load_plugin
+
+
+def settle_params(plugin, sr=44100):
+    """Process silence to let parameter smoothing ramps settle (2ms @ 44.1kHz = 88 samples)."""
+    silence = np.zeros(256, dtype=np.float32).reshape(-1, 1)
+    plugin.process(silence, sr)
 
 TESTS_DIR = Path(__file__).parent
 sys.path.insert(0, str(TESTS_DIR))  # Allow subdirectories to import utils
@@ -69,6 +76,7 @@ def fresh_plugin(plugin_path):
 
     Use this instead of load_plugin() directly to ensure consistent test setup.
     Override specific parameters as needed in your test.
+    Automatically settles parameter smoothing before returning.
 
     Defaults:
         - bypass_clipper=False (clipper active)
@@ -85,12 +93,14 @@ def fresh_plugin(plugin_path):
     plugin = load_plugin(plugin_path)
     for param, value in TEST_DEFAULTS.items():
         setattr(plugin, param, value)
+    settle_params(plugin)
     return plugin
 
 
 @pytest.fixture
 def make_plugin(plugin_path):
     """Factory fixture to create plugins with custom settings.
+    Automatically settles parameter smoothing before returning.
 
     Usage:
         def test_something(make_plugin):
@@ -102,6 +112,7 @@ def make_plugin(plugin_path):
         settings = {**TEST_DEFAULTS, **overrides}
         for param, value in settings.items():
             setattr(plugin, param, value)
+        settle_params(plugin)
         return plugin
     return _make_plugin
 

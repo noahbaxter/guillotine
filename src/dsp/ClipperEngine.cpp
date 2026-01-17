@@ -23,7 +23,15 @@ void ClipperEngine::prepare(double sampleRate, int maxBlockSize, int numChannels
     inputGain.setRampDurationSeconds(0.002);  // 2ms smoothing
     outputGain.prepare(spec);
     outputGain.setRampDurationSeconds(0.002);  // 2ms smoothing
+    clipper.prepare(sampleRate);
     oversampler.prepare(sampleRate, maxBlockSize, numChannels);
+
+    // Set up ceiling smoothing (only when sample rate changes to avoid interrupting ramp)
+    if (sampleRate != lastSampleRate)
+    {
+        lastSampleRate = sampleRate;
+        smoothedCeilingLinear.reset(sampleRate, 0.002);
+    }
 
     // Prepare dry buffer and oversampler for delta monitoring
     dryBuffer.setSize(numChannels, maxBlockSize);
@@ -50,8 +58,9 @@ void ClipperEngine::setOutputGain(float dB)
 
 void ClipperEngine::setCeiling(float dB)
 {
-    ceilingLinear = juce::Decibels::decibelsToGain(dB);
-    clipper.setCeiling(ceilingLinear);
+    float linear = juce::Decibels::decibelsToGain(dB);
+    smoothedCeilingLinear.setTargetValue(linear);
+    clipper.setCeiling(linear);
 }
 
 void ClipperEngine::setCurve(int curveIndex)
@@ -224,11 +233,14 @@ void ClipperEngine::process(juce::AudioBuffer<float>& buffer)
     // This ensures true peak limiting regardless of mode, pre-output-gain
     if (enforceCeilingEnabled)
     {
-        for (int ch = 0; ch < numChannels; ++ch)
+        for (int i = 0; i < numSamples; ++i)
         {
-            float* data = buffer.getWritePointer(ch);
-            for (int i = 0; i < numSamples; ++i)
-                data[i] = std::clamp(data[i], -ceilingLinear, ceilingLinear);
+            float ceil = smoothedCeilingLinear.getNextValue();
+            for (int ch = 0; ch < numChannels; ++ch)
+            {
+                float* data = buffer.getWritePointer(ch);
+                data[i] = std::clamp(data[i], -ceil, ceil);
+            }
         }
     }
 

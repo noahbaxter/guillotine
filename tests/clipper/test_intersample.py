@@ -18,6 +18,7 @@ from utils import (
     peak,
     db_to_linear,
     linear_to_db,
+    settle_params,
 )
 
 # Tolerance for intersample peak control
@@ -36,6 +37,7 @@ def clipper(plugin_path):
     plugin.oversampling = "4x"
     plugin.filter_type = "Minimum Phase"
     plugin.true_clip = True
+    settle_params(plugin)
     return plugin
 
 
@@ -72,6 +74,7 @@ class TestIntersamplePeakDetection:
             stereo=True
         )
 
+        settle_params(plugin)
         output = plugin.process(input_signal, 44100)
 
         output_sample_peak = peak(output)
@@ -133,6 +136,7 @@ class TestIntersampleControl:
             stereo=True
         )
 
+        settle_params(plugin)
         output = plugin.process(input_signal, 44100)
         output_true_peak = true_peak(output)
         overshoot_db = linear_to_db(output_true_peak / ceiling_linear)
@@ -159,6 +163,7 @@ class TestIntersampleControl:
             stereo=True
         )
 
+        settle_params(plugin)
         output = plugin.process(input_signal, 44100)
         output_true_peak = true_peak(output)
         overshoot_db = linear_to_db(output_true_peak / ceiling_linear)
@@ -192,6 +197,7 @@ class TestIntersampleComparison:
         plugin_1x.oversampling = "1x"
         plugin_1x.true_clip = False  # Measure actual OS behavior, not hard limiter
 
+        settle_params(plugin_1x)
         output_1x = plugin_1x.process(input_signal.copy(), 44100)
         true_peak_1x = true_peak(output_1x)
 
@@ -203,6 +209,7 @@ class TestIntersampleComparison:
         plugin_4x.filter_type = "Minimum Phase"
         plugin_4x.true_clip = False  # Measure actual OS behavior, not hard limiter
 
+        settle_params(plugin_4x)
         output_4x = plugin_4x.process(input_signal.copy(), 44100)
         true_peak_4x = true_peak(output_4x)
 

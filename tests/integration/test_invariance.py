@@ -7,7 +7,7 @@ At 1x oversampling (no filters), output should be sample-identical.
 import pytest
 import numpy as np
 from pedalboard import load_plugin
-from utils import generate_sine, peak, db_to_linear
+from utils import generate_sine, peak, db_to_linear, settle_params
 
 SAMPLE_RATES = [44100, 48000, 88200, 96000]
 BLOCK_SIZES = [64, 128, 256, 512, 1024, 2048]
@@ -36,6 +36,7 @@ class TestSampleRateInvariance:
             stereo=True
         )
 
+        settle_params(plugin, sample_rate)
         output = plugin.process(input_audio, sample_rate)
         output_peak = peak(output)
 
@@ -64,6 +65,7 @@ class TestSampleRateInvariance:
                 stereo=True
             )
 
+            settle_params(plugin, sample_rate)
             output = plugin.process(input_audio, sample_rate)
             peaks.append((sample_rate, peak(output)))
 
@@ -97,6 +99,7 @@ class TestBlockSizeInvariance:
         )
 
         # Process as one large block
+        settle_params(plugin)
         output_single = plugin.process(input_audio.copy(), 44100)
 
         # Process as many small blocks (64 samples each)
@@ -132,6 +135,7 @@ class TestBlockSizeInvariance:
             stereo=True
         )
 
+        settle_params(plugin)
         output = plugin.process(input_audio, 44100)
         output_peak = peak(output)
 
@@ -157,6 +161,7 @@ class TestBlockSizeInvariance:
             stereo=True
         )
 
+        settle_params(plugin)
         output = plugin.process(input_audio, 44100)
         output_peak = peak(output)
 
@@ -183,6 +188,7 @@ class TestBlockSizeInvariance:
             stereo=True
         )
 
+        settle_params(plugin)
         for i in range(16):
             single_sample = input_samples[i:i + 1]
             output = plugin.process(single_sample, 44100)
