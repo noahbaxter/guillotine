@@ -300,11 +300,13 @@ void GuillotineProcessor::processBlock(juce::AudioBuffer<float>& buffer, juce::M
     float enginePreClipPeak = clipperEngine.getLastPreClipPeak();
     float enginePostClipPeak = clipperEngine.getLastPostClipPeak();
 
-    // Accumulate peaks across blocks
-    if (enginePreClipPeak > preClipPeak)
-        preClipPeak = enginePreClipPeak;
-    if (enginePostClipPeak > postClipPeak)
-        postClipPeak = enginePostClipPeak;
+    // Accumulate peaks across blocks (relaxed ordering - UI reads can tolerate slight staleness)
+    float currentPrePeak = preClipPeak.load(std::memory_order_relaxed);
+    if (enginePreClipPeak > currentPrePeak)
+        preClipPeak.store(enginePreClipPeak, std::memory_order_relaxed);
+    float currentPostPeak = postClipPeak.load(std::memory_order_relaxed);
+    if (enginePostClipPeak > currentPostPeak)
+        postClipPeak.store(enginePostClipPeak, std::memory_order_relaxed);
 
     // Track samples and write to ring buffer at intervals
     samplesSincePeak += buffer.getNumSamples();
@@ -316,12 +318,12 @@ void GuillotineProcessor::processBlock(juce::AudioBuffer<float>& buffer, juce::M
     bool wrotePoint = false;
     while (samplesSincePeak >= currentSamplesPerPoint)
     {
-        int writePos = envelopeWritePos.load();
-        envelopePreClip[writePos] = preClipPeak;
-        envelopePostClip[writePos] = postClipPeak;
+        int writePos = envelopeWritePos.load(std::memory_order_relaxed);
+        envelopePreClip[writePos] = preClipPeak.load(std::memory_order_relaxed);
+        envelopePostClip[writePos] = postClipPeak.load(std::memory_order_relaxed);
         envelopeClipThresholds[writePos] = -ceilingDb / displayDbRange;
         writePos = (writePos + 1) % envelopeBufferSize;
-        envelopeWritePos.store(writePos);
+        envelopeWritePos.store(writePos, std::memory_order_relaxed);
 
         samplesSincePeak -= currentSamplesPerPoint;  // Keep leftover samples
         wrotePoint = true;
@@ -330,8 +332,8 @@ void GuillotineProcessor::processBlock(juce::AudioBuffer<float>& buffer, juce::M
     // Only reset peaks after writing at least one point
     if (wrotePoint)
     {
-        preClipPeak = 0.0f;
-        postClipPeak = 0.0f;
+        preClipPeak.store(0.0f, std::memory_order_relaxed);
+        postClipPeak.store(0.0f, std::memory_order_relaxed);
     }
 }
 

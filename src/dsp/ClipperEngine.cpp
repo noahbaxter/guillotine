@@ -129,24 +129,25 @@ void ClipperEngine::process(juce::AudioBuffer<float>& buffer)
     inputGain.process(juce::dsp::ProcessContextReplacing<float>(block));
 
     // Capture pre-clip peak (after input gain, before clipping)
-    lastPreClipPeak = 0.0f;
+    float preClipPeak = 0.0f;
     for (int ch = 0; ch < numChannels; ++ch)
     {
         const float* data = buffer.getReadPointer(ch);
         for (int i = 0; i < numSamples; ++i)
         {
             float absVal = std::abs(data[i]);
-            if (absVal > lastPreClipPeak)
-                lastPreClipPeak = absVal;
+            if (absVal > preClipPeak)
+                preClipPeak = absVal;
         }
     }
+    lastPreClipPeak.store(preClipPeak, std::memory_order_relaxed);
 
     // Skip clipping and makeup gain when bypassed
     // Input gain still applies so users can hear pre-clip level
     if (bypassed)
     {
         // When bypassed, post-clip = pre-clip (no clipping)
-        lastPostClipPeak = lastPreClipPeak;
+        lastPostClipPeak.store(preClipPeak, std::memory_order_relaxed);
 
         // Still sanitize NaN/Inf even when bypassed
         for (int ch = 0; ch < numChannels; ++ch)
@@ -204,17 +205,18 @@ void ClipperEngine::process(juce::AudioBuffer<float>& buffer)
         stereoProcessor.decodeFromMidSide(dryBuffer);
 
     // 7. Capture post-clip peak (after clipping, before output gain)
-    lastPostClipPeak = 0.0f;
+    float postClipPeak = 0.0f;
     for (int ch = 0; ch < numChannels; ++ch)
     {
         const float* data = buffer.getReadPointer(ch);
         for (int i = 0; i < numSamples; ++i)
         {
             float absVal = std::abs(data[i]);
-            if (absVal > lastPostClipPeak)
-                lastPostClipPeak = absVal;
+            if (absVal > postClipPeak)
+                postClipPeak = absVal;
         }
     }
+    lastPostClipPeak.store(postClipPeak, std::memory_order_relaxed);
 
     // 8. Delta monitor: output = dry - wet (what was clipped off)
     // Both signals have been through the same filter chain, so they're phase-aligned

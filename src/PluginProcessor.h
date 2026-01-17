@@ -67,16 +67,12 @@ private:
     std::array<float, envelopeBufferSize> envelopePostClip{};    // After clipping, before output gain (WHITE)
     std::array<float, envelopeBufferSize> envelopeClipThresholds{};  // Store threshold used for each envelope point
     std::atomic<int> envelopeWritePos{0};
-    float preClipPeak = 0.0f;
-    float postClipPeak = 0.0f;
+    std::atomic<float> preClipPeak{0.0f};
+    std::atomic<float> postClipPeak{0.0f};
     int samplesSincePeak = 0;
 
-    // Test oscillator (1Hz ramp for UI development)
-#if defined(JUCE_DEBUG) && JucePlugin_Build_Standalone
-    bool testOscEnabled = true;
-#else
+    // Test oscillator (1Hz ramp for UI development) - toggle via setTestOscEnabled()
     bool testOscEnabled = false;
-#endif
     double testOscPhase = 0.0;
     double sampleRate = 44100.0;
 
