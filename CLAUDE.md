@@ -15,6 +15,7 @@ Guillotine is a JUCE-based audio plugin (VST3/AU) implementing a clipping effect
 ./scripts/build.sh --no-install # Build without installing
 ./scripts/standalone.sh         # Quick UI preview - builds standalone app and launches it
 ./scripts/watch.sh              # Auto-reload: watches src/, assets/, web/ and rebuilds on change
+./scripts/validate.sh           # Run pluginval at strictness 10 (or pass level: ./scripts/validate.sh 5)
 ```
 
 **Build system:** CMake with Xcode generator. First build runs `cmake -B build -G Xcode` automatically.
@@ -36,19 +37,20 @@ pytest tests/integration/test_integration.py -v
 ```
 
 Test types:
-- `tests/clipper/` - Clipper DSP tests (delta, hard clip, oversampling, intersample)
+- `tests/clipper/` - Clipper DSP tests (delta, hard clip, oversampling, intersample, smoothing)
 - `tests/integration/` - Plugin-level tests (gain, bypass, NaN defense, invariance)
 - `tests/compliance/` - pluginval DAW compatibility checks
-- `tests/unit/` - C++ unit tests (CMake-based, Catch2)
+- `tests/unit/` - C++ unit tests (CMake-based, Catch2): clipper, oversampler, envelope buffer, transient
 
 ## Architecture
 
 **DSP Layer:**
-- `src/PluginProcessor.cpp` - Audio processing, envelope ring buffer, parameter management
+- `src/PluginProcessor.cpp` - Audio processing, parameter management
 - `src/dsp/ClipperEngine.cpp` - Main DSP chain: gain → M/S → oversample → clip → downsample
-- `src/dsp/Clipper.cpp` - Saturation curve implementations (hard, tanh, arctan, etc.)
-- `src/dsp/Oversampler.cpp` - Polyphase oversampling with configurable filter types
+- `src/dsp/Clipper.cpp` - Saturation curve implementations (hard, tanh, arctan, etc.) with parameter smoothing
+- `src/dsp/Oversampler.cpp` - Polyphase oversampling with deferred rebuild for thread safety
 - `src/dsp/StereoProcessor.cpp` - M/S encoding, stereo link
+- `src/dsp/EnvelopeBuffer.h` - Thread-safe ring buffer for waveform visualization
 
 **UI Layer (WebView):**
 - `src/PluginEditor.cpp` - JUCE WebBrowserComponent, serves web resources via `getResource()`
@@ -136,9 +138,18 @@ This flag:
 
 - JUCE framework lives in `third_party/JUCE/` (git submodule)
 - Build config in `CMakeLists.txt` - VERSION is read from `VERSION` file automatically
-- Envelope buffer: 220 samples/point at 44.1kHz, atomic write position for thread safety
 - Blade position 0.0-1.0 maps to 35% vertical travel
 - **Blade travel multiplier (1.25x):** Accounts for `object-fit: contain` constraining rendered image size; scales travel distance to match visual size
+
+## Thread Safety
+
+The DSP layer uses several patterns to avoid race conditions between audio and UI threads:
+
+- **EnvelopeBuffer**: Ring buffer with atomic write position - audio thread writes, UI reads safely
+- **Atomic peak meters**: `std::atomic<float>` for input/output levels read by UI
+- **Parameter smoothing**: `juce::SmoothedValue` prevents zipper noise on parameter changes
+- **Deferred oversampler rebuild**: Settings changes flag `needsRebuild` atomic; rebuild happens at next `processBlock()` start, not mid-process
+- **Pre-allocated vectors**: All vectors sized in `prepare()` to avoid audio-thread allocations
 
 ## Workflow Rules
 
