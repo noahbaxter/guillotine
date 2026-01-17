@@ -4,6 +4,7 @@
 #include <array>
 #include <atomic>
 #include "dsp/ClipperEngine.h"
+#include "dsp/EnvelopeBuffer.h"
 
 class GuillotineProcessor : public juce::AudioProcessor
 {
@@ -50,10 +51,10 @@ public:
     // Envelope buffer access for GUI
     // PreClip = after input gain, before clipping (RED in display - what gets clipped off)
     // PostClip = after input gain AND clipping, before output gain (WHITE in display - what you hear)
-    const std::array<float, envelopeBufferSize>& getEnvelopePreClip() const { return envelopePreClip; }
-    const std::array<float, envelopeBufferSize>& getEnvelopePostClip() const { return envelopePostClip; }
-    const std::array<float, envelopeBufferSize>& getEnvelopeClipThresholds() const { return envelopeClipThresholds; }
-    const std::atomic<int>& getEnvelopeWritePosition() const { return envelopeWritePos; }
+    const std::array<float, envelopeBufferSize>& getEnvelopePreClip() const { return envelopeBuffer.getPreClipBuffer(); }
+    const std::array<float, envelopeBufferSize>& getEnvelopePostClip() const { return envelopeBuffer.getPostClipBuffer(); }
+    const std::array<float, envelopeBufferSize>& getEnvelopeClipThresholds() const { return envelopeBuffer.getThresholdBuffer(); }
+    int getEnvelopeWritePosition() const { return envelopeBuffer.getWritePosition(); }
 
     // Test oscillator for UI development (1Hz ramp)
     void setTestOscEnabled(bool enabled) { testOscEnabled = enabled; }
@@ -63,13 +64,7 @@ private:
     juce::AudioProcessorValueTreeState apvts;
 
     // Ring buffer for envelope visualization (peak detection)
-    std::array<float, envelopeBufferSize> envelopePreClip{};     // After input gain, before clipping (RED)
-    std::array<float, envelopeBufferSize> envelopePostClip{};    // After clipping, before output gain (WHITE)
-    std::array<float, envelopeBufferSize> envelopeClipThresholds{};  // Store threshold used for each envelope point
-    std::atomic<int> envelopeWritePos{0};
-    std::atomic<float> preClipPeak{0.0f};
-    std::atomic<float> postClipPeak{0.0f};
-    int samplesSincePeak = 0;
+    dsp::EnvelopeBuffer<envelopeBufferSize> envelopeBuffer;
 
     // Test oscillator (1Hz ramp for UI development) - toggle via setTestOscEnabled()
     bool testOscEnabled = false;

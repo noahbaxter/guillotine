@@ -177,6 +177,7 @@ void GuillotineProcessor::prepareToPlay(double newSampleRate, int samplesPerBloc
     testOscPhase = 0.0;
 
     clipperEngine.prepare(newSampleRate, samplesPerBlock, getTotalNumInputChannels());
+    envelopeBuffer.prepare(newSampleRate, envelopePointDuration);
 
     // Read and apply oversampling settings so latency is correct from the start
     // (Some hosts cache latency at load time and don't update when it changes)
@@ -300,45 +301,11 @@ void GuillotineProcessor::processBlock(juce::AudioBuffer<float>& buffer, juce::M
     clipperEngine.setBypass(bypassClipper);
     clipperEngine.process(buffer);
 
-    // Get peaks from engine (both captured in the same process() call, synchronized)
-    float enginePreClipPeak = clipperEngine.getLastPreClipPeak();
-    float enginePostClipPeak = clipperEngine.getLastPostClipPeak();
-
-    // Accumulate peaks across blocks (relaxed ordering - UI reads can tolerate slight staleness)
-    float currentPrePeak = preClipPeak.load(std::memory_order_relaxed);
-    if (enginePreClipPeak > currentPrePeak)
-        preClipPeak.store(enginePreClipPeak, std::memory_order_relaxed);
-    float currentPostPeak = postClipPeak.load(std::memory_order_relaxed);
-    if (enginePostClipPeak > currentPostPeak)
-        postClipPeak.store(enginePostClipPeak, std::memory_order_relaxed);
-
-    // Track samples and write to ring buffer at intervals
-    samplesSincePeak += buffer.getNumSamples();
-
-    // Calculate threshold dynamically to handle sample rate changes mid-session
-    const int currentSamplesPerPoint = static_cast<int>(getSampleRate() * envelopePointDuration);
-
-    // Write as many points as needed (handles large buffers correctly)
-    bool wrotePoint = false;
-    while (samplesSincePeak >= currentSamplesPerPoint)
-    {
-        int writePos = envelopeWritePos.load(std::memory_order_relaxed);
-        envelopePreClip[writePos] = preClipPeak.load(std::memory_order_relaxed);
-        envelopePostClip[writePos] = postClipPeak.load(std::memory_order_relaxed);
-        envelopeClipThresholds[writePos] = -ceilingDb / displayDbRange;
-        writePos = (writePos + 1) % envelopeBufferSize;
-        envelopeWritePos.store(writePos, std::memory_order_relaxed);
-
-        samplesSincePeak -= currentSamplesPerPoint;  // Keep leftover samples
-        wrotePoint = true;
-    }
-
-    // Only reset peaks after writing at least one point
-    if (wrotePoint)
-    {
-        preClipPeak.store(0.0f, std::memory_order_relaxed);
-        postClipPeak.store(0.0f, std::memory_order_relaxed);
-    }
+    // Get peaks from engine and update envelope buffer
+    float preClipPeak = clipperEngine.getLastPreClipPeak();
+    float postClipPeak = clipperEngine.getLastPostClipPeak();
+    float threshold = -ceilingDb / displayDbRange;
+    envelopeBuffer.process(preClipPeak, postClipPeak, threshold, buffer.getNumSamples());
 }
 
 bool GuillotineProcessor::hasEditor() const
