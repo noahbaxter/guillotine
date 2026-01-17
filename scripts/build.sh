@@ -96,6 +96,7 @@ configure_cmake() {
             echo -e "${RED}CMake configuration failed${NC}"
             exit 1
         }
+        fix_ownership "$CMAKE_BUILD_DIR"
         echo -e "${GREEN}✓ CMake configured${NC}"
     fi
 }
@@ -111,6 +112,7 @@ force_reconfigure() {
         echo -e "${RED}CMake configuration failed${NC}"
         exit 1
     }
+    fix_ownership "$CMAKE_BUILD_DIR"
     echo -e "${GREEN}✓ CMake reconfigured${NC}"
 }
 
@@ -236,6 +238,7 @@ case "$MODE" in
             echo -e "${RED}Build Failed${NC}"
             exit 1
         }
+        fix_ownership "$CMAKE_BUILD_DIR"
 
         echo -e "${GREEN}✓ Debug build complete${NC}"
 
@@ -254,6 +257,7 @@ case "$MODE" in
             echo -e "${RED}Build Failed${NC}"
             exit 1
         }
+        fix_ownership "$CMAKE_BUILD_DIR"
 
         # Verify builds
         VST3_PATH="$ARTIFACTS_DIR/Release/VST3/$PLUGIN_NAME.vst3"

@@ -57,6 +57,7 @@ if [ "$need_configure" = true ]; then
         echo -e "${RED}CMake configuration failed${NC}"
         exit 1
     }
+    fix_ownership "$CMAKE_BUILD_DIR"
     echo -e "${GREEN}✓ CMake configured${NC}"
 fi
 
@@ -67,6 +68,7 @@ BUILD_OUTPUT=$(cmake --build "$CMAKE_BUILD_DIR" --config Debug --target Guilloti
     echo -e "${RED}Build failed${NC}"
     exit 1
 }
+fix_ownership "$CMAKE_BUILD_DIR"
 
 if [ ! -d "$APP_PATH" ]; then
     echo -e "${RED}Build failed - app not found at $APP_PATH${NC}"
