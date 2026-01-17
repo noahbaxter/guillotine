@@ -34,7 +34,15 @@ TEST_DEFAULTS = {
 
 
 def get_vst3_path():
-    """Get platform-specific VST3 install path."""
+    """Get platform-specific VST3 install path.
+
+    Set GUILLOTINE_VST3_PATH env var to override (e.g., for RTSan builds).
+    """
+    import os
+    override = os.environ.get("GUILLOTINE_VST3_PATH")
+    if override:
+        return Path(override)
+
     system = platform.system()
     if system == "Darwin":
         # Check system library first (where build.sh installs), then user library

@@ -23,7 +23,7 @@ void ClipperEngine::prepare(double sampleRate, int maxBlockSize, int numChannels
     inputGain.setRampDurationSeconds(0.002);  // 2ms smoothing
     outputGain.prepare(spec);
     outputGain.setRampDurationSeconds(0.002);  // 2ms smoothing
-    clipper.prepare(sampleRate);
+    clipper.prepare(sampleRate, numChannels);
     oversampler.prepare(sampleRate, maxBlockSize, numChannels);
 
     // Set up ceiling smoothing (only when sample rate changes to avoid interrupting ramp)
@@ -129,25 +129,24 @@ void ClipperEngine::process(juce::AudioBuffer<float>& buffer)
     inputGain.process(juce::dsp::ProcessContextReplacing<float>(block));
 
     // Capture pre-clip peak (after input gain, before clipping)
-    float preClipPeak = 0.0f;
+    lastPreClipPeak = 0.0f;
     for (int ch = 0; ch < numChannels; ++ch)
     {
         const float* data = buffer.getReadPointer(ch);
         for (int i = 0; i < numSamples; ++i)
         {
             float absVal = std::abs(data[i]);
-            if (absVal > preClipPeak)
-                preClipPeak = absVal;
+            if (absVal > lastPreClipPeak)
+                lastPreClipPeak = absVal;
         }
     }
-    lastPreClipPeak.store(preClipPeak, std::memory_order_relaxed);
 
     // Skip clipping and makeup gain when bypassed
     // Input gain still applies so users can hear pre-clip level
     if (bypassed)
     {
         // When bypassed, post-clip = pre-clip (no clipping)
-        lastPostClipPeak.store(preClipPeak, std::memory_order_relaxed);
+        lastPostClipPeak = lastPreClipPeak;
 
         // Still sanitize NaN/Inf even when bypassed
         for (int ch = 0; ch < numChannels; ++ch)
@@ -205,18 +204,17 @@ void ClipperEngine::process(juce::AudioBuffer<float>& buffer)
         stereoProcessor.decodeFromMidSide(dryBuffer);
 
     // 7. Capture post-clip peak (after clipping, before output gain)
-    float postClipPeak = 0.0f;
+    lastPostClipPeak = 0.0f;
     for (int ch = 0; ch < numChannels; ++ch)
     {
         const float* data = buffer.getReadPointer(ch);
         for (int i = 0; i < numSamples; ++i)
         {
             float absVal = std::abs(data[i]);
-            if (absVal > postClipPeak)
-                postClipPeak = absVal;
+            if (absVal > lastPostClipPeak)
+                lastPostClipPeak = absVal;
         }
     }
-    lastPostClipPeak.store(postClipPeak, std::memory_order_relaxed);
 
     // 8. Delta monitor: output = dry - wet (what was clipped off)
     // Both signals have been through the same filter chain, so they're phase-aligned

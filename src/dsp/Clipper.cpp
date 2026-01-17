@@ -1,11 +1,12 @@
 #include "Clipper.h"
 #include <cmath>
-#include <vector>
 
 namespace dsp {
 
-void Clipper::prepare(double sampleRate)
+void Clipper::prepare(double sampleRate, int numChannels)
 {
+    blockChannelPtrs.resize(static_cast<size_t>(numChannels));
+
     // Only reset SmoothedValue when sample rate changes
     // reset() interrupts smoothing by setting current=target, so avoid calling it repeatedly
     if (sampleRate != lastSampleRate)
@@ -98,11 +99,11 @@ void Clipper::process(juce::dsp::AudioBlock<float>& block)
     const int numChannels = static_cast<int>(block.getNumChannels());
     const int numSamples = static_cast<int>(block.getNumSamples());
 
-    std::vector<float*> channelPtrs(static_cast<size_t>(numChannels));
+    // Use pre-allocated member (from prepare()) to avoid audio-thread allocation
     for (int ch = 0; ch < numChannels; ++ch)
-        channelPtrs[static_cast<size_t>(ch)] = block.getChannelPointer(static_cast<size_t>(ch));
+        blockChannelPtrs[static_cast<size_t>(ch)] = block.getChannelPointer(static_cast<size_t>(ch));
 
-    processInternal(channelPtrs.data(), numChannels, numSamples);
+    processInternal(blockChannelPtrs.data(), numChannels, numSamples);
 }
 
 } // namespace dsp

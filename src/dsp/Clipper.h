@@ -2,6 +2,7 @@
 
 #include <juce_audio_basics/juce_audio_basics.h>
 #include <juce_dsp/juce_dsp.h>
+#include <vector>
 
 #include "SaturatorCurves.h"
 
@@ -12,7 +13,7 @@ class Clipper
 public:
     Clipper() = default;
 
-    void prepare(double sampleRate);
+    void prepare(double sampleRate, int numChannels);
     void process(juce::AudioBuffer<float>& buffer);
     void process(juce::dsp::AudioBlock<float>& block);
     void processInternal(float* const* channelData, int numChannels, int numSamples);
@@ -33,6 +34,9 @@ private:
     juce::SmoothedValue<float, juce::ValueSmoothingTypes::Linear> smoothedCeiling{1.0f};
     juce::SmoothedValue<float, juce::ValueSmoothingTypes::Linear> smoothedExponent{2.0f};
     double lastSampleRate = 0.0;  // Track sample rate to avoid unnecessary reset()
+
+    // Pre-allocated for process(AudioBlock&) to avoid audio-thread allocation
+    std::vector<float*> blockChannelPtrs;
 };
 
 } // namespace dsp

@@ -68,6 +68,9 @@ void Oversampler::prepare(double /*sampleRate*/, int maxBlock, int channels)
     numChannels_ = channels;
     maxBlockSize_ = maxBlock;
 
+    // Pre-allocate channel pointer array to avoid allocation in process
+    channelPtrs.resize(static_cast<size_t>(channels));
+
     rebuildOversampler();
     isPrepared = true;
 }

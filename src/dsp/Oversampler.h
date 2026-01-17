@@ -1,14 +1,15 @@
 #pragma once
 
 #include <juce_dsp/juce_dsp.h>
+#include <atomic>
 #include <memory>
 #include <vector>
 
 namespace dsp {
 
-// NOTE: Currently using JUCE's built-in oversampling. Consider investigating
-// alternative filter implementations (e.g., direct HIIR integration) for
-// potentially better performance in the future.
+    // NOTE: Currently using JUCE's built-in oversampling. Consider investigating
+    // alternative filter implementations (e.g., direct HIIR integration) for
+    // potentially better performance in the future.
 
 class Oversampler
 {
