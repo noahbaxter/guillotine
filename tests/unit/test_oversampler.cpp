@@ -136,6 +136,7 @@ TEST_CASE("MinimumPhase reports expected latency", "[latency]")
     os.prepare(kSampleRate, kBlockSize, kNumChannels);
     os.setOversamplingFactor(factorIndex);
     os.setFilterType(Oversampler::FilterType::MinimumPhase);
+    os.applyPendingChanges();
 
     REQUIRE(os.getLatencyInSamples() == kExpectedLatencyMinPhase[factorIndex]);
 }
@@ -148,6 +149,7 @@ TEST_CASE("LinearPhase reports expected latency", "[latency]")
     os.prepare(kSampleRate, kBlockSize, kNumChannels);
     os.setOversamplingFactor(factorIndex);
     os.setFilterType(Oversampler::FilterType::LinearPhase);
+    os.applyPendingChanges();
 
     REQUIRE(os.getLatencyInSamples() == kExpectedLatencyLinPhase[factorIndex]);
 }
@@ -158,6 +160,7 @@ TEST_CASE("Latency is consistent across calls", "[latency]")
     os.prepare(kSampleRate, kBlockSize, kNumChannels);
     os.setOversamplingFactor(3);  // 8x
     os.setFilterType(Oversampler::FilterType::LinearPhase);
+    os.applyPendingChanges();
 
     int latency1 = os.getLatencyInSamples();
     int latency2 = os.getLatencyInSamples();
@@ -345,14 +348,17 @@ TEST_CASE("Filter type switching updates latency correctly", "[filter]")
 
     // MinimumPhase: expected latency
     os.setFilterType(Oversampler::FilterType::MinimumPhase);
+    os.applyPendingChanges();
     REQUIRE(os.getLatencyInSamples() == kExpectedLatencyMinPhase[2]);
 
     // LinearPhase: expected latency
     os.setFilterType(Oversampler::FilterType::LinearPhase);
+    os.applyPendingChanges();
     REQUIRE(os.getLatencyInSamples() == kExpectedLatencyLinPhase[2]);
 
     // Switch back: same latency
     os.setFilterType(Oversampler::FilterType::MinimumPhase);
+    os.applyPendingChanges();
     REQUIRE(os.getLatencyInSamples() == kExpectedLatencyMinPhase[2]);
 }
 
@@ -421,21 +427,27 @@ TEST_CASE("getOversamplingFactor returns correct multiplier", "[factor]")
     os.prepare(kSampleRate, kBlockSize, kNumChannels);
 
     os.setOversamplingFactor(0);
+    os.applyPendingChanges();
     REQUIRE(os.getOversamplingFactor() == 1);
 
     os.setOversamplingFactor(1);
+    os.applyPendingChanges();
     REQUIRE(os.getOversamplingFactor() == 2);
 
     os.setOversamplingFactor(2);
+    os.applyPendingChanges();
     REQUIRE(os.getOversamplingFactor() == 4);
 
     os.setOversamplingFactor(3);
+    os.applyPendingChanges();
     REQUIRE(os.getOversamplingFactor() == 8);
 
     os.setOversamplingFactor(4);
+    os.applyPendingChanges();
     REQUIRE(os.getOversamplingFactor() == 16);
 
     os.setOversamplingFactor(5);
+    os.applyPendingChanges();
     REQUIRE(os.getOversamplingFactor() == 32);
 }
 
@@ -446,10 +458,12 @@ TEST_CASE("Factor index clamped to valid range", "[factor]")
 
     // Negative should clamp to 0
     os.setOversamplingFactor(-1);
+    os.applyPendingChanges();
     REQUIRE(os.getOversamplingFactor() == 1);
 
     // Too high should clamp to max
     os.setOversamplingFactor(100);
+    os.applyPendingChanges();
     REQUIRE(os.getOversamplingFactor() == 32);
 }
 

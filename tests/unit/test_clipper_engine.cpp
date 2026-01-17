@@ -29,6 +29,7 @@ TEST_CASE("Engine latency: minimum-phase all factors", "[engine][latency]")
     {
         CAPTURE(i);
         engine.setOversamplingFactor(i);
+        engine.applyPendingChanges();
         REQUIRE(engine.getLatencyInSamples() == kExpectedLatencyMinPhase[i]);
     }
 }
@@ -43,6 +44,7 @@ TEST_CASE("Engine latency: linear-phase all factors", "[engine][latency]")
     {
         CAPTURE(i);
         engine.setOversamplingFactor(i);
+        engine.applyPendingChanges();
         REQUIRE(engine.getLatencyInSamples() == kExpectedLatencyLinPhase[i]);
     }
 }
@@ -53,6 +55,7 @@ TEST_CASE("Engine latency: consistent across multiple queries", "[engine][latenc
     engine.prepare(kSampleRate, kBlockSize, kNumChannels);
     engine.setFilterType(true);
     engine.setOversamplingFactor(2);  // 4x linear phase
+    engine.applyPendingChanges();
 
     int latency1 = engine.getLatencyInSamples();
     int latency2 = engine.getLatencyInSamples();
@@ -79,6 +82,7 @@ TEST_CASE("Engine latency: consistent across sample rates and block sizes", "[en
     for (int i = 0; i <= 5; ++i)
     {
         refEngine.setOversamplingFactor(i);
+        refEngine.applyPendingChanges();
         refLatencyMinPhase[i] = refEngine.getLatencyInSamples();
     }
 
@@ -86,6 +90,7 @@ TEST_CASE("Engine latency: consistent across sample rates and block sizes", "[en
     for (int i = 0; i <= 5; ++i)
     {
         refEngine.setOversamplingFactor(i);
+        refEngine.applyPendingChanges();
         refLatencyLinPhase[i] = refEngine.getLatencyInSamples();
     }
 
@@ -103,6 +108,7 @@ TEST_CASE("Engine latency: consistent across sample rates and block sizes", "[en
             for (int i = 0; i <= 5; ++i)
             {
                 engine.setOversamplingFactor(i);
+                engine.applyPendingChanges();
                 REQUIRE(engine.getLatencyInSamples() == refLatencyMinPhase[i]);
             }
 
@@ -110,6 +116,7 @@ TEST_CASE("Engine latency: consistent across sample rates and block sizes", "[en
             for (int i = 0; i <= 5; ++i)
             {
                 engine.setOversamplingFactor(i);
+                engine.applyPendingChanges();
                 REQUIRE(engine.getLatencyInSamples() == refLatencyLinPhase[i]);
             }
         }
@@ -127,11 +134,13 @@ TEST_CASE("Enforce ceiling: output never exceeds ceiling", "[engine][ceiling]")
     engine.setCeiling(-6.0f);          // -6 dB = 0.5 linear
     engine.setCurve(static_cast<int>(CurveType::Hard));
     engine.setOversamplingFactor(2);   // 4x - filters can cause overshoot
+    engine.applyPendingChanges();
     engine.setInputGain(0.0f);
     engine.setOutputGain(0.0f);
     engine.setEnforceCeiling(true);
     engine.setDeltaMonitor(false);
     engine.reset();  // Snap smoothed values to target
+    settleEngine(engine);
 
     float ceilingLinear = juce::Decibels::decibelsToGain(-6.0f);
 
@@ -212,6 +221,7 @@ TEST_CASE("Enforce ceiling: works with different ceiling values", "[engine][ceil
     engine.prepare(kSampleRate, kBlockSize, kNumChannels);
     engine.setCurve(static_cast<int>(CurveType::Hard));
     engine.setOversamplingFactor(2);
+    engine.applyPendingChanges();
     engine.setInputGain(0.0f);
     engine.setOutputGain(0.0f);
     engine.setEnforceCeiling(true);
@@ -222,6 +232,7 @@ TEST_CASE("Enforce ceiling: works with different ceiling values", "[engine][ceil
 
     engine.setCeiling(ceilingDb);
     engine.reset();  // Snap smoothed values to target
+    settleEngine(engine);
     float ceilingLinear = juce::Decibels::decibelsToGain(ceilingDb);
 
     auto buffer = generateSine(1000.0f, kBlockSize, 1.0f);

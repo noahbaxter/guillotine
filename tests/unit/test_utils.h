@@ -4,6 +4,9 @@
 #include <cmath>
 #include <vector>
 
+// Forward declaration
+namespace dsp { class ClipperEngine; }
+
 namespace test_utils {
 
 // Shared constants
@@ -42,5 +45,8 @@ struct TransientMetrics {
     int settlingTime;  // samples to reach target after peak
 };
 TransientMetrics analyzeTransient(const juce::AudioBuffer<float>& buffer, int expectedPeakPos, float targetLevel, int channel = 0);
+
+// Engine helpers
+void settleEngine(dsp::ClipperEngine& engine, int numBlocks = 4);
 
 } // namespace test_utils

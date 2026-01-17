@@ -1,4 +1,5 @@
 #include "test_utils.h"
+#include "dsp/ClipperEngine.h"
 #include <vector>
 
 namespace test_utils {
@@ -220,6 +221,15 @@ TransientMetrics analyzeTransient(const juce::AudioBuffer<float>& buffer, int ex
     metrics.settlingTime = measureSettlingTime(buffer, targetLevel, 0.01f, metrics.peakPosition, channel);
 
     return metrics;
+}
+
+void settleEngine(dsp::ClipperEngine& engine, int numBlocks)
+{
+    for (int i = 0; i < numBlocks; ++i)
+    {
+        auto buffer = generateSine(1000.0f, kBlockSize, 0.5f);
+        engine.process(buffer);
+    }
 }
 
 } // namespace test_utils
