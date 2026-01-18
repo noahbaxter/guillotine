@@ -92,6 +92,7 @@ class GuillotineApp {
     // Container references
     this.guillotineContainer = document.getElementById('guillotine-container');
     this.microscopeContainer = document.getElementById('microscope-container');
+    this.togglesRowContainer = document.getElementById('toggles-row');
     this.ceilingContainer = document.getElementById('ceiling-container');
 
     // State
@@ -216,23 +217,23 @@ class GuillotineApp {
       wrapperClass: 'knob-wrapper--side'
     }));
 
-    // Settings toggles (hidden params)
-    this.filterTypeToggle = new Toggle(this.settingsTogglesContainer, {
+    // Settings toggles (hidden params) - displayed above microscope
+    this.filterTypeToggle = new Toggle(this.togglesRowContainer, {
       value: false,  // 0 = Min Phase (off), 1 = Linear Phase (on)
       tooltip: 'Filter: Min Phase / Linear Phase'
     });
 
-    this.channelModeToggle = new Toggle(this.settingsTogglesContainer, {
+    this.channelModeToggle = new Toggle(this.togglesRowContainer, {
       value: false,  // 0 = L/R (off), 1 = M/S (on)
       tooltip: 'Mode: L/R / M/S'
     });
 
-    this.stereoLinkToggle = new Toggle(this.settingsTogglesContainer, {
+    this.stereoLinkToggle = new Toggle(this.togglesRowContainer, {
       value: true,  // Default linked
       tooltip: 'Stereo Link'
     });
 
-    this.trueclipToggle = new Toggle(this.settingsTogglesContainer, {
+    this.trueclipToggle = new Toggle(this.togglesRowContainer, {
       value: true,  // Default enforced
       tooltip: 'True Clip (enforce ceiling)'
     });

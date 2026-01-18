@@ -259,6 +259,14 @@ body::before {
   overflow-clip-margin: 6.25em;
 }
 
+/* Toggles row - horizontal row above microscope */
+#toggles-row {
+  display: flex;
+  justify-content: center;
+  gap: 0.5em;
+  padding: 0;
+}
+
 #main-knobs {
   margin-left: -6em;
   position: relative;
