@@ -249,11 +249,13 @@ body::before {
   padding: 0.5em 1em 0.5em 0;
 }
 
-/* Exponent knob - positioned absolutely relative to container */
-#main-knobs .knob-wrapper--exponent {
+/* Ceiling positioned relative to guillotine */
+#ceiling-container {
   position: absolute;
-  top: 2.5em;
-  left: 3em;
+  right: -0.75em;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 10;
 }
 
 #gain-knobs {

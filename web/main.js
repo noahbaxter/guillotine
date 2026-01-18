@@ -92,10 +92,7 @@ class GuillotineApp {
     // Container references
     this.guillotineContainer = document.getElementById('guillotine-container');
     this.microscopeContainer = document.getElementById('microscope-container');
-    this.mainKnobsContainer = document.getElementById('main-knobs');
-    this.inputKnobContainer = document.getElementById('input-knob-container');
-    this.settingsTogglesContainer = document.getElementById('settings-toggles');
-    this.outputKnobContainer = document.getElementById('output-knob-container');
+    this.ceilingContainer = document.getElementById('ceiling-container');
 
     // State
     this.bypass = true;         // Start bypassed (blade up) - click to activate
@@ -158,10 +155,10 @@ class GuillotineApp {
       wrapperClass: 'knob-wrapper--exponent'
     }));
 
-    // Ceiling knob (0-1 maps to 0dB to currentMinDb dynamically) - CENTER, larger
+    // Ceiling knob (0-1 maps to 0dB to currentMinDb dynamically) - large, on left
     // Initial max must match default scale (-24dB -> threshold 0.4) to avoid showing full -60dB range
     const initialMaxThreshold = -DEFAULT_MIN_DB / DISPLAY_DB_RANGE;
-    this.thresholdKnob = new Knob(this.mainKnobsContainer, createSpriteKnob({
+    this.thresholdKnob = new Knob(this.ceilingContainer, createSpriteKnob({
       label: TEXT.labels.ceiling,
       min: 0,
       max: initialMaxThreshold,
