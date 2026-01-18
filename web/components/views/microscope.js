@@ -55,7 +55,7 @@ export class Microscope {
     this.container.appendChild(this.scaleDropdownContainer);
 
     this.scaleDropdown = new Dropdown(this.scaleDropdownContainer, {
-      options: SCALE_PRESETS.map(p => ({ label: `${Math.abs(p.minDb)}dB`, value: p.minDb })),
+      options: SCALE_PRESETS.map(p => ({ label: `${p.minDb}dB`, value: p.minDb })),
       value: this.currentPresetIndex,
       onChange: (idx) => this.setScale(SCALE_PRESETS[idx].minDb)
     });
