@@ -10,8 +10,7 @@ const sliderStates = {
     curveExponent: Juce.getSliderState("curveExponent"),
     oversampling: Juce.getSliderState("oversampling"),
     filterType: Juce.getSliderState("filterType"),
-    channelMode: Juce.getSliderState("channelMode"),
-    stereoLink: Juce.getSliderState("stereoLink"),
+    stereoMode: Juce.getSliderState("stereoMode"),
     deltaMonitor: Juce.getSliderState("deltaMonitor"),
     bypassClipper: Juce.getSliderState("bypassClipper"),
     enforceCeiling: Juce.getSliderState("enforceCeiling")
@@ -158,46 +157,24 @@ export function onFilterTypeChange(callback) {
     }
 }
 
-// Channel mode helpers - 0 = L/R, 1 = M/S
-export function setChannelMode(index) {
-    const state = sliderStates.channelMode;
+// Stereo mode helpers - 0 = Stereo Link, 1 = L/R, 2 = M/S
+export function setStereoMode(index) {
+    const state = sliderStates.stereoMode;
     if (state) {
-        state.setNormalisedValue(index);  // 0 or 1
+        state.setNormalisedValue(index / 2);  // 0, 1, 2 -> 0, 0.5, 1
     }
 }
 
-export function getChannelMode() {
-    const state = sliderStates.channelMode;
-    return state ? Math.round(state.getNormalisedValue()) : 0;
+export function getStereoMode() {
+    const state = sliderStates.stereoMode;
+    return state ? Math.round(state.getNormalisedValue() * 2) : 0;
 }
 
-export function onChannelModeChange(callback) {
-    const state = sliderStates.channelMode;
+export function onStereoModeChange(callback) {
+    const state = sliderStates.stereoMode;
     if (state) {
         state.valueChangedEvent.addListener(() => {
-            callback(Math.round(state.getNormalisedValue()));
-        });
-    }
-}
-
-// Stereo link helpers - syncs UI toggle with C++ param
-export function setStereoLink(enabled) {
-    const state = sliderStates.stereoLink;
-    if (state) {
-        state.setNormalisedValue(enabled ? 1.0 : 0.0);
-    }
-}
-
-export function getStereoLink() {
-    const state = sliderStates.stereoLink;
-    return state ? state.getNormalisedValue() > 0.5 : true;
-}
-
-export function onStereoLinkChange(callback) {
-    const state = sliderStates.stereoLink;
-    if (state) {
-        state.valueChangedEvent.addListener(() => {
-            callback(state.getNormalisedValue() > 0.5);
+            callback(Math.round(state.getNormalisedValue() * 2));
         });
     }
 }

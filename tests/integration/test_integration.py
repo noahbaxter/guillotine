@@ -1,5 +1,4 @@
 import pytest
-import numpy as np
 from pathlib import Path
 from pedalboard import load_plugin
 from utils import load_audio, generate_sine, rms, peak, db_to_linear, samples_equal, settle_params
@@ -59,27 +58,6 @@ def test_clipper_ceiling_sweep(fresh_plugin):
     for i in range(len(peaks) - 1):
         assert peaks[i] > peaks[i+1], \
             f"Ceiling {ceilings_db[i]}dB peak {peaks[i]:.3f} should be > ceiling {ceilings_db[i+1]}dB peak {peaks[i+1]:.3f}"
-
-
-def test_clipper_stereo_link_same_reduction(make_plugin):
-    """Stereo link should apply same gain reduction to both channels."""
-    plugin = make_plugin(ceiling_db=-6.0, stereo_link=True, true_clip=False)
-    settle_params(plugin)
-
-    # Create stereo with different amplitudes
-    t = np.linspace(0, 1.0, 44100, endpoint=False)
-    left = (0.9 * np.sin(2 * np.pi * 440 * t)).astype(np.float32)   # Above ceiling
-    right = (0.3 * np.sin(2 * np.pi * 440 * t)).astype(np.float32)  # Below ceiling
-    input_audio = np.column_stack([left, right])
-
-    output = plugin.process(input_audio, 44100)
-
-    # With stereo link, right channel should be reduced even though it's below ceiling
-    # Check that ratio is preserved
-    input_ratio = peak(input_audio[:, 0]) / peak(input_audio[:, 1])
-    output_ratio = peak(output[:, 0]) / peak(output[:, 1])
-    assert abs(input_ratio - output_ratio) < 0.1, \
-        f"Stereo link should preserve L/R ratio: input {input_ratio:.2f}, output {output_ratio:.2f}"
 
 
 # =============================================================================

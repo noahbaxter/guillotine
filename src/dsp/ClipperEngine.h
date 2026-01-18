@@ -27,8 +27,7 @@ public:
     void setCurveExponent(float exponent);        // For Knee/T2 modes: 1.0-4.0
     void setOversamplingFactor(int factorIndex);  // 0=1x, 1=2x, ... 5=32x
     void setFilterType(bool isLinearPhase);
-    void setChannelMode(bool isMidSide);
-    void setStereoLink(bool enabled);
+    void setStereoMode(int mode);  // 0=Stereo Link, 1=L/R, 2=M/S
     void setDeltaMonitor(bool enabled);
     void setEnforceCeiling(bool enabled);
     void setBypass(bool enabled);

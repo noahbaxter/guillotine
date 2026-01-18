@@ -89,14 +89,13 @@ void ClipperEngine::setFilterType(bool isLinearPhase)
     dryOversampler.setFilterType(filterType);
 }
 
-void ClipperEngine::setChannelMode(bool isMidSide)
+void ClipperEngine::setStereoMode(int mode)
 {
-    stereoProcessor.setMidSideMode(isMidSide);
-}
-
-void ClipperEngine::setStereoLink(bool enabled)
-{
-    clipper.setStereoLink(enabled);
+    // 0 = Stereo Link (L/R + linked)
+    // 1 = L/R (unlinked)
+    // 2 = M/S (unlinked)
+    stereoProcessor.setMidSideMode(mode == 2);
+    clipper.setStereoLink(mode == 0);
 }
 
 void ClipperEngine::setDeltaMonitor(bool enabled)

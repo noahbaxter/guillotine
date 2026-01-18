@@ -165,7 +165,7 @@ TEST_CASE("Engine delta: stereo independent channels", "[delta][engine]")
     engine.setOversamplingFactor(0);   // 1x
     engine.setInputGain(0.0f);
     engine.setOutputGain(0.0f);
-    engine.setStereoLink(false);       // Independent channels
+    engine.setStereoMode(1);           // L/R mode (independent channels)
     engine.setDeltaMonitor(true);
 
     // L clips, R doesn't

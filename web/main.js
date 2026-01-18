@@ -27,12 +27,9 @@ import {
   setFilterType,
   getFilterType,
   onFilterTypeChange,
-  setChannelMode,
-  getChannelMode,
-  onChannelModeChange,
-  setStereoLink,
-  getStereoLink,
-  onStereoLinkChange
+  setStereoMode,
+  getStereoMode,
+  onStereoModeChange
 } from './lib/juce-bridge.js';
 import { setDeltaMode, toggleReadableMode } from './lib/theme.js';
 import './lib/crt-effect.js';  // Initialize CRT effects (scanlines, jitter, vignette)
@@ -223,14 +220,12 @@ class GuillotineApp {
       tooltip: 'Filter: Min Phase / Linear Phase'
     });
 
-    this.channelModeToggle = new Toggle(this.togglesRowContainer, {
-      value: false,  // 0 = L/R (off), 1 = M/S (on)
-      tooltip: 'Mode: L/R / M/S'
-    });
-
-    this.stereoLinkToggle = new Toggle(this.togglesRowContainer, {
-      value: true,  // Default linked
-      tooltip: 'Stereo Link'
+    // Stereo mode: 3-way toggle (Stereo Link / L/R / M/S)
+    // true = Stereo Link (0), null = L/R (1), false = M/S (2)
+    this.stereoModeToggle = new Toggle(this.togglesRowContainer, {
+      value: true,  // Default to Stereo Link
+      threeWay: true,
+      tooltip: 'Stereo Link / L/R / M/S'
     });
 
     this.trueclipToggle = new Toggle(this.togglesRowContainer, {
@@ -263,8 +258,7 @@ class GuillotineApp {
       this.inputGainKnob.ready,
       this.outputGainKnob.ready,
       this.filterTypeToggle.ready,
-      this.channelModeToggle.ready,
-      this.stereoLinkToggle.ready,
+      this.stereoModeToggle.ready,
       this.trueclipToggle.ready
     ]);
 
@@ -299,8 +293,11 @@ class GuillotineApp {
 
     // Settings toggles
     this.filterTypeToggle.onChange = (v) => setFilterType(v ? 1 : 0);
-    this.channelModeToggle.onChange = (v) => setChannelMode(v ? 1 : 0);
-    this.stereoLinkToggle.onChange = (v) => setStereoLink(v);
+    // Stereo mode: true = Stereo Link (0), null = L/R (1), false = M/S (2)
+    this.stereoModeToggle.onChange = (v) => {
+      const mode = v === true ? 0 : v === null ? 1 : 2;
+      setStereoMode(mode);
+    };
     this.trueclipToggle.onChange = (v) => setEnforceCeiling(v);
 
     // Wire up threshold changes from microscope drag
@@ -386,12 +383,10 @@ class GuillotineApp {
       this.filterTypeToggle.setValue(index === 1);
     });
 
-    onChannelModeChange((index) => {
-      this.channelModeToggle.setValue(index === 1);
-    });
-
-    onStereoLinkChange((enabled) => {
-      this.stereoLinkToggle.setValue(enabled);
+    // Stereo mode: 0 = Stereo Link (true), 1 = L/R (null), 2 = M/S (false)
+    onStereoModeChange((mode) => {
+      const toggleValue = mode === 0 ? true : mode === 1 ? null : false;
+      this.stereoModeToggle.setValue(toggleValue);
     });
 
     onEnforceCeilingChange((enabled) => {
@@ -492,8 +487,9 @@ class GuillotineApp {
 
     // Hidden params (settings toggles)
     this.filterTypeToggle.setValue(getFilterType() === 1);
-    this.channelModeToggle.setValue(getChannelMode() === 1);
-    this.stereoLinkToggle.setValue(getStereoLink());
+    // Stereo mode: 0 = Stereo Link (true), 1 = L/R (null), 2 = M/S (false)
+    const stereoMode = getStereoMode();
+    this.stereoModeToggle.setValue(stereoMode === 0 ? true : stereoMode === 1 ? null : false);
     this.trueclipToggle.setValue(getEnforceCeiling());
   }
 

@@ -8,7 +8,7 @@ from pedalboard import load_plugin
 
 def settle_params(plugin, sr=44100):
     """Process silence to let parameter smoothing ramps settle (2ms @ 44.1kHz = 88 samples)."""
-    silence = np.zeros(256, dtype=np.float32).reshape(-1, 1)
+    silence = np.zeros((256, 2), dtype=np.float32)  # Stereo to match test conditions
     plugin.process(silence, sr)
 
 TESTS_DIR = Path(__file__).parent
@@ -26,8 +26,7 @@ TEST_DEFAULTS = {
     "ceiling_db": 0.0,
     "input_gain_db": 0.0,
     "output_gain_db": 0.0,
-    "stereo_link": False,
-    "channel_mode": "L/R",
+    "stereo_mode": "Stereo Link",  # "Stereo Link", "L/R", or "M/S"
     "delta": False,
     "true_clip": True,
 }
@@ -93,8 +92,7 @@ def fresh_plugin(plugin_path):
         - curve="Hard"
         - ceiling_db=0.0 (unity)
         - input/output_gain_db=0.0 (unity)
-        - stereo_link=False (independent channels)
-        - channel_mode="L/R" (not M/S)
+        - stereo_mode="Stereo Link" (L/R linked)
         - delta=False (normal output)
         - true_clip=True (enforce ceiling)
     """

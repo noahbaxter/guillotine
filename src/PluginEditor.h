@@ -28,8 +28,7 @@ private:
     juce::WebSliderRelay curveExponentRelay;
     juce::WebSliderRelay oversamplingRelay;
     juce::WebSliderRelay filterTypeRelay;
-    juce::WebSliderRelay channelModeRelay;
-    juce::WebSliderRelay stereoLinkRelay;
+    juce::WebSliderRelay stereoModeRelay;
     juce::WebSliderRelay deltaMonitorRelay;
     juce::WebSliderRelay bypassClipperRelay;
 
@@ -44,8 +43,7 @@ private:
     juce::WebSliderParameterAttachment curveExponentAttachment;
     juce::WebSliderParameterAttachment oversamplingAttachment;
     juce::WebSliderParameterAttachment filterTypeAttachment;
-    juce::WebSliderParameterAttachment channelModeAttachment;
-    juce::WebSliderParameterAttachment stereoLinkAttachment;
+    juce::WebSliderParameterAttachment stereoModeAttachment;
     juce::WebSliderParameterAttachment deltaMonitorAttachment;
     juce::WebSliderParameterAttachment bypassClipperAttachment;
 

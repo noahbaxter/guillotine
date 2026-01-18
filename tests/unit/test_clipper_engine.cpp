@@ -312,8 +312,7 @@ TEST_CASE("Engine M/S: stereo image preserved through chain", "[engine][ms]")
     engine.setOversamplingFactor(0);   // 1x for precise comparison
     engine.setInputGain(0.0f);
     engine.setOutputGain(0.0f);
-    engine.setChannelMode(true);       // M/S enabled
-    engine.setStereoLink(false);
+    engine.setStereoMode(2);           // M/S mode
     engine.setEnforceCeiling(true);
     engine.setDeltaMonitor(false);
 
@@ -345,7 +344,7 @@ TEST_CASE("Engine M/S: disabled passes L/R unchanged", "[engine][ms]")
     engine.setOversamplingFactor(0);
     engine.setInputGain(0.0f);
     engine.setOutputGain(0.0f);
-    engine.setChannelMode(false);      // M/S disabled (L/R mode)
+    engine.setStereoMode(1);           // L/R mode (unlinked)
     engine.setEnforceCeiling(true);
     engine.setDeltaMonitor(false);
 

@@ -302,7 +302,7 @@ class TestDeltaStereo:
         plugin.bypass_clipper = False
         plugin.ceiling_db = -6.0
         plugin.oversampling = "1x"
-        plugin.stereo_link = False
+        plugin.stereo_mode = "L/R"
         plugin.delta = True
         plugin.true_clip = True
 
@@ -333,7 +333,7 @@ class TestDeltaStereo:
         plugin.bypass_clipper = False
         plugin.ceiling_db = -6.0
         plugin.oversampling = "1x"
-        plugin.channel_mode = "M/S"
+        plugin.stereo_mode = "M/S"
         plugin.delta = True
         plugin.true_clip = True
 

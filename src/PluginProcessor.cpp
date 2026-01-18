@@ -74,18 +74,12 @@ juce::AudioProcessorValueTreeState::ParameterLayout GuillotineProcessor::createP
         juce::StringArray{"Minimum Phase", "Linear Phase"},
         0));
 
-    // Channel mode: 0=L/R, 1=M/S
+    // Stereo mode: 0=Stereo Link (L/R linked), 1=L/R (unlinked), 2=M/S (unlinked)
     params.push_back(std::make_unique<juce::AudioParameterChoice>(
-        juce::ParameterID{"channelMode", 1},
-        "Channel Mode",
-        juce::StringArray{"L/R", "M/S"},
-        0));
-
-    // Stereo link
-    params.push_back(std::make_unique<juce::AudioParameterBool>(
-        juce::ParameterID{"stereoLink", 1},
-        "Stereo Link",
-        true));  // Default to linked
+        juce::ParameterID{"stereoMode", 1},
+        "Stereo Mode",
+        juce::StringArray{"Stereo Link", "L/R", "M/S"},
+        0));  // Default to Stereo Link
 
     // Delta monitor
     params.push_back(std::make_unique<juce::AudioParameterBool>(
@@ -241,8 +235,7 @@ void GuillotineProcessor::processBlock(juce::AudioBuffer<float>& buffer, juce::M
     float ceilingDb = apvts.getRawParameterValue("ceiling")->load();
     int oversamplingChoice = static_cast<int>(apvts.getRawParameterValue("oversampling")->load());
     int filterType = static_cast<int>(apvts.getRawParameterValue("filterType")->load());
-    int channelMode = static_cast<int>(apvts.getRawParameterValue("channelMode")->load());
-    bool stereoLink = apvts.getRawParameterValue("stereoLink")->load() > 0.5f;
+    int stereoMode = juce::roundToInt(apvts.getRawParameterValue("stereoMode")->load());
     bool deltaMonitor = apvts.getRawParameterValue("deltaMonitor")->load() > 0.5f;
     bool bypassClipper = apvts.getRawParameterValue("bypassClipper")->load() > 0.5f;
     bool enforceCeiling = apvts.getRawParameterValue("enforceCeiling")->load() > 0.5f;
@@ -258,8 +251,7 @@ void GuillotineProcessor::processBlock(juce::AudioBuffer<float>& buffer, juce::M
     clipperEngine.setCeiling(ceilingDb);
     clipperEngine.setOversamplingFactor(oversamplingFactor);
     clipperEngine.setFilterType(filterType == 1);  // 1 = linear phase
-    clipperEngine.setChannelMode(channelMode == 1);  // 1 = M/S
-    clipperEngine.setStereoLink(stereoLink);
+    clipperEngine.setStereoMode(stereoMode);  // 0=Stereo Link, 1=L/R, 2=M/S
     clipperEngine.setDeltaMonitor(deltaMonitor);
     clipperEngine.setEnforceCeiling(enforceCeiling);
 

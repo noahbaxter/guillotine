@@ -13,8 +13,7 @@ GuillotineEditor::GuillotineEditor(GuillotineProcessor& p)
       curveExponentRelay{"curveExponent"},
       oversamplingRelay{"oversampling"},
       filterTypeRelay{"filterType"},
-      channelModeRelay{"channelMode"},
-      stereoLinkRelay{"stereoLink"},
+      stereoModeRelay{"stereoMode"},
       deltaMonitorRelay{"deltaMonitor"},
       bypassClipperRelay{"bypassClipper"},
       // Initialize WebView with relays
@@ -35,8 +34,7 @@ GuillotineEditor::GuillotineEditor(GuillotineProcessor& p)
               .withOptionsFrom(curveExponentRelay)
               .withOptionsFrom(oversamplingRelay)
               .withOptionsFrom(filterTypeRelay)
-              .withOptionsFrom(channelModeRelay)
-              .withOptionsFrom(stereoLinkRelay)
+              .withOptionsFrom(stereoModeRelay)
               .withOptionsFrom(deltaMonitorRelay)
               .withOptionsFrom(bypassClipperRelay)
       },
@@ -62,12 +60,9 @@ GuillotineEditor::GuillotineEditor(GuillotineProcessor& p)
       filterTypeAttachment{
           *audioProcessor.getAPVTS().getParameter("filterType"),
           filterTypeRelay, nullptr},
-      channelModeAttachment{
-          *audioProcessor.getAPVTS().getParameter("channelMode"),
-          channelModeRelay, nullptr},
-      stereoLinkAttachment{
-          *audioProcessor.getAPVTS().getParameter("stereoLink"),
-          stereoLinkRelay, nullptr},
+      stereoModeAttachment{
+          *audioProcessor.getAPVTS().getParameter("stereoMode"),
+          stereoModeRelay, nullptr},
       deltaMonitorAttachment{
           *audioProcessor.getAPVTS().getParameter("deltaMonitor"),
           deltaMonitorRelay, nullptr},

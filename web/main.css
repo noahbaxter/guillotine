@@ -360,7 +360,7 @@ body::before {
 
 /* MID state: centered circle */
 .toggle-switch--mid .toggle-stem {
-  bottom: 0em;
+  bottom: 0.5em;
   width: 50%;
 }
 
