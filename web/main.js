@@ -315,8 +315,9 @@ class GuillotineApp {
     // Start microscope visualization
     this.microscope.start();
 
-    // Bypass toggle on guillotine click
-    this.guillotineContainer.addEventListener('click', () => this.toggleBypass());
+    // Bypass toggle via click zones (guillotine body and lever)
+    document.getElementById('click-zone-guillotine').addEventListener('click', () => this.toggleBypass());
+    document.getElementById('click-zone-lever').addEventListener('click', () => this.toggleBypass());
 
     // Setup DELTA mode click handlers
     this.setupDeltaModeHandlers();
