@@ -131,12 +131,10 @@ juce_add_binary_data(GuillotineData
         assets/blade.png
         assets/rope.png
         assets/side.png
-        assets/switch.png
         assets/guillotine-logo.png
-        # Assets - toggle SVGs
-        web/assets/switch-base.svg
-        web/assets/switch-stem-up.svg
-        web/assets/switch-stem-mid.svg
+        # Assets - toggle PNGs
+        assets/toggle-up.png
+        assets/toggle-center.png
         # Assets - numeric
         assets/numeric/num-0.png
         assets/numeric/num-1.png

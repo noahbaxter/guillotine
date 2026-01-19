@@ -1,4 +1,4 @@
-// Toggle switch component using layered SVG assets
+// Toggle switch component using CSS background-images
 
 export class Toggle {
   constructor(container, options = {}) {
@@ -7,7 +7,7 @@ export class Toggle {
     this.tooltip = options.tooltip || '';
     this.value = options.value ?? true;
     this.onChange = options.onChange || null;
-    this.threeWay = options.threeWay ?? false;  // Support 3-way toggle (up/mid/down)
+    this.threeWay = options.threeWay ?? false;
 
     this.ready = this.init();
   }
@@ -17,9 +17,11 @@ export class Toggle {
     this.element.className = 'toggle-wrapper';
 
     this.element.innerHTML = `
-      <div class="toggle-switch ${this.value ? 'toggle-switch--on' : ''}">
-        <img class="toggle-base" src="assets/switch-base.svg" alt="" draggable="false">
-        <img class="toggle-stem" src="assets/switch-stem-up.svg" alt="toggle" draggable="false">
+      <div class="toggle-switch">
+        <div class="toggle-click-zone"></div>
+        <div class="toggle-state toggle-state--up"></div>
+        <div class="toggle-state toggle-state--mid"></div>
+        <div class="toggle-state toggle-state--down"></div>
       </div>
       ${this.label ? `<span class="toggle-label">${this.label}</span>` : ''}
       ${this.tooltip ? `<span class="toggle-tooltip">${this.tooltip}</span>` : ''}
@@ -28,9 +30,9 @@ export class Toggle {
     this.container.appendChild(this.element);
 
     this.switchEl = this.element.querySelector('.toggle-switch');
-    this.stemEl = this.element.querySelector('.toggle-stem');
+    this.clickZone = this.element.querySelector('.toggle-click-zone');
 
-    this.switchEl.addEventListener('click', () => {
+    this.clickZone.addEventListener('click', () => {
       if (this.threeWay) {
         // Cycle: true (up) -> null (mid) -> false (down) -> true
         if (this.value === true) this.setValue(null);
@@ -42,7 +44,6 @@ export class Toggle {
       if (this.onChange) this.onChange(this.value);
     });
 
-    // Set initial visual state
     this.updateVisual();
   }
 
@@ -52,20 +53,14 @@ export class Toggle {
   }
 
   updateVisual() {
+    // Toggle class controls which pre-rendered image is visible
+    this.switchEl.classList.remove('toggle-switch--on', 'toggle-switch--off', 'toggle-switch--mid');
+
     if (this.threeWay && this.value === null) {
-      // Middle position
-      this.stemEl.src = 'assets/switch-stem-mid.svg';
-      this.switchEl.classList.remove('toggle-switch--on', 'toggle-switch--off');
       this.switchEl.classList.add('toggle-switch--mid');
     } else if (this.value) {
-      // On = up
-      this.stemEl.src = 'assets/switch-stem-up.svg';
-      this.switchEl.classList.remove('toggle-switch--off', 'toggle-switch--mid');
       this.switchEl.classList.add('toggle-switch--on');
     } else {
-      // Off = down (flipped)
-      this.stemEl.src = 'assets/switch-stem-up.svg';
-      this.switchEl.classList.remove('toggle-switch--on', 'toggle-switch--mid');
       this.switchEl.classList.add('toggle-switch--off');
     }
   }

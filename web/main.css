@@ -4,6 +4,12 @@
 :root {
   --cursive-font: 'Zeyada', cursive;
   --readable-font: ui-monospace, 'SF Mono', SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace;
+
+  /* Toggle sizing - derived from PNG dimensions (up: 938x1177, center: 938x966)
+     To resize: change --toggle-width, recalculate --toggle-height = width * 1.2548 */
+  --toggle-width: 2em;
+  --toggle-height: 2.51em; /* width * 1.2548 */
+  --toggle-center-ratio: 82.07%; /* 966/1177 - center height as % of up */
 }
 
 /* ==========================================================================
@@ -311,65 +317,76 @@ body::before {
 }
 
 /* ==========================================================================
-   Toggle Switch Styles (layered SVG)
+   Toggle Switch Styles (PNG)
    ========================================================================== */
 .toggle-wrapper {
   position: relative;
   display: flex;
   flex-direction: column;
   align-items: center;
+  z-index: 10;
+  overflow: visible;
 }
 
 .toggle-switch {
   position: relative;
-  width: 2em;
-  height: 3em;
-  cursor: pointer;
+  width: var(--toggle-width);
+  height: var(--toggle-height);
+  overflow: visible;
 }
 
-.toggle-switch img {
+/* Click zone - fixed size, centered, always in same position */
+.toggle-click-zone {
   position: absolute;
-  left: 50%;
-  transform: translateX(-50%);
-  transition: transform 0.1s ease;
+  inset: 0;
+  cursor: pointer;
+  z-index: 2;
 }
 
-.toggle-base {
+/* All states use background-image (no load flicker) */
+.toggle-state {
+  position: absolute;
+  left: 0;
+  right: 0;
   bottom: 0;
-  width: 100%;
-  height: auto;
+  background-size: 100% 100%;
+  background-repeat: no-repeat;
+  pointer-events: none;
+  z-index: 1;
+  opacity: 0;
 }
 
-.toggle-stem {
-  bottom: 0.4em;
-  width: 70%;
-  height: auto;
+/* Up/down fill full height */
+.toggle-state--up,
+.toggle-state--down {
+  top: 0;
 }
 
-/* ON state: stem points up */
-.toggle-switch--on .toggle-stem {
-  bottom: 0.4em;
-  transform: translateX(-50%) scaleY(1);
+.toggle-state--up {
+  background-image: url('assets/toggle-up.png');
 }
 
-/* OFF state: stem flipped down */
-.toggle-switch--off .toggle-stem {
-  top: 1.5em;
-  transform: translateX(-50%) scaleY(-1);
+/* Center is shorter, anchored at bottom */
+.toggle-state--mid {
+  background-image: url('assets/toggle-center.png');
+  height: var(--toggle-center-ratio);
 }
 
-/* MID state: centered circle */
-.toggle-switch--mid .toggle-stem {
-  bottom: 0.5em;
-  width: 50%;
+/* Down is flipped up, offset by stem height (100% - center ratio) */
+.toggle-state--down {
+  background-image: url('assets/toggle-up.png');
+  transform: scaleY(-1) translateY(calc(-1 * (100% - var(--toggle-center-ratio))));
 }
 
-.toggle-switch:hover {
+/* Show only the active state */
+.toggle-switch--on .toggle-state--up,
+.toggle-switch--mid .toggle-state--mid,
+.toggle-switch--off .toggle-state--down {
+  opacity: 1;
+}
+
+.toggle-click-zone:hover ~ .toggle-state {
   filter: brightness(1.1);
-}
-
-.toggle-switch:active {
-  transform: scale(0.95);
 }
 
 .toggle-label {
@@ -380,7 +397,7 @@ body::before {
   font-family: var(--cursive-font);
 }
 
-/* Tooltip - shows on hover */
+/* Tooltip - shows on hover, overflows container */
 .toggle-tooltip {
   position: absolute;
   bottom: 100%;
