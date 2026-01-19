@@ -43,6 +43,14 @@ fontStyles.textContent = `
 `;
 document.head.appendChild(fontStyles);
 
+// Knob sizes (px) - edit these to resize knobs globally
+const KNOB_SIZE = {
+  LARGE: 60,   // ceiling
+  MEDIUM: 50,  // blade, oversample
+  SMALL: 32,   // input, output
+  TINY: 24     // curve exponent
+};
+
 // Dynamic root font-size for proportional scaling
 const BASE_WIDTH = 600;
 const BASE_FONT_SIZE = 16;
@@ -90,6 +98,9 @@ class GuillotineApp {
     this.guillotineContainer = document.getElementById('guillotine-container');
     this.microscopeContainer = document.getElementById('microscope-container');
     this.togglesRowContainer = document.getElementById('toggles-row');
+    this.mainKnobsContainer = document.getElementById('main-knobs');
+    this.inputKnobContainer = document.getElementById('input-knob-container');
+    this.outputKnobContainer = document.getElementById('output-knob-container');
     this.ceilingContainer = document.getElementById('ceiling-container');
 
     // State
@@ -126,26 +137,30 @@ class GuillotineApp {
     this.bloodPool = new BloodPool(this.guillotineContainer);
     this.microscope = new Microscope(this.microscopeContainer);
 
-    // Blade knob (stepped: Hard, Quintic, Cubic, Tanh, Arctan, Knee, T2) - LEFT
-    this.curveKnob = new Knob(this.mainKnobsContainer, {
+    // Blade knob + exponent wrapper (exponent is positioned relative to blade)
+    this.curveKnobWrapper = document.createElement('div');
+    this.curveKnobWrapper.id = 'curve-knob-wrapper';
+    this.mainKnobsContainer.appendChild(this.curveKnobWrapper);
+
+    // Blade knob (stepped: Hard, Quintic, Cubic, Tanh, Arctan, Knee, T2)
+    this.curveKnob = new Knob(this.curveKnobWrapper, {
       label: TEXT.labels.blade,
       min: 0, max: 6, value: 0, step: 1,
-      size: 50,
+      size: KNOB_SIZE.MEDIUM,
       allowTextEdit: false,
       formatValue: (v) => TEXT.blades[Math.round(v)]?.text || '',
       values: TEXT.blades,
-      wrapperClass: 'knob-wrapper--side',
       parseValue: (input) => {
         const mapping = { 'hard': 0, 'quint': 1, 'quintic': 1, 'cubic': 2, 'tanh': 3, 'atan': 4, 'arctan': 4, 'knee': 5, 't2': 6, 't^2': 6, 'tsquared': 6 };
         return mapping[input.toLowerCase()] ?? null;
       }
     });
 
-    // Curve exponent knob (tiny, no label, only enabled for Knee/T2)
-    this.curveExponentKnob = new Knob(this.mainKnobsContainer, createSpriteKnob({
+    // Curve exponent knob (tiny, positioned relative to blade knob)
+    this.curveExponentKnob = new Knob(this.curveKnobWrapper, createSpriteKnob({
       label: '',
       min: 1, max: 4, value: 4,
-      size: 24,
+      size: KNOB_SIZE.TINY,
       spriteScale: 0.2,
       suffix: '',
       formatter: (v) => v.toFixed(1),
@@ -161,7 +176,7 @@ class GuillotineApp {
       min: 0,
       max: initialMaxThreshold,
       value: this.threshold,
-      size: 60,
+      size: KNOB_SIZE.LARGE,
       spriteScale: 0.4,
       suffix: TEXT.suffixes.dB,
       formatter: (v) => this.thresholdToDb(v).toFixed(1),
@@ -183,15 +198,14 @@ class GuillotineApp {
       wrapperClass: 'knob-wrapper--threshold'
     }));
 
-    // Oversampling knob (stepped: 1x, 2x, 4x, 8x, 16x, 32x) - RIGHT
+    // Oversampling knob (stepped: 1x, 2x, 4x, 8x, 16x, 32x)
     this.oversamplingKnob = new Knob(this.mainKnobsContainer, createSpriteKnob({
       label: TEXT.labels.oversample,
       min: 0, max: 5, value: 0, step: 1,
-      size: 50,
+      size: KNOB_SIZE.MEDIUM,
       spriteScale: 0.35,
       suffix: TEXT.suffixes.x,
       allowTextEdit: false,
-      wrapperClass: 'knob-wrapper--side',
       formatter: (v) => [1, 2, 4, 8, 16, 32][Math.round(v)],
       parser: (input) => {
         const match = input.match(/\d+/);
@@ -206,7 +220,7 @@ class GuillotineApp {
     this.inputGainKnob = new Knob(this.inputKnobContainer, createSpriteKnob({
       label: TEXT.labels.input,
       min: -24, max: 24, value: 0,
-      size: 32,
+      size: KNOB_SIZE.SMALL,
       spriteScale: 0.25,
       suffix: TEXT.suffixes.dB,
       formatter: (v) => v.toFixed(1),
@@ -237,7 +251,7 @@ class GuillotineApp {
     this.outputGainKnob = new Knob(this.outputKnobContainer, createSpriteKnob({
       label: TEXT.labels.output,
       min: -24, max: 24, value: 0,
-      size: 32,
+      size: KNOB_SIZE.SMALL,
       spriteScale: 0.25,
       suffix: TEXT.suffixes.dB,
       formatter: (v) => v.toFixed(1),
