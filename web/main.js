@@ -620,7 +620,7 @@ class GuillotineApp {
     // Update all components except the source to avoid feedback loops
     if (source !== 'knob') this.thresholdKnob.setValue(clampedValue);
     if (source !== 'microscope') this.microscope.setThreshold(clampedValue);
-    // Note: guillotine blade position is now controlled by bypass/lever, not threshold
+    this.guillotine.setCeilingOffset(clampedValue);  // Subtle blade shift with ceiling
 
     // Update waveform's ceiling for soft clipping simulation
     // threshold 0→1 maps to ceiling 0dB→-60dB → linear 1.0→0.001

@@ -15,7 +15,10 @@ const MAX_JITTER = 30;
 
 const DEFAULTS = {
   maxBladeTravel: 0.35,
-  ropeClipOffset: 0.25,
+  ceilingBladeTravel: 0.04,  // Additional blade travel from ceiling (0dB→-60dB)
+  bypassUpOffset: 0.04,      // Downward nudge when blade is up (bypassed)
+  containScale: 1.25,        // Compensates for object-fit: contain constraining image size
+  ropeClipOffset: 0.27,
   ...GUILLOTINE_CONFIG,
   images: {
     rope: 'assets/rope.png',
@@ -61,6 +64,7 @@ export class Guillotine {
     this.elements = {};
     this.sharpness = 1.0;     // 0 = dull/jittery, 1 = sharp/flat
     this.bloodPattern = [];   // Random pattern for blood line jitter
+    this.ceilingOffset = 0;   // 0 = 0dB (up), 1 = -60dB (down) - subtle blade shift
 
     this.ready = this.init();
   }
@@ -154,15 +158,25 @@ export class Guillotine {
     });
   }
 
+  getScaledHeight() {
+    return this.container.clientHeight * this.options.containScale;
+  }
+
   getBladeOffset() {
-    const containerHeight = this.container.clientHeight;
-    // Blade wasn't traveling far enough without this multiplier - object-fit: contain
-    // constrains the rendered image size, so we scale up the travel distance to match
-    return this.position * this.options.maxBladeTravel * (containerHeight * 1.25);
+    const { maxBladeTravel, ceilingBladeTravel, bypassUpOffset } = this.options;
+    const scaledHeight = this.getScaledHeight();
+    const bypassOffset = this.position * maxBladeTravel * scaledHeight;
+    // Ceiling offset: 0dB (ceilingOffset=0) = up, -60dB (ceilingOffset=1) = down
+    // Centered around 0.5 so old baseline is at -30dB
+    const ceilingShift = (this.ceilingOffset - 0.5) * 2 * ceilingBladeTravel * scaledHeight;
+    // Downward nudge when blade is up (bypassed) so it doesn't sit too high
+    const upOffset = (1 - this.position) * bypassUpOffset * scaledHeight;
+    return bypassOffset + ceilingShift + upOffset;
   }
 
   updateVisuals() {
-    const { ropeClipOffset, maxBladeTravel } = this.options;
+    const { ropeClipOffset } = this.options;
+    const scaledHeight = this.getScaledHeight();
     const offset = this.getBladeOffset();
 
     if (this.elements.blade) {
@@ -172,7 +186,9 @@ export class Guillotine {
     this.drawBloodLine();
 
     if (this.elements.rope) {
-      const clipBottom = 100 - ((this.position * maxBladeTravel + ropeClipOffset) * 100);
+      // Derive rope clip directly from blade offset so they're always in sync
+      const offsetAsPercent = offset / scaledHeight;
+      const clipBottom = 100 - ((offsetAsPercent + ropeClipOffset) * 100);
       this.elements.rope.style.clipPath = `inset(0 0 ${Math.max(0, clipBottom)}% 0)`;
     }
   }
@@ -293,5 +309,10 @@ export class Guillotine {
   setSharpness(value) {
     this.sharpness = Math.max(0, Math.min(1, value));
     this.drawBloodLine();
+  }
+
+  setCeilingOffset(value) {
+    this.ceilingOffset = Math.max(0, Math.min(1, value));
+    this.updateVisuals();
   }
 }

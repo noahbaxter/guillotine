@@ -14,8 +14,9 @@ Focus: Make installation painless for users.
 
 Focus: High-demand features from testers.
 
-- Input/output metering
-- Dry/wet knob
+- Input/output clip lights (TBD: on guillotine legs vs separate meters by knobs)
+- Dry/wet knob (left of guillotine, guillotine shading fades as dry increases)
+- Ceiling knob moves guillotine blade slightly up/down (visual connection to microscope)
 - Hard-soft curve control
 
 ---
