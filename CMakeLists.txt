@@ -135,6 +135,13 @@ juce_add_binary_data(GuillotineData
         # Assets - toggle PNGs
         assets/toggle-up.png
         assets/toggle-center.png
+        # Assets - toggle icons (SVG)
+        web/assets/icon-linear-phase.svg
+        web/assets/icon-min-phase.svg
+        web/assets/icon-stereo-link.svg
+        web/assets/icon-lr.svg
+        web/assets/icon-ms.svg
+        web/assets/icon-true-peak.svg
         # Assets - numeric
         assets/numeric/num-0.png
         assets/numeric/num-1.png

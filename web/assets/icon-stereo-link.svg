@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 18 16" fill="none" stroke="currentColor" stroke-width="1.5">
+  <!-- Stereo Link: two overlapping circles (Venn diagram) -->
+  <circle cx="6" cy="8" r="5"/>
+  <circle cx="12" cy="8" r="5"/>
+</svg>

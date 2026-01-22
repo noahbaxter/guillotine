@@ -5,11 +5,16 @@
   --cursive-font: 'Zeyada', cursive;
   --readable-font: ui-monospace, 'SF Mono', SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace;
 
-  /* Toggle sizing - derived from PNG dimensions (up: 938x1177, center: 938x966)
-     To resize: change --toggle-width, recalculate --toggle-height = width * 1.2548 */
-  --toggle-width: 2em;
-  --toggle-height: 2.51em; /* width * 1.2548 */
+  /* Toggle sizing - change --toggle-scale to resize everything proportionally
+     PNG dimensions: up 938x1177, center 938x966 → height = width * 1.2548 */
+  --toggle-scale: 1.2;
+  --toggle-width: calc(1.6em * var(--toggle-scale));
+  --toggle-height: calc(var(--toggle-width) * 1.2548);
   --toggle-center-ratio: 82.07%; /* 966/1177 - center height as % of up */
+  --toggle-icon-gap: calc(0.8em * var(--toggle-scale));
+  --toggle-icon-gap-vertical: calc(0.8em * var(--toggle-scale)); /* top/bottom icons closer */
+  --toggle-icon-width: calc(1.6em * var(--toggle-scale));
+  --toggle-icon-height: calc(0.8em * var(--toggle-scale));
 }
 
 /* ==========================================================================
@@ -88,6 +93,9 @@ html {
   user-select: none;
   -webkit-user-drag: none;
   outline: none;
+  /* Force GPU compositing to prevent visual glitches on state changes.
+     May increase GPU memory usage - consider selective application if performance issues arise. */
+  will-change: transform, opacity;
 }
 
 body {
@@ -213,7 +221,7 @@ body::before {
 #delta-text {
   height: 3.125em;
   text-align: center;
-  transform: translateY(-1.2em);
+  transform: translate(-1em, -0.8em);
 }
 
 #delta-text .text-mask {
@@ -236,6 +244,8 @@ body::before {
 #microscope-wrapper {
   flex: 1;
   min-height: 0;
+  padding-top: 2em;
+  padding-right: 0.5em;
   position: relative;
   overflow: visible;
 }
@@ -264,14 +274,35 @@ body::before {
   overflow-clip-margin: 6.25em;
 }
 
-/* Toggles row - horizontal row above microscope */
-#toggles-row {
+/* Controls row - toggles column + knobs */
+#controls-row {
   display: flex;
-  justify-content: center;
-  gap: 0.5em;
-  padding: 0;
+  align-items: stretch;
+  gap: 0;
+  height: 15em;
+  width: 100%;
+  padding-right: 0.5em;
 }
 
+/* Toggles column - vertical stack to left of knobs */
+#toggles-column {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: space-around;
+  height: 100%;
+  gap: 0.25em;
+  margin-left: -1em;
+}
+
+
+#knobs-wrapper {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-evenly;
+  margin-left: -1.5em;
+}
 
 #main-knobs,
 #gain-knobs {
@@ -284,8 +315,9 @@ body::before {
   position: relative;
 }
 
-#main-knobs > .knob-wrapper .knob__label {
+#main-knobs .knob__label {
   margin-top: 0.25em;
+  font-size: 1em;
 }
 
 #curve-knob-wrapper .knob-wrapper--exponent {
@@ -320,6 +352,12 @@ body::before {
   top: 0.5em;
 }
 
+#input-knob-container .knob__value,
+#output-knob-container .knob__value {
+  position: relative;
+  top: -0.5em;
+}
+
 #settings-toggles {
   display: flex;
   gap: 0;
@@ -331,11 +369,82 @@ body::before {
    ========================================================================== */
 .toggle-wrapper {
   position: relative;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
   z-index: 10;
   overflow: visible;
+  height: calc(3em * var(--toggle-scale));
+  width: calc(3em * var(--toggle-scale));
+  flex-shrink: 0;
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* Compact wrapper for toggles with icon only on one side (top OR bottom) */
+.toggle-wrapper--compact {
+  height: calc(2.4em * var(--toggle-scale));
+}
+
+.toggle-wrapper:active {
+  transform: none;
+}
+
+.toggle-row {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 0;
+  bottom: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  /* Offset upward so center state (not up state) is visually centered */
+  margin-top: calc(-0.5 * (100% - var(--toggle-center-ratio)));
+}
+
+.toggle-icon {
+  position: absolute;
+  width: var(--toggle-icon-width);
+  height: var(--toggle-icon-height);
+  opacity: 0.5;
+  transition: opacity 0.15s ease;
+  filter: brightness(0) invert(1); /* make SVG white */
+}
+
+.toggle-icon--on {
+  top: calc(50% - var(--toggle-icon-gap-vertical) - var(--toggle-icon-height));
+  left: 50%;
+  transform: translateX(-50%);
+}
+
+.toggle-icon--off {
+  top: calc(50% + var(--toggle-icon-gap-vertical) + 0.2em);
+  left: 50%;
+  transform: translateX(-50%);
+}
+
+/* Mid icon base styles */
+.toggle-icon--mid {
+  top: 55%;
+  transform: translateY(-50%);
+}
+
+.toggle-icon--mid-right {
+  left: calc(50% + var(--toggle-icon-gap) - 0.2em);
+}
+
+.toggle-icon--mid-left {
+  left: calc(50% - var(--toggle-icon-gap) - var(--toggle-icon-width) + 0.2em);
+}
+
+/* Highlight active icon based on toggle state */
+.toggle-wrapper:has(.toggle-switch--on) .toggle-icon--on,
+.toggle-wrapper:has(.toggle-switch--off) .toggle-icon--off,
+.toggle-wrapper:has(.toggle-switch--mid) .toggle-icon--mid {
+  opacity: 1;
+}
+
+/* Mid state: top/bottom icons stay at default opacity */
+.toggle-wrapper:has(.toggle-switch--mid) .toggle-icon--on,
+.toggle-wrapper:has(.toggle-switch--mid) .toggle-icon--off {
+  opacity: 0.5;
 }
 
 .toggle-switch {
@@ -351,6 +460,13 @@ body::before {
   inset: 0;
   cursor: pointer;
   z-index: 2;
+  -webkit-tap-highlight-color: transparent;
+  -webkit-appearance: none;
+  touch-action: manipulation;
+}
+
+.toggle-click-zone:active {
+  transform: none;
 }
 
 /* All states use background-image (no load flicker) */
@@ -436,6 +552,27 @@ body::before {
   pointer-events: none;
 }
 
+/* LED indicator for toggles */
+.toggle-led {
+  position: absolute;
+  top: -0.2em;
+  right: -0.5em;
+  width: 0.4em;
+  height: 0.4em;
+  border-radius: 50%;
+  background: #400;
+  box-shadow: none;
+  transition: background 0.15s ease, box-shadow 0.15s ease;
+  pointer-events: none;
+  z-index: 10;
+}
+
+.toggle-wrapper:has(.toggle-switch--on) .toggle-led {
+  background: #f33;
+  box-shadow: 0 0 0.3em 0.15em rgba(255, 50, 50, 0.6),
+              0 0 0.6em 0.3em rgba(255, 50, 50, 0.3);
+}
+
 /* Version tag */
 #version-tag {
   position: fixed;
@@ -449,7 +586,7 @@ body::before {
 
 #andy-sig {
   position: fixed;
-  bottom: 0.25em;
+  bottom: 0em;
   left: 2.2em;
   height: 1.25em;
   width: 4em;

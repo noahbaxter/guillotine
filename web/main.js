@@ -97,7 +97,7 @@ class GuillotineApp {
     // Container references
     this.guillotineContainer = document.getElementById('guillotine-container');
     this.microscopeContainer = document.getElementById('microscope-container');
-    this.togglesRowContainer = document.getElementById('toggles-row');
+    this.togglesColumnContainer = document.getElementById('toggles-column');
     this.mainKnobsContainer = document.getElementById('main-knobs');
     this.inputKnobContainer = document.getElementById('input-knob-container');
     this.outputKnobContainer = document.getElementById('output-knob-container');
@@ -228,23 +228,37 @@ class GuillotineApp {
       wrapperClass: 'knob-wrapper--side'
     }));
 
-    // Settings toggles (hidden params) - displayed above microscope
-    this.filterTypeToggle = new Toggle(this.togglesRowContainer, {
+    // Settings toggles (hidden params) - displayed in column
+    this.trueclipToggle = new Toggle(this.togglesColumnContainer, {
+      value: true,  // Default enforced
+      tooltip: 'True Clip (enforce ceiling)',
+      led: true,
+      compact: true,  // Only has icon on top
+      icons: {
+        on: 'assets/icon-true-peak.svg'
+      }
+    });
+
+    this.filterTypeToggle = new Toggle(this.togglesColumnContainer, {
       value: false,  // 0 = Min Phase (off), 1 = Linear Phase (on)
-      tooltip: 'Filter: Min Phase / Linear Phase'
+      tooltip: 'Filter: Min Phase / Linear Phase',
+      icons: {
+        on: 'assets/icon-linear-phase.svg',
+        off: 'assets/icon-min-phase.svg'
+      }
     });
 
     // Stereo mode: 3-way toggle (Stereo Link / L/R / M/S)
     // true = Stereo Link (0), null = L/R (1), false = M/S (2)
-    this.stereoModeToggle = new Toggle(this.togglesRowContainer, {
+    this.stereoModeToggle = new Toggle(this.togglesColumnContainer, {
       value: true,  // Default to Stereo Link
       threeWay: true,
-      tooltip: 'Stereo Link / L/R / M/S'
-    });
-
-    this.trueclipToggle = new Toggle(this.togglesRowContainer, {
-      value: true,  // Default enforced
-      tooltip: 'True Clip (enforce ceiling)'
+      tooltip: 'Stereo Link / L/R / M/S',
+      icons: {
+        up: 'assets/icon-stereo-link.svg',
+        mid: 'assets/icon-lr.svg',
+        down: 'assets/icon-ms.svg'
+      }
     });
 
     // Output Gain knob

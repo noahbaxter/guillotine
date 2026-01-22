@@ -8,21 +8,38 @@ export class Toggle {
     this.value = options.value ?? true;
     this.onChange = options.onChange || null;
     this.threeWay = options.threeWay ?? false;
+    // Icons: { on, off } for 2-way, { up, mid, down } for 3-way
+    this.icons = options.icons || null;
+    this.led = options.led ?? false;
+    this.compact = options.compact ?? false; // Smaller wrapper for single-icon toggles
+    this.midSide = options.midSide || 'left'; // 'right' or 'left' for mid icon position
 
     this.ready = this.init();
   }
 
   async init() {
     this.element = document.createElement('div');
-    this.element.className = 'toggle-wrapper';
+    this.element.className = 'toggle-wrapper' + (this.compact ? ' toggle-wrapper--compact' : '');
+
+    // Build icon HTML if provided
+    const iconOn = this.icons?.on || this.icons?.up || '';
+    const iconMid = this.icons?.mid || this.icons?.side || '';
+    const iconOff = this.icons?.off || this.icons?.down || '';
+    const midSideClass = this.midSide === 'left' ? 'toggle-icon--mid-left' : 'toggle-icon--mid-right';
 
     this.element.innerHTML = `
-      <div class="toggle-switch">
-        <div class="toggle-click-zone"></div>
-        <div class="toggle-state toggle-state--up"></div>
-        <div class="toggle-state toggle-state--mid"></div>
-        <div class="toggle-state toggle-state--down"></div>
+      ${iconOn ? `<img class="toggle-icon toggle-icon--on" src="${iconOn}" alt="" draggable="false">` : ''}
+      <div class="toggle-row">
+        ${iconMid ? `<img class="toggle-icon toggle-icon--mid ${midSideClass}" src="${iconMid}" alt="" draggable="false">` : ''}
+        <div class="toggle-switch">
+          <div class="toggle-click-zone"></div>
+          <div class="toggle-state toggle-state--up"></div>
+          <div class="toggle-state toggle-state--mid"></div>
+          <div class="toggle-state toggle-state--down"></div>
+          ${this.led ? '<div class="toggle-led"></div>' : ''}
+        </div>
       </div>
+      ${iconOff ? `<img class="toggle-icon toggle-icon--off" src="${iconOff}" alt="" draggable="false">` : ''}
       ${this.label ? `<span class="toggle-label">${this.label}</span>` : ''}
       ${this.tooltip ? `<span class="toggle-tooltip">${this.tooltip}</span>` : ''}
     `;

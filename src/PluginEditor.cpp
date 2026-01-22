@@ -239,6 +239,13 @@ std::optional<juce::WebBrowserComponent::Resource> GuillotineEditor::getResource
         // Toggle PNGs
         { "assets/toggle-up.png",     BinaryData::toggleup_png,     BinaryData::toggleup_pngSize,     "image/png" },
         { "assets/toggle-center.png", BinaryData::togglecenter_png, BinaryData::togglecenter_pngSize, "image/png" },
+        // Toggle icons (SVG)
+        { "assets/icon-linear-phase.svg", BinaryData::iconlinearphase_svg, BinaryData::iconlinearphase_svgSize, "image/svg+xml" },
+        { "assets/icon-min-phase.svg",    BinaryData::iconminphase_svg,    BinaryData::iconminphase_svgSize,    "image/svg+xml" },
+        { "assets/icon-stereo-link.svg",  BinaryData::iconstereolink_svg,  BinaryData::iconstereolink_svgSize,  "image/svg+xml" },
+        { "assets/icon-lr.svg",           BinaryData::iconlr_svg,          BinaryData::iconlr_svgSize,          "image/svg+xml" },
+        { "assets/icon-ms.svg",           BinaryData::iconms_svg,          BinaryData::iconms_svgSize,          "image/svg+xml" },
+        { "assets/icon-true-peak.svg",    BinaryData::icontruepeak_svg,    BinaryData::icontruepeak_svgSize,    "image/svg+xml" },
         // Numeric sprites
         { "assets/numeric/num-0.png",   BinaryData::num0_png,       BinaryData::num0_pngSize,       "image/png" },
         { "assets/numeric/num-1.png",   BinaryData::num1_png,       BinaryData::num1_pngSize,       "image/png" },
