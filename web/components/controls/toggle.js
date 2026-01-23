@@ -4,8 +4,7 @@ export class Toggle {
   constructor(container, options = {}) {
     this.container = container;
     this.label = options.label || '';
-    this.tooltip = options.tooltip || '';
-    // State-specific tooltips: { on, off } for 2-way, { on, mid, off } for 3-way
+    // Per-icon tooltips: { on, off } for 2-way, { on, mid, off } for 3-way
     this.tooltips = options.tooltips || null;
     this.value = options.value ?? true;
     this.onChange = options.onChange || null;
@@ -28,12 +27,14 @@ export class Toggle {
     const iconMid = this.icons?.mid || this.icons?.side || '';
     const iconOff = this.icons?.off || this.icons?.down || '';
     const midSideClass = this.midSide === 'left' ? 'toggle-icon--mid-left' : 'toggle-icon--mid-right';
-    const hasTooltip = this.tooltip || this.tooltips;
+    const tooltipOn = this.tooltips?.on || '';
+    const tooltipMid = this.tooltips?.mid || '';
+    const tooltipOff = this.tooltips?.off || '';
 
     this.element.innerHTML = `
-      ${iconOn ? `<div class="text-mask toggle-icon toggle-icon--on" style="--mask-src: url(${iconOn})"></div>` : ''}
+      ${iconOn ? `<div class="toggle-icon-wrap toggle-icon--on" ${tooltipOn ? `data-tooltip="${tooltipOn}"` : ''}><div class="text-mask toggle-icon" style="--mask-src: url(${iconOn})"></div></div>` : ''}
       <div class="toggle-row">
-        ${iconMid ? `<div class="text-mask toggle-icon toggle-icon--mid ${midSideClass}" style="--mask-src: url(${iconMid})"></div>` : ''}
+        ${iconMid ? `<div class="toggle-icon-wrap toggle-icon--mid ${midSideClass}" ${tooltipMid ? `data-tooltip="${tooltipMid}"` : ''}><div class="text-mask toggle-icon" style="--mask-src: url(${iconMid})"></div></div>` : ''}
         <div class="toggle-switch">
           <div class="toggle-click-zone"></div>
           <div class="toggle-layer toggle-layer--base"></div>
@@ -42,17 +43,16 @@ export class Toggle {
           ${this.led ? '<div class="toggle-led"></div>' : ''}
         </div>
       </div>
-      ${iconOff ? `<div class="text-mask toggle-icon toggle-icon--off" style="--mask-src: url(${iconOff})"></div>` : ''}
+      ${iconOff ? `<div class="toggle-icon-wrap toggle-icon--off" ${tooltipOff ? `data-tooltip="${tooltipOff}"` : ''}><div class="text-mask toggle-icon" style="--mask-src: url(${iconOff})"></div></div>` : ''}
       ${this.label ? `<span class="toggle-label">${this.label}</span>` : ''}
-      ${hasTooltip ? `<span class="toggle-tooltip">${this.tooltip}</span>` : ''}
     `;
 
     this.container.appendChild(this.element);
 
     this.switchEl = this.element.querySelector('.toggle-switch');
     this.clickZone = this.element.querySelector('.toggle-click-zone');
-    this.tooltipEl = this.element.querySelector('.toggle-tooltip');
 
+    // Main toggle click cycles through states
     this.clickZone.addEventListener('click', () => {
       if (this.threeWay) {
         // Cycle: true (up) -> null (mid) -> false (down) -> true
@@ -64,6 +64,30 @@ export class Toggle {
       }
       if (this.onChange) this.onChange(this.value);
     });
+
+    // Icon clicks jump directly to that state
+    const iconOnEl = this.element.querySelector('.toggle-icon--on');
+    const iconOffEl = this.element.querySelector('.toggle-icon--off');
+    const iconMidEl = this.element.querySelector('.toggle-icon--mid');
+
+    if (iconOnEl) {
+      iconOnEl.addEventListener('click', () => {
+        this.setValue(true);
+        if (this.onChange) this.onChange(this.value);
+      });
+    }
+    if (iconOffEl) {
+      iconOffEl.addEventListener('click', () => {
+        this.setValue(false);
+        if (this.onChange) this.onChange(this.value);
+      });
+    }
+    if (iconMidEl) {
+      iconMidEl.addEventListener('click', () => {
+        this.setValue(null);
+        if (this.onChange) this.onChange(this.value);
+      });
+    }
 
     this.updateVisual();
   }
@@ -84,17 +108,6 @@ export class Toggle {
     } else {
       this.switchEl.classList.add('toggle-switch--off');
     }
-
-    // Update tooltip if state-specific tooltips are provided
-    if (this.tooltips && this.tooltipEl) {
-      if (this.threeWay && this.value === null) {
-        this.tooltipEl.textContent = this.tooltips.mid || '';
-      } else if (this.value) {
-        this.tooltipEl.textContent = this.tooltips.on || '';
-      } else {
-        this.tooltipEl.textContent = this.tooltips.off || '';
-      }
-    }
   }
 
   getValue() {
@@ -103,13 +116,5 @@ export class Toggle {
 
   setDisabled(disabled) {
     this.element.classList.toggle('toggle--disabled', disabled);
-  }
-
-  setTooltip(text) {
-    this.tooltip = text;
-    const tooltipEl = this.element.querySelector('.toggle-tooltip');
-    if (tooltipEl) {
-      tooltipEl.textContent = text;
-    }
   }
 }

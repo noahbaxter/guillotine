@@ -250,8 +250,8 @@ class GuillotineApp {
         on: 'assets/icon-true-peak.svg'
       },
       tooltips: {
-        on: 'True Peak On',
-        off: 'True Peak Off'
+        on: 'True Peak',
+        off: ''
       }
     });
 

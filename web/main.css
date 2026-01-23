@@ -299,6 +299,7 @@ body::before {
   height: 15em;
   width: 100%;
   padding-right: 0.5em;
+  overflow: visible;
 }
 
 /* Toggles column - vertical stack to left of knobs */
@@ -310,6 +311,7 @@ body::before {
   height: 100%;
   gap: 0.25em;
   margin-left: -1em;
+  overflow: visible;
 }
 
 
@@ -319,6 +321,11 @@ body::before {
   flex-direction: column;
   justify-content: space-evenly;
   margin-left: -1.5em;
+  pointer-events: none;
+}
+
+#knobs-wrapper .knob-wrapper {
+  pointer-events: auto;
 }
 
 #main-knobs,
@@ -412,13 +419,22 @@ body::before {
   display: flex;
   align-items: center;
   justify-content: center;
+  pointer-events: none;
 }
 
-/* Extends .text-mask - only overrides for positioning/sizing */
-.toggle-icon {
+/* Icon wrapper handles positioning and click events */
+.toggle-icon-wrap {
   position: absolute;
   width: var(--toggle-icon-width);
   height: var(--toggle-icon-height);
+  cursor: pointer;
+  pointer-events: auto;
+}
+
+/* Icon visual (masked) */
+.toggle-icon {
+  width: 100%;
+  height: 100%;
   opacity: 0.5;
   transition: opacity 0.15s ease, background-color var(--delta-transition, 0.4s);
   background-color: #fff;
@@ -451,15 +467,15 @@ body::before {
 }
 
 /* Highlight active icon based on toggle state */
-.toggle-wrapper:has(.toggle-switch--on) .toggle-icon--on,
-.toggle-wrapper:has(.toggle-switch--off) .toggle-icon--off,
-.toggle-wrapper:has(.toggle-switch--mid) .toggle-icon--mid {
+.toggle-wrapper:has(.toggle-switch--on) .toggle-icon--on .toggle-icon,
+.toggle-wrapper:has(.toggle-switch--off) .toggle-icon--off .toggle-icon,
+.toggle-wrapper:has(.toggle-switch--mid) .toggle-icon--mid .toggle-icon {
   opacity: 1;
 }
 
 /* Mid state: top/bottom icons stay at default opacity */
-.toggle-wrapper:has(.toggle-switch--mid) .toggle-icon--on,
-.toggle-wrapper:has(.toggle-switch--mid) .toggle-icon--off {
+.toggle-wrapper:has(.toggle-switch--mid) .toggle-icon--on .toggle-icon,
+.toggle-wrapper:has(.toggle-switch--mid) .toggle-icon--off .toggle-icon {
   opacity: 0.5;
 }
 
@@ -473,9 +489,13 @@ body::before {
 /* Click zone - fixed size, centered, always in same position */
 .toggle-click-zone {
   position: absolute;
-  inset: 0;
+  bottom: -0.2em;
+  left: -0.2em;
+  right: -0.2em;
+  height: calc(var(--toggle-width) + 0.4em);
   cursor: pointer;
-  z-index: 2;
+  z-index: 10;
+  pointer-events: auto;
   -webkit-tap-highlight-color: transparent;
   -webkit-appearance: none;
   touch-action: manipulation;
@@ -531,9 +551,6 @@ body::before {
   transform: scaleY(-1) translateY(-0.35em);
 }
 
-.toggle-click-zone:hover ~ .toggle-layer {
-  filter: brightness(1.1);
-}
 
 .toggle-label {
   font-size: 0.5em;
@@ -544,11 +561,14 @@ body::before {
 }
 
 /* Tooltip - shows on hover, overflows container */
-.toggle-tooltip {
+/* Per-icon tooltips via data-tooltip attribute */
+.toggle-icon-wrap[data-tooltip]::after {
+  content: attr(data-tooltip);
   position: absolute;
   bottom: 100%;
   left: 50%;
   transform: translateX(-50%);
+  margin-bottom: 0.3em;
   padding: 0.25em 0.5em;
   background: rgba(0, 0, 0, 0.85);
   color: var(--color-text-primary);
@@ -560,10 +580,13 @@ body::before {
   pointer-events: none;
   transition: opacity 0.15s ease;
   z-index: 100;
-  margin-bottom: 1em;
 }
 
-.toggle-wrapper:hover .toggle-tooltip {
+.toggle-icon--mid {
+  z-index: 50;
+}
+
+.toggle-icon-wrap[data-tooltip]:hover::after {
   opacity: 1;
 }
 
