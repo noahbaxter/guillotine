@@ -213,6 +213,11 @@
 /* Tiny exponent knob (for T² curve) */
 .knob-wrapper--exponent {
   gap: 0.125em;
+  pointer-events: none;  /* Container doesn't block adjacent knobs */
+}
+
+.knob-wrapper--exponent .knob__dial {
+  pointer-events: auto;  /* Dial itself is interactive */
 }
 
 .knob-wrapper--exponent .knob__dial {
