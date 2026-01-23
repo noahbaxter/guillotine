@@ -7,7 +7,7 @@ import { getBloodColors, getNeonColors, isDeltaMode, onDeltaModeChange } from '.
 const BLADE_NATURAL = { width: 300, height: 344 };
 const BLOOD_LINE_P1 = { x: 108, y: 63 };
 const BLOOD_LINE_P2 = { x: 188, y: 98 };
-const Y_OFFSET_RATIO = 0.04; // Vertical adjustment as ratio of container height
+const Y_OFFSET_RATIO = 0.05; // Vertical adjustment as ratio of container height
 const MAX_JITTER = 30;
 const PATTERN_LENGTH = 50;
 const BASE_WIDTH = 600;
