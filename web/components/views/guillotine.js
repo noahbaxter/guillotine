@@ -16,11 +16,11 @@ const DEFAULTS = {
   ropeClipOffsetDown: 0.17,  // Rope clip offset when blade is down
   ...GUILLOTINE_CONFIG,
   images: {
-    rope: 'assets/rope.png',
-    blade: 'assets/blade.png',
-    bladeOutline: 'assets/blade-outline.png',
-    base: 'assets/base.png',
-    baseOutline: 'assets/base-outline.png'
+    rope: 'assets/guillotine/rope.png',
+    blade: 'assets/guillotine/blade.png',
+    bladeOutline: 'assets/guillotine/blade-outline.png',
+    base: 'assets/guillotine/base.png',
+    baseOutline: 'assets/guillotine/base-outline.png'
   }
 };
 

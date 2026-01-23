@@ -127,18 +127,18 @@ juce_add_binary_data(GuillotineData
         web/components/display/blood-line.js
         # Web - assets
         web/assets/grunge-texture.jpg
-        # Assets - main
-        assets/base.png
-        assets/base-outline.png
-        assets/blade.png
-        assets/blade-outline.png
-        assets/rope.png
-        assets/side-fill.png
-        assets/side-outline.png
+        # Assets - guillotine
+        assets/guillotine/base.png
+        assets/guillotine/base-outline.png
+        assets/guillotine/blade.png
+        assets/guillotine/blade-outline.png
+        assets/guillotine/rope.png
+        assets/guillotine/side-fill.png
+        assets/guillotine/side-outline.png
         assets/guillotine-logo.png
-        # Assets - toggle PNGs
-        assets/toggle-up.png
-        assets/toggle-center.png
+        # Assets - toggles
+        assets/toggles/up.png
+        assets/toggles/center.png
         # Assets - toggle icons (SVG)
         web/assets/icon-linear-phase.svg
         web/assets/icon-min-phase.svg
@@ -180,9 +180,9 @@ juce_add_binary_data(GuillotineData
         assets/text/controls/blades/t2.png
         assets/text/controls/blades/tanh.png
         # Assets - wood textures
-        assets/original/wood-1.png
-        assets/original/wood-2.png
-        assets/original/wood-3.png
+        assets/textures/wood-1.png
+        assets/textures/wood-2.png
+        assets/textures/wood-3.png
         # Assets - fonts
         assets/fonts/zeyada.ttf
         assets/fonts/cedarville.ttf

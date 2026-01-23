@@ -231,18 +231,18 @@ std::optional<juce::WebBrowserComponent::Resource> GuillotineEditor::getResource
         { "components/display/blood-line.js",   BinaryData::bloodline_js,   BinaryData::bloodline_jsSize,   "text/javascript" },
         // CSS - global
         { "main.css",                BinaryData::main_css,        BinaryData::main_cssSize,        "text/css" },
-        // Assets
-        { "assets/base.png",         BinaryData::base_png,        BinaryData::base_pngSize,        "image/png" },
-        { "assets/base-outline.png", BinaryData::baseoutline_png, BinaryData::baseoutline_pngSize, "image/png" },
-        { "assets/blade.png",        BinaryData::blade_png,       BinaryData::blade_pngSize,       "image/png" },
-        { "assets/blade-outline.png", BinaryData::bladeoutline_png, BinaryData::bladeoutline_pngSize, "image/png" },
-        { "assets/rope.png",         BinaryData::rope_png,        BinaryData::rope_pngSize,        "image/png" },
-        { "assets/side-fill.png",    BinaryData::sidefill_png,    BinaryData::sidefill_pngSize,    "image/png" },
-        { "assets/side-outline.png", BinaryData::sideoutline_png, BinaryData::sideoutline_pngSize, "image/png" },
+        // Assets - guillotine
+        { "assets/guillotine/base.png",         BinaryData::base_png,        BinaryData::base_pngSize,        "image/png" },
+        { "assets/guillotine/base-outline.png", BinaryData::baseoutline_png, BinaryData::baseoutline_pngSize, "image/png" },
+        { "assets/guillotine/blade.png",        BinaryData::blade_png,       BinaryData::blade_pngSize,       "image/png" },
+        { "assets/guillotine/blade-outline.png", BinaryData::bladeoutline_png, BinaryData::bladeoutline_pngSize, "image/png" },
+        { "assets/guillotine/rope.png",         BinaryData::rope_png,        BinaryData::rope_pngSize,        "image/png" },
+        { "assets/guillotine/side-fill.png",    BinaryData::sidefill_png,    BinaryData::sidefill_pngSize,    "image/png" },
+        { "assets/guillotine/side-outline.png", BinaryData::sideoutline_png, BinaryData::sideoutline_pngSize, "image/png" },
         { "assets/guillotine-logo.png", BinaryData::guillotinelogo_png, BinaryData::guillotinelogo_pngSize, "image/png" },
-        // Toggle PNGs
-        { "assets/toggle-up.png",     BinaryData::toggleup_png,     BinaryData::toggleup_pngSize,     "image/png" },
-        { "assets/toggle-center.png", BinaryData::togglecenter_png, BinaryData::togglecenter_pngSize, "image/png" },
+        // Assets - toggles
+        { "assets/toggles/up.png",     BinaryData::up_png,     BinaryData::up_pngSize,     "image/png" },
+        { "assets/toggles/center.png", BinaryData::center_png, BinaryData::center_pngSize, "image/png" },
         // Toggle icons (SVG)
         { "assets/icon-linear-phase.svg", BinaryData::iconlinearphase_svg, BinaryData::iconlinearphase_svgSize, "image/svg+xml" },
         { "assets/icon-min-phase.svg",    BinaryData::iconminphase_svg,    BinaryData::iconminphase_svgSize,    "image/svg+xml" },
@@ -284,9 +284,9 @@ std::optional<juce::WebBrowserComponent::Resource> GuillotineEditor::getResource
         { "assets/text/controls/blades/t2.png",    BinaryData::t2_png,     BinaryData::t2_pngSize,     "image/png" },
         { "assets/text/controls/blades/tanh.png",  BinaryData::tanh_png,   BinaryData::tanh_pngSize,   "image/png" },
         // Wood textures
-        { "assets/original/wood-1.png", BinaryData::wood1_png,      BinaryData::wood1_pngSize,      "image/png" },
-        { "assets/original/wood-2.png", BinaryData::wood2_png,      BinaryData::wood2_pngSize,      "image/png" },
-        { "assets/original/wood-3.png", BinaryData::wood3_png,      BinaryData::wood3_pngSize,      "image/png" },
+        { "assets/textures/wood-1.png", BinaryData::wood1_png,      BinaryData::wood1_pngSize,      "image/png" },
+        { "assets/textures/wood-2.png", BinaryData::wood2_png,      BinaryData::wood2_pngSize,      "image/png" },
+        { "assets/textures/wood-3.png", BinaryData::wood3_png,      BinaryData::wood3_pngSize,      "image/png" },
         // Fonts
         { "assets/fonts/zeyada.ttf",    BinaryData::zeyada_ttf,     BinaryData::zeyada_ttfSize,     "application/x-font-ttf" },
         { "assets/fonts/cedarville.ttf", BinaryData::cedarville_ttf, BinaryData::cedarville_ttfSize, "application/x-font-ttf" },

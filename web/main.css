@@ -508,18 +508,18 @@ body::before {
 }
 
 .toggle-state--up {
-  background-image: url('assets/toggle-up.png');
+  background-image: url('assets/toggles/up.png');
 }
 
 /* Center is shorter, anchored at bottom */
 .toggle-state--mid {
-  background-image: url('assets/toggle-center.png');
+  background-image: url('assets/toggles/center.png');
   height: var(--toggle-center-ratio);
 }
 
 /* Down is flipped up, offset by stem height (100% - center ratio) */
 .toggle-state--down {
-  background-image: url('assets/toggle-up.png');
+  background-image: url('assets/toggles/up.png');
   transform: scaleY(-1) translateY(calc(-1 * (100% - var(--toggle-center-ratio))));
 }
 
