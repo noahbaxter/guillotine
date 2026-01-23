@@ -417,13 +417,14 @@ body::before {
   margin-top: calc(-0.5 * (100% - var(--toggle-center-ratio)));
 }
 
+/* Extends .text-mask - only overrides for positioning/sizing */
 .toggle-icon {
   position: absolute;
   width: var(--toggle-icon-width);
   height: var(--toggle-icon-height);
   opacity: 0.5;
-  transition: opacity 0.15s ease;
-  filter: brightness(0) invert(1); /* make SVG white */
+  transition: opacity 0.15s ease, background-color var(--delta-transition, 0.4s);
+  background-color: #fff;
 }
 
 .toggle-icon--on {

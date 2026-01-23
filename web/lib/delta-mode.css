@@ -174,3 +174,19 @@ body.delta-mode #andy-sig {
 body.delta-mode #version-tag {
   color: var(--color-delta-text);
 }
+
+/* ==========================================================================
+   Toggle Icons - Red in Delta Mode
+   ========================================================================== */
+
+/* All toggle icons turn red in delta mode */
+body.delta-mode .toggle-icon {
+  background-color: var(--color-delta-text);
+}
+
+/* Active toggle icons in delta mode: brighter with glow */
+body.delta-mode .toggle-wrapper:has(.toggle-switch--on) .toggle-icon--on,
+body.delta-mode .toggle-wrapper:has(.toggle-switch--off) .toggle-icon--off,
+body.delta-mode .toggle-wrapper:has(.toggle-switch--mid) .toggle-icon--mid {
+  filter: brightness(1.2) drop-shadow(0 0 4px #ff4040) drop-shadow(0 0 8px rgba(255, 64, 64, 0.6));
+}

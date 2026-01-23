@@ -28,9 +28,9 @@ export class Toggle {
     const midSideClass = this.midSide === 'left' ? 'toggle-icon--mid-left' : 'toggle-icon--mid-right';
 
     this.element.innerHTML = `
-      ${iconOn ? `<img class="toggle-icon toggle-icon--on" src="${iconOn}" alt="" draggable="false">` : ''}
+      ${iconOn ? `<div class="text-mask toggle-icon toggle-icon--on" style="--mask-src: url(${iconOn})"></div>` : ''}
       <div class="toggle-row">
-        ${iconMid ? `<img class="toggle-icon toggle-icon--mid ${midSideClass}" src="${iconMid}" alt="" draggable="false">` : ''}
+        ${iconMid ? `<div class="text-mask toggle-icon toggle-icon--mid ${midSideClass}" style="--mask-src: url(${iconMid})"></div>` : ''}
         <div class="toggle-switch">
           <div class="toggle-click-zone"></div>
           <div class="toggle-state toggle-state--up"></div>
@@ -39,7 +39,7 @@ export class Toggle {
           ${this.led ? '<div class="toggle-led"></div>' : ''}
         </div>
       </div>
-      ${iconOff ? `<img class="toggle-icon toggle-icon--off" src="${iconOff}" alt="" draggable="false">` : ''}
+      ${iconOff ? `<div class="text-mask toggle-icon toggle-icon--off" style="--mask-src: url(${iconOff})"></div>` : ''}
       ${this.label ? `<span class="toggle-label">${this.label}</span>` : ''}
       ${this.tooltip ? `<span class="toggle-tooltip">${this.tooltip}</span>` : ''}
     `;
