@@ -241,8 +241,9 @@ std::optional<juce::WebBrowserComponent::Resource> GuillotineEditor::getResource
         { "assets/guillotine/side-outline.png", BinaryData::sideoutline_png, BinaryData::sideoutline_pngSize, "image/png" },
         { "assets/guillotine-logo.png", BinaryData::guillotinelogo_png, BinaryData::guillotinelogo_pngSize, "image/png" },
         // Assets - toggles
-        { "assets/toggles/up.png",     BinaryData::up_png,     BinaryData::up_pngSize,     "image/png" },
-        { "assets/toggles/center.png", BinaryData::center_png, BinaryData::center_pngSize, "image/png" },
+        { "assets/toggles/toggle-base.png",   BinaryData::togglebase_png,   BinaryData::togglebase_pngSize,   "image/png" },
+        { "assets/toggles/toggle-middle.png", BinaryData::togglemiddle_png, BinaryData::togglemiddle_pngSize, "image/png" },
+        { "assets/toggles/toggle-stem.png",   BinaryData::togglestem_png,   BinaryData::togglestem_pngSize,   "image/png" },
         // Toggle icons (SVG)
         { "assets/icon-linear-phase.svg", BinaryData::iconlinearphase_svg, BinaryData::iconlinearphase_svgSize, "image/svg+xml" },
         { "assets/icon-min-phase.svg",    BinaryData::iconminphase_svg,    BinaryData::iconminphase_svgSize,    "image/svg+xml" },

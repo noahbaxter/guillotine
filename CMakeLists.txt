@@ -137,8 +137,9 @@ juce_add_binary_data(GuillotineData
         assets/guillotine/side-outline.png
         assets/guillotine-logo.png
         # Assets - toggles
-        assets/toggles/up.png
-        assets/toggles/center.png
+        assets/toggles/toggle-base.png
+        assets/toggles/toggle-middle.png
+        assets/toggles/toggle-stem.png
         # Assets - toggle icons (SVG)
         web/assets/icon-linear-phase.svg
         web/assets/icon-min-phase.svg

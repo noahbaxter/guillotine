@@ -36,9 +36,9 @@ export class Toggle {
         ${iconMid ? `<div class="text-mask toggle-icon toggle-icon--mid ${midSideClass}" style="--mask-src: url(${iconMid})"></div>` : ''}
         <div class="toggle-switch">
           <div class="toggle-click-zone"></div>
-          <div class="toggle-state toggle-state--up"></div>
-          <div class="toggle-state toggle-state--mid"></div>
-          <div class="toggle-state toggle-state--down"></div>
+          <div class="toggle-layer toggle-layer--base"></div>
+          <div class="toggle-layer toggle-layer--middle"></div>
+          <div class="toggle-layer toggle-layer--stem"></div>
           ${this.led ? '<div class="toggle-led"></div>' : ''}
         </div>
       </div>
