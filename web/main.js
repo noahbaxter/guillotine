@@ -102,6 +102,7 @@ class GuillotineApp {
     this.inputKnobContainer = document.getElementById('input-knob-container');
     this.outputKnobContainer = document.getElementById('output-knob-container');
     this.ceilingContainer = document.getElementById('ceiling-container');
+    this.drywetContainer = document.getElementById('drywet-container');
 
     // State
     this.bypass = true;         // Start bypassed (blade up) - click to activate
@@ -196,6 +197,18 @@ class GuillotineApp {
       suffixVariant: 'large',
       sizeVariant: 'large',
       wrapperClass: 'knob-wrapper--threshold'
+    }));
+
+    // Dry/Wet mix knob (0% = dry, 100% = wet)
+    this.drywetKnob = new Knob(this.drywetContainer, createSpriteKnob({
+      label: TEXT.labels.mix,
+      min: 0, max: 100, value: 100,
+      size: KNOB_SIZE.SMALL,
+      spriteScale: 0.25,
+      suffix: TEXT.suffixes.percent,
+      formatter: (v) => Math.round(v),
+      snap: (v) => Math.round(v),
+      wrapperClass: 'knob-wrapper--side'
     }));
 
     // Oversampling knob (stepped: 1x, 2x, 4x, 8x, 16x, 32x)
@@ -318,6 +331,18 @@ class GuillotineApp {
 
     this.outputGainKnob.onChange = (v) => this.setOutputGain(v);
     bindDragTracking(this.outputGainKnob, 'outputGain', this);
+
+    // Dry/Wet mix (visual only for now - fades guillotine texture)
+    this.drywetKnob.onChange = (v) => {
+      const normalized = v / 100;
+      this.guillotine.setDryWet(normalized);
+      this.lever.setDryWet(normalized);
+      // Also fade the side art main layer
+      const sideMain = document.querySelector('.guillotine-side__img--main');
+      if (sideMain) {
+        sideMain.style.opacity = normalized;
+      }
+    };
 
     // Settings toggles
     this.filterTypeToggle.onChange = (v) => setFilterType(v ? 1 : 0);

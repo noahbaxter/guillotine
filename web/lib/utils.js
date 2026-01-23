@@ -11,11 +11,13 @@ export const TEXT = {
     ceiling: { text: 'Ceiling', src: 'assets/text/controls/ceiling.png' },
     oversample: { text: 'Oversample', src: 'assets/text/controls/oversample.png' },
     input: { text: 'Input', src: 'assets/text/controls/input.png' },
-    output: { text: 'Output', src: 'assets/text/controls/output.png' }
+    output: { text: 'Output', src: 'assets/text/controls/output.png' },
+    mix: { text: 'Mix', src: 'assets/text/controls/mix.png' }
   },
   suffixes: {
     dB: { text: ' dB', src: 'assets/text/controls/dB.png' },
-    x: { text: 'x', src: 'assets/text/controls/x.png' }
+    x: { text: 'x', src: 'assets/text/controls/x.png' },
+    percent: { text: '%', src: null }
   },
   blades: [
     { text: 'Hard', src: 'assets/text/controls/blades/hard.png' },

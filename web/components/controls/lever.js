@@ -264,6 +264,18 @@ export class Lever {
     }
   }
 
+  setDryWet(value) {
+    const clamped = Math.max(0, Math.min(1, value));
+    if (this.baseFaces) {
+      this.baseFaces.front.style.opacity = clamped;
+      this.baseFaces.top.style.opacity = clamped;
+      this.baseFaces.right.style.opacity = clamped;
+    }
+    if (this.arm) {
+      this.arm.style.setProperty('--texture-opacity', clamped);
+    }
+  }
+
   destroy() {
     if (this.cancelAnimation) this.cancelAnimation();
     if (this.resizeObserver) this.resizeObserver.disconnect();

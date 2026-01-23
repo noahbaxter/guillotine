@@ -36,14 +36,25 @@
 }
 
 .lever__arm {
+  --texture-opacity: 1;
+  position: relative;
   width: 0.4375em;
   height: 5.9375em;
-  background-image: url('assets/original/wood-1.png');
-  background-size: cover;
-  background-position: center;
   border-radius: 0.25em 0.25em 0 0;
   transform-origin: bottom center;
   box-shadow:
     0.0625em 0.0625em 0.1875em var(--color-shadow-50),
     inset 0.0625em 0 0 var(--color-white-20);
+}
+
+.lever__arm::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-image: url('assets/original/wood-1.png');
+  background-size: cover;
+  background-position: center;
+  border-radius: inherit;
+  opacity: var(--texture-opacity);
+  pointer-events: none;
 }

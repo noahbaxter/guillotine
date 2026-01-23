@@ -207,15 +207,33 @@ body::before {
   z-index: 5;
 }
 
+/* Dry/Wet knob positioned above the side art */
+#drywet-container {
+  position: absolute;
+  left: 0em;
+  top: 1em;
+  z-index: 10;
+  transform: rotate(15deg);
+}
+
 #guillotine-side {
   position: absolute;
   left: 0;
-  top: 45%;
+  top: 50%;
   transform: translateY(-50%);
   height: 6.25em;
   width: auto;
   pointer-events: none;
-  opacity: 1.0;
+}
+
+.guillotine-side__img {
+  position: absolute;
+  height: 100%;
+  width: auto;
+}
+
+.guillotine-side__img--main {
+  opacity: 1;
 }
 
 #delta-text {

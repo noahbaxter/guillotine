@@ -124,13 +124,17 @@ juce_add_binary_data(GuillotineData
         web/components/display/digits.css
         web/components/display/blood-pool.js
         web/components/display/blood-pool.css
+        web/components/display/blood-line.js
         # Web - assets
         web/assets/grunge-texture.jpg
         # Assets - main
         assets/base.png
+        assets/base-outline.png
         assets/blade.png
+        assets/blade-outline.png
         assets/rope.png
-        assets/side.png
+        assets/side-fill.png
+        assets/side-outline.png
         assets/guillotine-logo.png
         # Assets - toggle PNGs
         assets/toggle-up.png

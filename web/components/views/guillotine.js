@@ -3,53 +3,26 @@
 
 import { loadStyles } from '../../lib/component-loader.js';
 import { GUILLOTINE_CONFIG, animateValue } from '../../lib/guillotine-utils.js';
-import { getBloodColors, onDeltaModeChange } from '../../lib/theme.js';
-
-// Blood line endpoints as percentages of the BLADE IMAGE (not container)
-// Original px values: P1(100, 63), P2(180, 98) on the blade image
-// Blade image natural size: 300x344
-const BLADE_NATURAL = { width: 300, height: 344 };
-const BLOOD_LINE_P1 = { x: 108, y: 63 };
-const BLOOD_LINE_P2 = { x: 188, y: 98 };
-const MAX_JITTER = 30;
+import { BloodLine } from '../display/blood-line.js';
 
 const DEFAULTS = {
   maxBladeTravel: 0.35,
   ceilingBladeTravel: 0.04,  // Additional blade travel from ceiling (0dB→-60dB)
   bypassUpOffset: 0.04,      // Downward nudge when blade is up (bypassed)
-  containScale: 1.25,        // Compensates for object-fit: contain constraining image size
-  ropeClipOffset: 0.27,
+  bypassDownOffset: -0.09,   // Upward nudge when blade is down (active)
+  bladeOutlineVerticalOffset: -0.065,   // Vertical offset for blade outline to align with old asset
+  bladeOutlineHorizontalOffset: -0.003, // Horizontal offset for blade outline
+  ropeClipOffsetUp: 0.1,     // Rope clip offset when blade is up
+  ropeClipOffsetDown: 0.17,  // Rope clip offset when blade is down
   ...GUILLOTINE_CONFIG,
   images: {
     rope: 'assets/rope.png',
     blade: 'assets/blade.png',
-    base: 'assets/base.png'
+    bladeOutline: 'assets/blade-outline.png',
+    base: 'assets/base.png',
+    baseOutline: 'assets/base-outline.png'
   }
 };
-
-// Calculate rendered image bounds for object-fit: contain
-function getContainedImageBounds(containerWidth, containerHeight, imageWidth, imageHeight) {
-  const containerRatio = containerWidth / containerHeight;
-  const imageRatio = imageWidth / imageHeight;
-
-  let renderedWidth, renderedHeight, offsetX, offsetY;
-
-  if (imageRatio > containerRatio) {
-    // Image is wider - constrained by width
-    renderedWidth = containerWidth;
-    renderedHeight = containerWidth / imageRatio;
-    offsetX = 0;
-    offsetY = (containerHeight - renderedHeight) / 2;
-  } else {
-    // Image is taller - constrained by height
-    renderedHeight = containerHeight;
-    renderedWidth = containerHeight * imageRatio;
-    offsetX = (containerWidth - renderedWidth) / 2;
-    offsetY = 0;
-  }
-
-  return { renderedWidth, renderedHeight, offsetX, offsetY };
-}
 
 export class Guillotine {
   static stylesLoaded = false;
@@ -62,8 +35,7 @@ export class Guillotine {
     this.initialized = false; // Skip animations until markInitialized() is called
     this.cancelAnimation = null;
     this.elements = {};
-    this.sharpness = 1.0;     // 0 = dull/jittery, 1 = sharp/flat
-    this.bloodPattern = [];   // Random pattern for blood line jitter
+    this.bloodLine = null;
     this.ceilingOffset = 0;   // 0 = 0dB (up), 1 = -60dB (down) - subtle blade shift
 
     this.ready = this.init();
@@ -81,8 +53,9 @@ export class Guillotine {
       <div class="guillotine">
         <img class="guillotine__layer guillotine__layer--rope" src="${images.rope}" alt="">
         <img class="guillotine__layer guillotine__layer--blade" src="${images.blade}" alt="">
-        <canvas class="guillotine__layer guillotine__layer--blood-line"></canvas>
+        <img class="guillotine__layer guillotine__layer--blade-outline" src="${images.bladeOutline}" alt="">
         <img class="guillotine__layer guillotine__layer--base" src="${images.base}" alt="">
+        <img class="guillotine__layer guillotine__layer--base-outline" src="${images.baseOutline}" alt="">
       </div>
     `;
 
@@ -90,26 +63,24 @@ export class Guillotine {
     this.elements = {
       rope: this.element.querySelector('.guillotine__layer--rope'),
       blade: this.element.querySelector('.guillotine__layer--blade'),
-      bloodLine: this.element.querySelector('.guillotine__layer--blood-line'),
-      base: this.element.querySelector('.guillotine__layer--base')
+      bladeOutline: this.element.querySelector('.guillotine__layer--blade-outline'),
+      base: this.element.querySelector('.guillotine__layer--base'),
+      baseOutline: this.element.querySelector('.guillotine__layer--base-outline')
     };
 
     this.container.appendChild(this.element);
 
-    // Add deltable class for DELTA mode transitions
-    this.elements.rope.classList.add('deltable');
-    this.elements.blade.classList.add('deltable');
-    this.elements.base.classList.add('deltable');
+    // Add deltable class to container for DELTA mode transitions
+    this.element.classList.add('deltable');
 
-    // Redraw blood line when delta mode changes
-    onDeltaModeChange(() => this.drawBloodLine());
+    // Create blood line - normal canvas inside guillotine, delta canvas in parent container
+    this.bloodLine = new BloodLine(this.element, this.container);
 
-    this.setupBloodLine();
     this.updateVisuals();
 
-    // Re-setup on resize to fix canvas size and positions
+    // Re-setup on resize
     this.resizeObserver = new ResizeObserver(() => {
-      this.setupBloodLine();
+      this.bloodLine.resize();
       this.updateVisuals();
     });
     this.resizeObserver.observe(document.body);
@@ -158,37 +129,48 @@ export class Guillotine {
     });
   }
 
-  getScaledHeight() {
-    return this.container.clientHeight * this.options.containScale;
-  }
-
   getBladeOffset() {
-    const { maxBladeTravel, ceilingBladeTravel, bypassUpOffset } = this.options;
-    const scaledHeight = this.getScaledHeight();
-    const bypassOffset = this.position * maxBladeTravel * scaledHeight;
+    const { maxBladeTravel, ceilingBladeTravel, bypassUpOffset, bypassDownOffset } = this.options;
+    const h = this.container.clientHeight;
+    const bypassOffset = this.position * maxBladeTravel * h;
     // Ceiling offset: 0dB (ceilingOffset=0) = up, -60dB (ceilingOffset=1) = down
     // Centered around 0.5 so old baseline is at -30dB
-    const ceilingShift = (this.ceilingOffset - 0.5) * 2 * ceilingBladeTravel * scaledHeight;
+    const ceilingShift = (this.ceilingOffset - 0.5) * 2 * ceilingBladeTravel * h;
     // Downward nudge when blade is up (bypassed) so it doesn't sit too high
-    const upOffset = (1 - this.position) * bypassUpOffset * scaledHeight;
-    return bypassOffset + ceilingShift + upOffset;
+    const upOffset = (1 - this.position) * bypassUpOffset * h;
+    // Upward nudge when blade is down (active)
+    const downOffset = -this.position * bypassDownOffset * h;
+    return bypassOffset + ceilingShift + upOffset + downOffset;
   }
 
   updateVisuals() {
-    const { ropeClipOffset } = this.options;
-    const scaledHeight = this.getScaledHeight();
+    const { bladeOutlineVerticalOffset, bladeOutlineHorizontalOffset, ropeClipOffsetUp, ropeClipOffsetDown } = this.options;
+    const w = this.container.clientWidth;
+    const h = this.container.clientHeight;
     const offset = this.getBladeOffset();
 
+    // Apply blade transform
     if (this.elements.blade) {
       this.elements.blade.style.transform = `translateY(${offset}px)`;
     }
+    // Blade outline needs its own offset to align with old asset
+    const outlineOffsetX = bladeOutlineHorizontalOffset * w;
+    const outlineOffsetY = offset + (bladeOutlineVerticalOffset * h);
+    if (this.elements.bladeOutline) {
+      this.elements.bladeOutline.style.transform = `translate(${outlineOffsetX}px, ${outlineOffsetY}px)`;
+    }
 
-    this.drawBloodLine();
+    // Update blood line position
+    if (this.bloodLine) {
+      this.bloodLine.update(offset);
+    }
+
+    // Rope clip - interpolate offset based on position
+    const ropeClipOffset = ropeClipOffsetUp + (ropeClipOffsetDown - ropeClipOffsetUp) * this.position;
+    const ropeMovement = offset / h;
+    const clipBottom = 100 - ((ropeMovement + ropeClipOffset) * 100);
 
     if (this.elements.rope) {
-      // Derive rope clip directly from blade offset so they're always in sync
-      const offsetAsPercent = offset / scaledHeight;
-      const clipBottom = 100 - ((offsetAsPercent + ropeClipOffset) * 100);
       this.elements.rope.style.clipPath = `inset(0 0 ${Math.max(0, clipBottom)}% 0)`;
     }
   }
@@ -200,119 +182,29 @@ export class Guillotine {
   destroy() {
     if (this.cancelAnimation) this.cancelAnimation();
     if (this.resizeObserver) this.resizeObserver.disconnect();
+    if (this.bloodLine) this.bloodLine.destroy();
     if (this.element) this.element.remove();
     this.elements = {};
   }
 
-  setupBloodLine() {
-    const canvas = this.elements.bloodLine;
-    if (!canvas) return;
-
-    const dpr = window.devicePixelRatio || 1;
-    const containerWidth = this.container.clientWidth;
-    const containerHeight = this.container.clientHeight;
-
-    canvas.width = containerWidth * dpr;
-    canvas.height = containerHeight * dpr;
-    canvas.style.width = containerWidth + 'px';
-    canvas.style.height = containerHeight + 'px';
-    canvas.style.position = 'absolute';
-    canvas.style.top = '0';
-    canvas.style.left = '0';
-
-    this.bloodDpr = dpr;
-    this.generateBloodPattern();
-    this.drawBloodLine();
-  }
-
-  generateBloodPattern() {
-    // Generate a fixed number of random points for the jitter pattern
-    // This will be interpolated along the line at any size
-    const patternLength = 50;
-    this.bloodPattern = [];
-    for (let i = 0; i <= patternLength; i++) {
-      this.bloodPattern.push(Math.random() - 0.5);
-    }
-  }
-
-  drawBloodLine() {
-    const canvas = this.elements.bloodLine;
-    if (!canvas || !this.bloodPattern.length) return;
-
-    const ctx = canvas.getContext('2d');
-    const containerWidth = this.container.clientWidth;
-    const containerHeight = this.container.clientHeight;
-    const offset = this.getBladeOffset();
-
-    // Scale jitter relative to window size
-    const baseWidth = 600;
-    const bloodLineMaxJitter = (MAX_JITTER / baseWidth) * containerWidth;
-
-    // Calculate where the blade image actually renders (object-fit: contain)
-    const bounds = getContainedImageBounds(
-      containerWidth, containerHeight,
-      BLADE_NATURAL.width, BLADE_NATURAL.height
-    );
-    const scale = bounds.renderedWidth / BLADE_NATURAL.width;
-
-    // Transform blood line points from image coords to container coords
-    const p1 = {
-      x: bounds.offsetX + BLOOD_LINE_P1.x * scale,
-      y: bounds.offsetY + BLOOD_LINE_P1.y * scale + offset
-    };
-    const p2 = {
-      x: bounds.offsetX + BLOOD_LINE_P2.x * scale,
-      y: bounds.offsetY + BLOOD_LINE_P2.y * scale + offset
-    };
-
-    ctx.setTransform(this.bloodDpr, 0, 0, this.bloodDpr, 0, 0);
-    ctx.clearRect(0, 0, canvas.width / this.bloodDpr, canvas.height / this.bloodDpr);
-
-    const dx = p2.x - p1.x;
-    const dy = p2.y - p1.y;
-    const angle = Math.atan2(dy, dx);
-
-    // Get current colors from theme
-    const colors = getBloodColors();
-
-    // Draw straight line first
-    ctx.beginPath();
-    ctx.moveTo(p1.x, p1.y);
-    ctx.lineTo(p2.x, p2.y);
-    ctx.strokeStyle = colors.line1;
-    ctx.lineWidth = 3;
-    ctx.lineCap = 'round';
-    ctx.stroke();
-
-    // Perpendicular vector for jitter
-    const perpX = -Math.sin(angle);
-    const perpY = Math.cos(angle);
-    const jitterScale = (1 - this.sharpness) * bloodLineMaxJitter;
-
-    // Draw jittery line on top
-    ctx.beginPath();
-    ctx.moveTo(p1.x + perpX * this.bloodPattern[0] * jitterScale, p1.y + perpY * this.bloodPattern[0] * jitterScale);
-
-    for (let i = 1; i < this.bloodPattern.length; i++) {
-      const progress = i / this.bloodPattern.length;
-      const x = p1.x + dx * progress + perpX * this.bloodPattern[i] * jitterScale;
-      const y = p1.y + dy * progress + perpY * this.bloodPattern[i] * jitterScale;
-      ctx.lineTo(x, y);
-    }
-
-    ctx.strokeStyle = colors.line2;
-    ctx.lineWidth = 3;
-    ctx.lineCap = 'round';
-    ctx.stroke();
-  }
-
   setSharpness(value) {
-    this.sharpness = Math.max(0, Math.min(1, value));
-    this.drawBloodLine();
+    if (this.bloodLine) {
+      this.bloodLine.setSharpness(value);
+    }
   }
 
   setCeilingOffset(value) {
     this.ceilingOffset = Math.max(0, Math.min(1, value));
     this.updateVisuals();
+  }
+
+  setDryWet(value) {
+    const clamped = Math.max(0, Math.min(1, value));
+    if (this.elements.blade) {
+      this.elements.blade.style.opacity = clamped;
+    }
+    if (this.elements.base) {
+      this.elements.base.style.opacity = clamped;
+    }
   }
 }

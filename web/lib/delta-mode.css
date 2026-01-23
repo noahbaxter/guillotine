@@ -24,14 +24,17 @@
    Dimming Non-Red Elements
    ========================================================================== */
 
-body.delta-mode .deltable:not(.knob-wrapper):not(.microscope-label) {
+body.delta-mode .deltable:not(.knob-wrapper):not(.microscope-label):not(.guillotine) {
   opacity: 0.3;
   filter: grayscale(0.7) brightness(0.6);
 }
 
-body.delta-mode #plugin-logo,
-body.delta-mode #guillotine-side {
+body.delta-mode #plugin-logo {
   opacity: 0.12;
+}
+
+body.delta-mode .guillotine {
+  opacity: 0.2;
 }
 
 /* ==========================================================================

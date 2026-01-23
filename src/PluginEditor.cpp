@@ -228,13 +228,17 @@ std::optional<juce::WebBrowserComponent::Resource> GuillotineEditor::getResource
         { "components/display/digits.css",  BinaryData::digits_css,  BinaryData::digits_cssSize,  "text/css" },
         { "components/display/blood-pool.js",   BinaryData::bloodpool_js,   BinaryData::bloodpool_jsSize,   "text/javascript" },
         { "components/display/blood-pool.css",  BinaryData::bloodpool_css,  BinaryData::bloodpool_cssSize,  "text/css" },
+        { "components/display/blood-line.js",   BinaryData::bloodline_js,   BinaryData::bloodline_jsSize,   "text/javascript" },
         // CSS - global
         { "main.css",                BinaryData::main_css,        BinaryData::main_cssSize,        "text/css" },
         // Assets
         { "assets/base.png",         BinaryData::base_png,        BinaryData::base_pngSize,        "image/png" },
+        { "assets/base-outline.png", BinaryData::baseoutline_png, BinaryData::baseoutline_pngSize, "image/png" },
         { "assets/blade.png",        BinaryData::blade_png,       BinaryData::blade_pngSize,       "image/png" },
+        { "assets/blade-outline.png", BinaryData::bladeoutline_png, BinaryData::bladeoutline_pngSize, "image/png" },
         { "assets/rope.png",         BinaryData::rope_png,        BinaryData::rope_pngSize,        "image/png" },
-        { "assets/side.png",         BinaryData::side_png,        BinaryData::side_pngSize,        "image/png" },
+        { "assets/side-fill.png",    BinaryData::sidefill_png,    BinaryData::sidefill_pngSize,    "image/png" },
+        { "assets/side-outline.png", BinaryData::sideoutline_png, BinaryData::sideoutline_pngSize, "image/png" },
         { "assets/guillotine-logo.png", BinaryData::guillotinelogo_png, BinaryData::guillotinelogo_pngSize, "image/png" },
         // Toggle PNGs
         { "assets/toggle-up.png",     BinaryData::toggleup_png,     BinaryData::toggleup_pngSize,     "image/png" },

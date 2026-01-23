@@ -84,6 +84,15 @@ const DELTA_OVERRIDES = {
   waveformOutline: 'rgba(180, 180, 180, 0.5)',
 };
 
+// Neon style - bright glowing colors for delta mode accents
+const NEON = {
+  red: '#ff4040',
+  redBright: '#ff6060',
+  redGlow: '#ff2020',
+  glowBlur: 12,
+  glowBlurSmall: 8,
+};
+
 // Convert camelCase to kebab-case for CSS variable names
 function toKebab(str) {
   return str.replace(/([a-z])([A-Z0-9])/g, '$1-$2').toLowerCase();
@@ -256,4 +265,8 @@ export function onReadableModeChange(callback) {
   };
 }
 
-export { COLORS, DELTA_OVERRIDES };
+export function getNeonColors() {
+  return NEON;
+}
+
+export { COLORS, DELTA_OVERRIDES, NEON };

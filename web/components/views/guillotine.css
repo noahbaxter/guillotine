@@ -8,6 +8,7 @@
   justify-content: center;
 }
 
+/* All layers are absolutely positioned and use object-fit: contain */
 .guillotine__layer {
   position: absolute;
   width: 100%;
@@ -16,6 +17,7 @@
   pointer-events: none;
 }
 
+/* Z-index ordering (lower = further back) */
 .guillotine__layer--rope {
   z-index: 1;
 }
@@ -24,11 +26,33 @@
   z-index: 2;
 }
 
-.guillotine__layer--blood-line {
+.guillotine__layer--blade-outline {
   z-index: 2;
-  pointer-events: none;
 }
 
 .guillotine__layer--base {
   z-index: 3;
+}
+
+.guillotine__layer--base-outline {
+  z-index: 3;
+}
+
+/* Blood line canvases */
+.blood-line {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  transition: opacity 0.15s ease;
+}
+
+/* Normal mode canvas - inside guillotine, between blade and base */
+.blood-line--normal {
+  z-index: 2;
+}
+
+/* Delta mode canvas - in parent container, above everything */
+.blood-line--delta {
+  z-index: 20;
 }
