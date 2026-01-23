@@ -5,6 +5,8 @@ export class Toggle {
     this.container = container;
     this.label = options.label || '';
     this.tooltip = options.tooltip || '';
+    // State-specific tooltips: { on, off } for 2-way, { on, mid, off } for 3-way
+    this.tooltips = options.tooltips || null;
     this.value = options.value ?? true;
     this.onChange = options.onChange || null;
     this.threeWay = options.threeWay ?? false;
@@ -26,6 +28,7 @@ export class Toggle {
     const iconMid = this.icons?.mid || this.icons?.side || '';
     const iconOff = this.icons?.off || this.icons?.down || '';
     const midSideClass = this.midSide === 'left' ? 'toggle-icon--mid-left' : 'toggle-icon--mid-right';
+    const hasTooltip = this.tooltip || this.tooltips;
 
     this.element.innerHTML = `
       ${iconOn ? `<div class="text-mask toggle-icon toggle-icon--on" style="--mask-src: url(${iconOn})"></div>` : ''}
@@ -41,13 +44,14 @@ export class Toggle {
       </div>
       ${iconOff ? `<div class="text-mask toggle-icon toggle-icon--off" style="--mask-src: url(${iconOff})"></div>` : ''}
       ${this.label ? `<span class="toggle-label">${this.label}</span>` : ''}
-      ${this.tooltip ? `<span class="toggle-tooltip">${this.tooltip}</span>` : ''}
+      ${hasTooltip ? `<span class="toggle-tooltip">${this.tooltip}</span>` : ''}
     `;
 
     this.container.appendChild(this.element);
 
     this.switchEl = this.element.querySelector('.toggle-switch');
     this.clickZone = this.element.querySelector('.toggle-click-zone');
+    this.tooltipEl = this.element.querySelector('.toggle-tooltip');
 
     this.clickZone.addEventListener('click', () => {
       if (this.threeWay) {
@@ -79,6 +83,17 @@ export class Toggle {
       this.switchEl.classList.add('toggle-switch--on');
     } else {
       this.switchEl.classList.add('toggle-switch--off');
+    }
+
+    // Update tooltip if state-specific tooltips are provided
+    if (this.tooltips && this.tooltipEl) {
+      if (this.threeWay && this.value === null) {
+        this.tooltipEl.textContent = this.tooltips.mid || '';
+      } else if (this.value) {
+        this.tooltipEl.textContent = this.tooltips.on || '';
+      } else {
+        this.tooltipEl.textContent = this.tooltips.off || '';
+      }
     }
   }
 

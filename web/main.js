@@ -244,20 +244,26 @@ class GuillotineApp {
     // Settings toggles (hidden params) - displayed in column
     this.trueclipToggle = new Toggle(this.togglesColumnContainer, {
       value: true,  // Default enforced
-      tooltip: 'True Clip (enforce ceiling)',
       led: true,
       compact: true,  // Only has icon on top
       icons: {
         on: 'assets/icon-true-peak.svg'
+      },
+      tooltips: {
+        on: 'True Peak On',
+        off: 'True Peak Off'
       }
     });
 
     this.filterTypeToggle = new Toggle(this.togglesColumnContainer, {
       value: false,  // 0 = Min Phase (off), 1 = Linear Phase (on)
-      tooltip: 'Filter: Min Phase / Linear Phase',
       icons: {
         on: 'assets/icon-linear-phase.svg',
         off: 'assets/icon-min-phase.svg'
+      },
+      tooltips: {
+        on: 'Min Phase',
+        off: 'Lin Phase'
       }
     });
 
@@ -266,11 +272,15 @@ class GuillotineApp {
     this.stereoModeToggle = new Toggle(this.togglesColumnContainer, {
       value: true,  // Default to Stereo Link
       threeWay: true,
-      tooltip: 'Stereo Link / L/R / M/S',
       icons: {
         up: 'assets/icon-stereo-link.svg',
         mid: 'assets/icon-lr.svg',
         down: 'assets/icon-ms.svg'
+      },
+      tooltips: {
+        on: 'Stereo Link',
+        mid: 'Dual Mono',
+        off: 'M/S'
       }
     });
 

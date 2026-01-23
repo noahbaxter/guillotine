@@ -559,7 +559,7 @@ body::before {
   pointer-events: none;
   transition: opacity 0.15s ease;
   z-index: 100;
-  margin-bottom: 0.25em;
+  margin-bottom: 1em;
 }
 
 .toggle-wrapper:hover .toggle-tooltip {
