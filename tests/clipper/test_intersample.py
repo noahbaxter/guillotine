@@ -8,7 +8,7 @@ Using JUCE's built-in dsp::Oversampling. Measured performance:
   - All rates have ~2-3dB intersample overshoot
   - 2x linear phase is best at +2.01dB
   - Aliasing rejection is excellent (-70dB min-phase, -66dB linear)
-  - For strict true peak limiting, use enforce_ceiling
+  - For strict true peak limiting, use true_clip
 """
 import pytest
 from pedalboard import load_plugin
@@ -23,7 +23,7 @@ from utils import (
 
 # Tolerance for intersample peak control
 # JUCE oversampling achieves ~2-3dB overshoot at all rates. For strict true peak
-# limiting, use enforce_ceiling which adds a hard limiter after the filter.
+# limiting, use true_clip which adds a hard limiter after the filter.
 MAX_TRUE_PEAK_OVERSHOOT_DB = 0.5  # Ideal target (not achievable with current filters)
 MAX_REALISTIC_OVERSHOOT_DB = 3.5  # Realistic threshold for JUCE filters
 
@@ -100,7 +100,7 @@ class TestIntersampleControl:
         
         Note: JUCE's IIR filters have more overshoot at 4x than the previous
         oversimple library (~2dB vs ~0.2dB). Higher rates (16x/32x) perform
-        better with JUCE. Use enforce_ceiling for strict true peak limiting.
+        better with JUCE. Use true_clip for strict true peak limiting.
         """
         ceiling_linear = db_to_linear(-6.0)
 
@@ -222,6 +222,146 @@ class TestIntersampleComparison:
         improvement_db = linear_to_db(true_peak_1x) - linear_to_db(true_peak_4x)
         assert improvement_db > 0.5, (
             f"Expected >0.5dB improvement from 4x min-phase OS, got {improvement_db:.2f}dB"
+        )
+
+
+class TestTrueClip:
+    """Verify true_clip catches sample-level overshoot after M/S decode.
+
+    Note: true_clip operates at the output sample rate and catches SAMPLE
+    peaks, not TRUE (intersample) peaks. Its main purpose is catching overshoot
+    from M/S decode where L = M + S can exceed ceiling when both are clipped.
+    """
+
+    def test_true_clip_catches_ms_decode_overshoot(self, plugin_path):
+        """M/S decode can cause sample overshoot - true_clip catches it."""
+        import numpy as np
+
+        plugin = load_plugin(plugin_path)
+        plugin.bypass_clipper = False
+        plugin.ceiling_db = -6.0
+        plugin.oversampling = "1x"  # Simplify - no OS filter artifacts
+        plugin.stereo_mode = "M/S"
+
+        ceiling_linear = db_to_linear(-6.0)  # 0.5012
+
+        # Asymmetric signal: L loud, R quiet
+        # L = 2*ceiling, R = 0
+        # Encode: M = (L+R)/2 = ceiling, S = (L-R)/2 = ceiling
+        # After clip to ceiling: M = ceiling, S = ceiling
+        # Decode: L = M + S = 2*ceiling (exceeds!)
+        duration = 0.1
+        sr = 44100
+        samples = int(sr * duration)
+        left = np.full(samples, ceiling_linear * 2.0, dtype=np.float32)
+        right = np.zeros(samples, dtype=np.float32)
+        input_signal = np.column_stack([left, right])
+
+        # With true_clip OFF - samples can exceed ceiling
+        plugin.true_clip = False
+        settle_params(plugin)
+        output_off = plugin.process(input_signal.copy(), sr)
+        peak_off = peak(output_off)
+
+        # With true_clip ON - samples clamped
+        plugin.true_clip = True
+        settle_params(plugin)
+        output_on = plugin.process(input_signal.copy(), sr)
+        peak_on = peak(output_on)
+
+        # OFF should exceed ceiling (M/S decode overshoot)
+        assert peak_off > ceiling_linear * 1.5, (
+            f"Expected M/S decode overshoot (~2x ceiling), but peak={peak_off:.4f}"
+        )
+
+        # ON should be at ceiling
+        assert peak_on <= ceiling_linear * 1.01, (
+            f"true_clip should clamp to {ceiling_linear:.4f}, but peak={peak_on:.4f}"
+        )
+
+    def test_true_clip_difference_is_significant(self, plugin_path):
+        """The difference between true_clip on/off should be ~6dB for M/S."""
+        import numpy as np
+
+        ceiling_linear = db_to_linear(-6.0)
+        duration = 0.1
+        sr = 44100
+        samples = int(sr * duration)
+
+        # Same asymmetric signal that triggers M/S decode overshoot
+        left = np.full(samples, ceiling_linear * 2.0, dtype=np.float32)
+        right = np.zeros(samples, dtype=np.float32)
+        input_signal = np.column_stack([left, right])
+
+        # Process with true_clip OFF
+        plugin_off = load_plugin(plugin_path)
+        plugin_off.bypass_clipper = False
+        plugin_off.ceiling_db = -6.0
+        plugin_off.oversampling = "1x"
+        plugin_off.stereo_mode = "M/S"
+        plugin_off.true_clip = False
+        settle_params(plugin_off)
+        output_off = plugin_off.process(input_signal.copy(), sr)
+        peak_off = peak(output_off)
+
+        # Process with true_clip ON
+        plugin_on = load_plugin(plugin_path)
+        plugin_on.bypass_clipper = False
+        plugin_on.ceiling_db = -6.0
+        plugin_on.oversampling = "1x"
+        plugin_on.stereo_mode = "M/S"
+        plugin_on.true_clip = True
+        settle_params(plugin_on)
+        output_on = plugin_on.process(input_signal.copy(), sr)
+        peak_on = peak(output_on)
+
+        # ON should have lower peak than OFF
+        assert peak_on < peak_off, (
+            f"true_clip=True ({peak_on:.4f}) should have lower "
+            f"peak than OFF ({peak_off:.4f})"
+        )
+
+        # The difference should be ~6dB (2x overshoot clamped to ceiling)
+        diff_db = linear_to_db(peak_off) - linear_to_db(peak_on)
+        assert diff_db > 5.0, (
+            f"Expected ~6dB difference from M/S overshoot, got {diff_db:.2f}dB"
+        )
+
+    def test_true_clip_no_effect_on_lr_mode(self, plugin_path):
+        """In L/R mode (no M/S), true_clip has minimal effect."""
+        plugin = load_plugin(plugin_path)
+        plugin.bypass_clipper = False
+        plugin.ceiling_db = -6.0
+        plugin.oversampling = "1x"
+        plugin.stereo_mode = "L/R"  # No M/S encode/decode
+
+        ceiling_linear = db_to_linear(-6.0)
+
+        # Hot signal that will be clipped
+        input_signal = generate_intersample_test(
+            amplitude=ceiling_linear * 2.0,
+            duration=0.1,
+            stereo=True
+        )
+
+        # Both ON and OFF should produce same sample peaks (clipper handles it)
+        plugin.true_clip = False
+        settle_params(plugin)
+        output_off = plugin.process(input_signal.copy(), 44100)
+        peak_off = peak(output_off)
+
+        plugin.true_clip = True
+        settle_params(plugin)
+        output_on = plugin.process(input_signal.copy(), 44100)
+        peak_on = peak(output_on)
+
+        # Both should be at ceiling (within tolerance)
+        assert peak_off <= ceiling_linear * 1.02
+        assert peak_on <= ceiling_linear * 1.02
+
+        # And they should be essentially identical
+        assert abs(peak_off - peak_on) < 0.001, (
+            f"L/R mode: peaks should match, got OFF={peak_off:.4f} vs ON={peak_on:.4f}"
         )
 
 
