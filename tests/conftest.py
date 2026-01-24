@@ -29,6 +29,7 @@ TEST_DEFAULTS = {
     "stereo_mode": "Stereo Link",  # "Stereo Link", "L/R", or "M/S"
     "delta": False,
     "true_clip": True,
+    "dry_wet": 1.0,  # 0.0 = dry, 1.0 = wet
 }
 
 
