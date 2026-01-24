@@ -1,6 +1,15 @@
 # Guillotine Roadmap
 
-## v1.0.3 - Distribution & Install (Current)
+## v1.0.3 - Dry/Wet Mix (Current)
+
+Focus: Phase-coherent dry/wet mixing.
+
+- [x] Dry/wet knob synced to DSP parameter
+- [x] Matched oversamplers for phase-coherent mixing
+- [x] True clip tests for M/S decode overshoot
+- [x] Dry/wet phase coherence test suite
+
+## v1.1 - Distribution & Install
 
 Focus: Make installation painless for users.
 
@@ -10,12 +19,11 @@ Focus: Make installation painless for users.
 - Proper installers (PKG for macOS, Inno/WiX for Windows)
 - CI automation for signed releases
 
-## v1.1 - Features
+## v1.2 - Features
 
 Focus: High-demand features from testers.
 
 - Input/output clip lights (TBD: on guillotine legs vs separate meters by knobs)
-- Dry/wet knob (left of guillotine, guillotine shading fades as dry increases)
 - Ceiling knob moves guillotine blade slightly up/down (visual connection to microscope)
 - Hard-soft curve control
 

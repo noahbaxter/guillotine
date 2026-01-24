@@ -18,8 +18,8 @@ Categorized bank of potential features. Pull from here into ROADMAP.md when plan
 
 ## Controls & Parameters
 
-- [ ] Dry/wet knob (replace on/off toggle)
-- [x] ~~UI toggles for hidden params (filter type, channel mode, true clip, stereo link)~~ (v1.1)
+- [x] ~~Dry/wet knob (phase-coherent mixing)~~ (v1.0.3)
+- [x] ~~UI toggles for hidden params (filter type, channel mode, true clip, stereo link)~~ (v1.0.2)
 - [ ] Readable mode as UI toggle (not just R key)
 - [ ] Resize handle / size menu (more discoverable)
 - [ ] Valhalla-style status bar for hovered control description
@@ -119,6 +119,8 @@ Rough ideas to explore - exact UX TBD:
 - Stereo link behavior
 - Latency reporting (basic)
 - pluginval DAW compliance
+- True clip M/S decode overshoot (v1.0.3)
+- Dry/wet phase coherence (v1.0.3)
 
 ---
 
