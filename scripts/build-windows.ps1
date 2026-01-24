@@ -1,44 +1,17 @@
-# build-windows.ps1 - Windows build script matching GitHub Actions CI
-# Usage: .\scripts\build-windows.ps1 [clean|release|debug|install|sync]
+# build-windows.ps1 - Windows build script for Guillotine
+# Usage: .\scripts\build-windows.ps1 [clean|release|debug|install|installer]
 #
-# Workflow: Edit code in WSL, run this script to sync & build on Windows FS
+# When called from WSL, use build-windows.sh which handles sync automatically
 
 param(
     [string]$Config = "release",
-    [switch]$NoSync
+    [switch]$NoSync  # Kept for compatibility with bash wrapper
 )
 
 $ErrorActionPreference = "Stop"
 $ProjectRoot = "C:\Users\Noah\Code\guillotine"
 $BuildDir = Join-Path $ProjectRoot "build"
 $VST3Dest = "C:\Program Files\Common Files\VST3"
-$WSLSource = "/home/noahbaxter/Code/personal/guillotine/"
-
-# Sync from WSL to Windows FS
-function Sync-FromWSL {
-    Write-Host "=== Syncing from WSL ===" -ForegroundColor Cyan
-    Write-Host "Source: $WSLSource"
-    Write-Host "Dest:   $ProjectRoot"
-
-    $rsyncCmd = "rsync -av --delete " +
-        "--exclude='build/' " +
-        "--exclude='packages/' " +
-        "--exclude='*.zip' " +
-        "--exclude='.git/' " +
-        "$WSLSource /mnt/c/Users/Noah/Code/guillotine/"
-
-    wsl bash -c $rsyncCmd
-    if ($LASTEXITCODE -ne 0) { throw "Sync from WSL failed" }
-
-    Write-Host "Sync complete." -ForegroundColor Green
-    Write-Host ""
-}
-
-# Handle sync-only
-if ($Config -eq "sync") {
-    Sync-FromWSL
-    exit 0
-}
 
 # Find CMake from VS BuildTools
 $CMakePath = "C:\Program Files (x86)\Microsoft Visual Studio\2022\BuildTools\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\bin\cmake.exe"
@@ -90,13 +63,20 @@ if ($Config -eq "install") {
     exit 0
 }
 
+# Handle installer build
+if ($Config -eq "installer") {
+    # First build release
+    $Config = "release"
+    $BuildType = "Release"
+
+    # Continue to build, then create installer at the end
+    $BuildInstaller = $true
+} else {
+    $BuildInstaller = $false
+}
+
 # Determine build type
 $BuildType = if ($Config -eq "debug") { "Debug" } else { "Release" }
-
-# Sync from WSL before building (unless -NoSync)
-if (-not $NoSync) {
-    Sync-FromWSL
-}
 
 # Configure (only if needed)
 $CMakeCacheFile = Join-Path $BuildDir "CMakeCache.txt"
@@ -139,7 +119,52 @@ if (Test-Path $StandalonePath) {
     Write-Host "Standalone: $StandalonePath ($size MB)" -ForegroundColor Green
 }
 
-# Offer to install
-Write-Host ""
-Write-Host "To install VST3 to system folder, run:" -ForegroundColor Yellow
-Write-Host "  .\scripts\build-windows.ps1 install" -ForegroundColor White
+# Build installer if requested
+if ($BuildInstaller) {
+    Write-Host ""
+    Write-Host "=== Building Installer (Inno Setup) ===" -ForegroundColor Cyan
+
+    $Version = Get-Content (Join-Path $ProjectRoot "VERSION") -Raw
+    $Version = $Version.Trim()
+    $InstallerDir = Join-Path $ProjectRoot "installer\windows"
+    $SourceDir = Join-Path $BuildDir "Guillotine_artefacts\Release"
+
+    # Check for Inno Setup in common locations
+    $isccPaths = @(
+        "C:\Program Files (x86)\Inno Setup 6\ISCC.exe",
+        "C:\Program Files\Inno Setup 6\ISCC.exe",
+        "$env:LOCALAPPDATA\Programs\Inno Setup 6\ISCC.exe",
+        "$env:ProgramFiles\Inno Setup 6\ISCC.exe"
+    )
+    $iscc = $null
+    foreach ($path in $isccPaths) {
+        if (Test-Path $path) {
+            $iscc = $path
+            break
+        }
+    }
+    if (-not $iscc) {
+        # Try PATH as last resort
+        $iscc = Get-Command iscc -ErrorAction SilentlyContinue | Select-Object -ExpandProperty Source
+    }
+    if (-not $iscc) {
+        Write-Error "Inno Setup not found. Install with: winget install JRSoftware.InnoSetup"
+        exit 1
+    }
+
+    Push-Location $InstallerDir
+    try {
+        & $iscc /DVERSION=$Version /DSOURCE_DIR=$SourceDir installer.iss
+        if ($LASTEXITCODE -ne 0) { throw "Inno Setup build failed" }
+
+        $InstallerPath = Join-Path $InstallerDir "Guillotine-$Version-Windows-x64.exe"
+        Write-Host "Installer: $InstallerPath" -ForegroundColor Green
+    } finally {
+        Pop-Location
+    }
+} else {
+    # Offer to install
+    Write-Host ""
+    Write-Host "To install VST3 to system folder, run:" -ForegroundColor Yellow
+    Write-Host "  .\scripts\build-windows.ps1 install" -ForegroundColor White
+}

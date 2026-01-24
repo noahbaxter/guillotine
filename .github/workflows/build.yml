@@ -498,7 +498,7 @@ jobs:
       - name: Prepare build structure
         shell: pwsh
         run: |
-          # Create expected directory structure for NSIS
+          # Create expected directory structure for Inno Setup
           New-Item -ItemType Directory -Path "build/Guillotine_artefacts/Release/VST3" -Force
 
           # Artifact downloads as Guillotine.vst3/ folder
@@ -521,18 +521,18 @@ jobs:
           $version = $version.Trim()
           echo "version=$version" >> $env:GITHUB_OUTPUT
 
-      - name: Install NSIS
+      - name: Install Inno Setup
         shell: pwsh
         run: |
-          choco install nsis -y
-          echo "C:\Program Files (x86)\NSIS" >> $env:GITHUB_PATH
+          choco install innosetup -y
 
       - name: Build installer
         shell: pwsh
         run: |
           $version = "${{ steps.version.outputs.version }}"
+          $iscc = "C:\Program Files (x86)\Inno Setup 6\ISCC.exe"
           cd installer/windows
-          makensis /DVERSION=$version installer.nsi
+          & $iscc /DVERSION=$version installer.iss
 
       - name: Upload installer
         uses: actions/upload-artifact@v4
