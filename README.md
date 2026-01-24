@@ -2,6 +2,22 @@
 
 A clipper plugin with oversampling and multiple curve modes.
 
+## Installation
+
+**macOS** (signed & notarized)
+- Download the `.pkg` installer from [Releases](https://github.com/dichoticstudios/guillotine/releases)
+- Double-click to install
+- VST3 and AU plugins install to `/Library/Audio/Plug-Ins/`
+
+**Windows**
+- Download the `.exe` installer from [Releases](https://github.com/dichoticstudios/guillotine/releases)
+- If SmartScreen appears, click "More info" → "Run anyway"
+- Plugin installs to `C:\Program Files\Common Files\VST3\`
+
+**Linux**
+- Download the `.zip` from [Releases](https://github.com/dichoticstudios/guillotine/releases)
+- Extract to `~/.vst3/`
+
 ## Oversampling & Filter Types
 
 ### Filter Types

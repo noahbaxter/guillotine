@@ -3,6 +3,8 @@ name: Build Guillotine
 on:
   push:
     branches: [main, develop]
+    tags:
+      - 'v*'
   pull_request:
     branches: [main, develop]
   workflow_dispatch:
@@ -312,6 +314,234 @@ jobs:
       - name: Run all tests
         run: pytest tests/ -v
 
+  # Package macOS installer (signed + notarized)
+  package-macos:
+    needs: [build-macos, test-macos]
+    runs-on: macos-14
+    if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/v'))
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Download macOS artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: Guillotine-macOS
+          path: ./artifacts/
+
+      - name: Prepare build structure
+        run: |
+          mkdir -p build/Guillotine_artefacts/Release/VST3
+          mkdir -p build/Guillotine_artefacts/Release/AU
+
+          # Handle different artifact structures
+          if [ -d "./artifacts/VST3/Guillotine.vst3" ]; then
+            cp -R ./artifacts/VST3/Guillotine.vst3 build/Guillotine_artefacts/Release/VST3/
+          elif [ -d "./artifacts/Guillotine.vst3" ]; then
+            cp -R ./artifacts/Guillotine.vst3 build/Guillotine_artefacts/Release/VST3/
+          fi
+
+          if [ -d "./artifacts/AU/Guillotine.component" ]; then
+            cp -R ./artifacts/AU/Guillotine.component build/Guillotine_artefacts/Release/AU/
+          elif [ -d "./artifacts/Guillotine.component" ]; then
+            cp -R ./artifacts/Guillotine.component build/Guillotine_artefacts/Release/AU/
+          fi
+
+          echo "=== Build structure ==="
+          find build/Guillotine_artefacts -type d
+
+      - name: Get version
+        id: version
+        run: |
+          VERSION=$(cat VERSION | tr -d '\n')
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+
+      - name: Import certificates
+        env:
+          APPLE_CERTIFICATE_APPLICATION: ${{ secrets.APPLE_CERTIFICATE_APPLICATION }}
+          APPLE_CERTIFICATE_INSTALLER: ${{ secrets.APPLE_CERTIFICATE_INSTALLER }}
+          APPLE_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
+        run: |
+          # Create temporary keychain
+          KEYCHAIN_PATH=$RUNNER_TEMP/signing.keychain-db
+          KEYCHAIN_PASSWORD=$(openssl rand -base64 32)
+
+          security create-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
+          security set-keychain-settings -lut 21600 "$KEYCHAIN_PATH"
+          security unlock-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
+
+          # Import certificates
+          echo "$APPLE_CERTIFICATE_APPLICATION" | base64 --decode > $RUNNER_TEMP/app.p12
+          echo "$APPLE_CERTIFICATE_INSTALLER" | base64 --decode > $RUNNER_TEMP/installer.p12
+
+          security import $RUNNER_TEMP/app.p12 -P "$APPLE_CERTIFICATE_PASSWORD" \
+            -A -t cert -f pkcs12 -k "$KEYCHAIN_PATH"
+          security import $RUNNER_TEMP/installer.p12 -P "$APPLE_CERTIFICATE_PASSWORD" \
+            -A -t cert -f pkcs12 -k "$KEYCHAIN_PATH"
+
+          # Download and import Apple intermediate certificate
+          curl -sO https://www.apple.com/certificateauthority/DeveloperIDG2CA.cer
+          security import DeveloperIDG2CA.cer -k "$KEYCHAIN_PATH"
+
+          # Set keychain search list
+          security list-keychain -d user -s "$KEYCHAIN_PATH" login.keychain
+
+          # Allow codesign to access the keychain
+          security set-key-partition-list -S apple-tool:,apple:,codesign: -s -k "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
+
+          # Verify
+          echo "=== Available signing identities ==="
+          security find-identity -v -p codesigning "$KEYCHAIN_PATH"
+
+      - name: Store notarization credentials
+        env:
+          APPLE_ID: ${{ secrets.APPLE_ID }}
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+          APPLE_APP_PASSWORD: ${{ secrets.APPLE_APP_PASSWORD }}
+        run: |
+          xcrun notarytool store-credentials "notarytool-profile" \
+            --apple-id "$APPLE_ID" \
+            --team-id "$APPLE_TEAM_ID" \
+            --password "$APPLE_APP_PASSWORD"
+
+      - name: Sign and package
+        run: |
+          VERSION="${{ steps.version.outputs.version }}"
+          PKG_ROOT="build/pkg-root"
+          PKG_OUT="build/installer"
+          APP_IDENTITY="Developer ID Application: Noah Baxter (KUP5WU7WPC)"
+          PKG_IDENTITY="Developer ID Installer: Noah Baxter (KUP5WU7WPC)"
+
+          # Create package structure
+          mkdir -p "$PKG_ROOT/Library/Audio/Plug-Ins/VST3"
+          mkdir -p "$PKG_ROOT/Library/Audio/Plug-Ins/Components"
+          mkdir -p "$PKG_OUT"
+
+          # Copy plugins
+          cp -R build/Guillotine_artefacts/Release/VST3/Guillotine.vst3 "$PKG_ROOT/Library/Audio/Plug-Ins/VST3/"
+          cp -R build/Guillotine_artefacts/Release/AU/Guillotine.component "$PKG_ROOT/Library/Audio/Plug-Ins/Components/"
+
+          # Sign plugins
+          echo "=== Signing VST3 ==="
+          codesign --force --deep --sign "$APP_IDENTITY" \
+            --options runtime --timestamp \
+            "$PKG_ROOT/Library/Audio/Plug-Ins/VST3/Guillotine.vst3"
+
+          echo "=== Signing AU ==="
+          codesign --force --deep --sign "$APP_IDENTITY" \
+            --options runtime --timestamp \
+            "$PKG_ROOT/Library/Audio/Plug-Ins/Components/Guillotine.component"
+
+          # Verify signatures
+          codesign --verify --deep --strict "$PKG_ROOT/Library/Audio/Plug-Ins/VST3/Guillotine.vst3"
+          codesign --verify --deep --strict "$PKG_ROOT/Library/Audio/Plug-Ins/Components/Guillotine.component"
+
+          # Build package
+          echo "=== Building package ==="
+          pkgbuild \
+            --root "$PKG_ROOT" \
+            --identifier "com.dichoticstudios.guillotine.pkg" \
+            --version "$VERSION" \
+            --install-location "/" \
+            "$PKG_OUT/Guillotine-unsigned.pkg"
+
+          # Sign package
+          echo "=== Signing package ==="
+          productsign \
+            --sign "$PKG_IDENTITY" \
+            "$PKG_OUT/Guillotine-unsigned.pkg" \
+            "$PKG_OUT/Guillotine-${VERSION}-macOS.pkg"
+
+          rm "$PKG_OUT/Guillotine-unsigned.pkg"
+
+          # Verify package
+          pkgutil --check-signature "$PKG_OUT/Guillotine-${VERSION}-macOS.pkg"
+
+      - name: Notarize
+        run: |
+          VERSION="${{ steps.version.outputs.version }}"
+          PKG="build/installer/Guillotine-${VERSION}-macOS.pkg"
+
+          echo "=== Submitting for notarization ==="
+          xcrun notarytool submit "$PKG" \
+            --keychain-profile "notarytool-profile" \
+            --wait
+
+          echo "=== Stapling ticket ==="
+          xcrun stapler staple "$PKG"
+          xcrun stapler validate "$PKG"
+
+      - name: Upload installer
+        uses: actions/upload-artifact@v4
+        with:
+          name: Guillotine-Installer-macOS
+          path: build/installer/Guillotine-*.pkg
+          retention-days: 30
+
+  # Package Windows installer (unsigned)
+  package-windows:
+    needs: [build-windows, test-windows]
+    runs-on: windows-latest
+    if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/v'))
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Download Windows artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: Guillotine-VST3-Windows-x64
+          path: ./artifacts/
+
+      - name: Prepare build structure
+        shell: pwsh
+        run: |
+          # Create expected directory structure for NSIS
+          New-Item -ItemType Directory -Path "build/Guillotine_artefacts/Release/VST3" -Force
+
+          # Artifact downloads as Guillotine.vst3/ folder
+          if (Test-Path "./artifacts/Guillotine.vst3") {
+            Copy-Item -Recurse "./artifacts/Guillotine.vst3" "build/Guillotine_artefacts/Release/VST3/"
+          } else {
+            # Or it might be the contents directly
+            New-Item -ItemType Directory -Path "build/Guillotine_artefacts/Release/VST3/Guillotine.vst3" -Force
+            Copy-Item -Recurse "./artifacts/*" "build/Guillotine_artefacts/Release/VST3/Guillotine.vst3/"
+          }
+
+          Write-Host "=== Build structure ==="
+          Get-ChildItem -Recurse "build/Guillotine_artefacts/Release/VST3" | Select-Object FullName
+
+      - name: Get version
+        id: version
+        shell: pwsh
+        run: |
+          $version = Get-Content VERSION -Raw
+          $version = $version.Trim()
+          echo "version=$version" >> $env:GITHUB_OUTPUT
+
+      - name: Install NSIS
+        shell: pwsh
+        run: |
+          choco install nsis -y
+          echo "C:\Program Files (x86)\NSIS" >> $env:GITHUB_PATH
+
+      - name: Build installer
+        shell: pwsh
+        run: |
+          $version = "${{ steps.version.outputs.version }}"
+          cd installer/windows
+          makensis /DVERSION=$version installer.nsi
+
+      - name: Upload installer
+        uses: actions/upload-artifact@v4
+        with:
+          name: Guillotine-Installer-Windows
+          path: installer/windows/Guillotine-*.exe
+          retention-days: 30
+
+  # Check if release is needed
   check-release:
     needs: [build-windows, build-macos, build-linux, test-macos, test-windows]
     runs-on: ubuntu-latest
@@ -339,60 +569,101 @@ jobs:
             echo "should_release=true" >> $GITHUB_OUTPUT
           fi
 
+  # Create GitHub release with installers
   release:
-    needs: [check-release]
+    needs: [check-release, package-macos, package-windows]
     runs-on: ubuntu-latest
     if: needs.check-release.outputs.should_release == 'true'
     permissions:
       contents: write
 
     steps:
-      - name: Download Windows artifacts
+      - name: Download macOS installer
         uses: actions/download-artifact@v4
         with:
-          name: Guillotine-VST3-Windows-x64
-          path: ./windows-vst3/
+          name: Guillotine-Installer-macOS
+          path: ./installers/
 
-      - name: Download macOS artifacts
+      - name: Download Windows installer
         uses: actions/download-artifact@v4
         with:
-          name: Guillotine-macOS
-          path: ./macos-artifacts/
+          name: Guillotine-Installer-Windows
+          path: ./installers/
 
       - name: Download Linux artifacts
         uses: actions/download-artifact@v4
         with:
           name: Guillotine-VST3-Linux-x64
-          path: ./linux-artifacts/
+          path: ./linux-vst3/
 
-      - name: Create release archives
+      - name: Create Linux archive
         run: |
           VERSION="${{ needs.check-release.outputs.version }}"
-          TIMESTAMP=$(date -u +%Y%m%d-%H%M)
-          cd windows-vst3 && zip -r "../Guillotine-${VERSION}-${TIMESTAMP}-Windows-x64.zip" . && cd ..
-          cd macos-artifacts && zip -r "../Guillotine-${VERSION}-${TIMESTAMP}-macOS.zip" . && cd ..
-          cd linux-artifacts && zip -r "../Guillotine-${VERSION}-${TIMESTAMP}-Linux-x64.zip" . && cd ..
-          echo "TIMESTAMP=${TIMESTAMP}" >> $GITHUB_ENV
+          cd linux-vst3
+          zip -r "../installers/Guillotine-${VERSION}-Linux-x64.zip" .
 
-      - name: Generate release notes
-        run: |
-          VERSION="${{ needs.check-release.outputs.version }}"
-          echo "## Guillotine v$VERSION" >> release_notes.md
-          echo "" >> release_notes.md
-          echo "### Installation" >> release_notes.md
-          echo "- **Windows**: Extract and place \`Guillotine.vst3\` folder in your VST3 directory" >> release_notes.md
-          echo "- **macOS**: Extract and copy VST3/AU to \`~/Library/Audio/Plug-Ins/\`" >> release_notes.md
-          echo "- **Linux**: Extract to \`~/.vst3/\` or your DAW's VST3 directory" >> release_notes.md
+      - name: List installers
+        run: ls -la installers/
 
       - name: Create release
         uses: softprops/action-gh-release@v1
         with:
           tag_name: v${{ needs.check-release.outputs.version }}
           name: Guillotine v${{ needs.check-release.outputs.version }}
-          body_path: release_notes.md
+          draft: true
           files: |
-            Guillotine-${{ needs.check-release.outputs.version }}-${{ env.TIMESTAMP }}-Windows-x64.zip
-            Guillotine-${{ needs.check-release.outputs.version }}-${{ env.TIMESTAMP }}-macOS.zip
-            Guillotine-${{ needs.check-release.outputs.version }}-${{ env.TIMESTAMP }}-Linux-x64.zip
+            installers/*
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  # Manual/tag release (when pushing a tag directly)
+  release-from-tag:
+    needs: [package-macos, package-windows]
+    runs-on: ubuntu-latest
+    if: startsWith(github.ref, 'refs/tags/v')
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Get version from tag
+        id: version
+        run: |
+          VERSION=${GITHUB_REF#refs/tags/v}
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+
+      - name: Download macOS installer
+        uses: actions/download-artifact@v4
+        with:
+          name: Guillotine-Installer-macOS
+          path: ./installers/
+
+      - name: Download Windows installer
+        uses: actions/download-artifact@v4
+        with:
+          name: Guillotine-Installer-Windows
+          path: ./installers/
+
+      - name: Download Linux artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: Guillotine-VST3-Linux-x64
+          path: ./linux-vst3/
+
+      - name: Create Linux archive
+        run: |
+          VERSION="${{ steps.version.outputs.version }}"
+          cd linux-vst3
+          zip -r "../installers/Guillotine-${VERSION}-Linux-x64.zip" .
+
+      - name: Create release
+        uses: softprops/action-gh-release@v1
+        with:
+          name: Guillotine v${{ steps.version.outputs.version }}
+          draft: true
+          files: |
+            installers/*
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
