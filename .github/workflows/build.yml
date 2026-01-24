@@ -624,11 +624,11 @@ jobs:
         run: |
           VERSION="${{ needs.check-release.outputs.version }}"
           cp installers/Guillotine-${VERSION}-macOS.pkg installers/Guillotine-macOS.pkg
-          cp installers/Guillotine-${VERSION}-Windows.exe installers/Guillotine-Windows.exe
+          cp installers/Guillotine-${VERSION}-Windows-x64.exe installers/Guillotine-Windows.exe
           cp installers/Guillotine-${VERSION}-Linux-x64.zip installers/Guillotine-Linux-x64.zip
-          aws s3 cp installers/Guillotine-macOS.pkg s3://vst-guillotine/ --endpoint-url $AWS_ENDPOINT_URL
-          aws s3 cp installers/Guillotine-Windows.exe s3://vst-guillotine/ --endpoint-url $AWS_ENDPOINT_URL
-          aws s3 cp installers/Guillotine-Linux-x64.zip s3://vst-guillotine/ --endpoint-url $AWS_ENDPOINT_URL
+          aws s3 cp installers/Guillotine-macOS.pkg s3://vst-guillotine/ --endpoint-url $AWS_ENDPOINT_URL --region auto
+          aws s3 cp installers/Guillotine-Windows.exe s3://vst-guillotine/ --endpoint-url $AWS_ENDPOINT_URL --region auto
+          aws s3 cp installers/Guillotine-Linux-x64.zip s3://vst-guillotine/ --endpoint-url $AWS_ENDPOINT_URL --region auto
 
   # Manual/tag release (when pushing a tag directly)
   release-from-tag:
@@ -690,8 +690,8 @@ jobs:
         run: |
           VERSION="${{ steps.version.outputs.version }}"
           cp installers/Guillotine-${VERSION}-macOS.pkg installers/Guillotine-macOS.pkg
-          cp installers/Guillotine-${VERSION}-Windows.exe installers/Guillotine-Windows.exe
+          cp installers/Guillotine-${VERSION}-Windows-x64.exe installers/Guillotine-Windows.exe
           cp installers/Guillotine-${VERSION}-Linux-x64.zip installers/Guillotine-Linux-x64.zip
-          aws s3 cp installers/Guillotine-macOS.pkg s3://vst-guillotine/ --endpoint-url $AWS_ENDPOINT_URL
-          aws s3 cp installers/Guillotine-Windows.exe s3://vst-guillotine/ --endpoint-url $AWS_ENDPOINT_URL
-          aws s3 cp installers/Guillotine-Linux-x64.zip s3://vst-guillotine/ --endpoint-url $AWS_ENDPOINT_URL
+          aws s3 cp installers/Guillotine-macOS.pkg s3://vst-guillotine/ --endpoint-url $AWS_ENDPOINT_URL --region auto
+          aws s3 cp installers/Guillotine-Windows.exe s3://vst-guillotine/ --endpoint-url $AWS_ENDPOINT_URL --region auto
+          aws s3 cp installers/Guillotine-Linux-x64.zip s3://vst-guillotine/ --endpoint-url $AWS_ENDPOINT_URL --region auto
