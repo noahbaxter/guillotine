@@ -14,7 +14,7 @@ Guillotine is a JUCE-based audio plugin (VST3/AU) implementing a clipping effect
 ./scripts/build.sh clean        # Clean build artifacts
 ./scripts/build.sh --no-install # Build without installing
 ./scripts/standalone.sh         # Quick UI preview - builds standalone app and launches it
-./scripts/watch.sh              # Auto-reload: watches src/, assets/, web/ and rebuilds on change
+./scripts/watch.sh              # Auto-reload: watches src/, web/ and rebuilds on change
 ./scripts/validate.sh           # Run pluginval at strictness 10 (or pass level: ./scripts/validate.sh 5)
 ```
 
@@ -65,8 +65,7 @@ Test types:
 - `web/lib/` - Utilities: config.js, theme.js, guillotine-utils.js, saturation-curves.js
 
 **Assets:**
-- `assets/*.png` - Guillotine graphics (blade, rope, base, lever, digits)
-- `web/assets/` - Web-specific assets (textures)
+- `web/assets/` - All images: guillotine graphics, toggles, numeric digits, text labels, textures, fonts
 
 ## Adding New Web Assets
 
@@ -93,8 +92,8 @@ web/components/foo.js
 
 **For PNG images:** Crop to remove unnecessary whitespace using ImageMagick before committing:
 ```bash
-magick convert assets/image.png -trim -fuzz 0% -format "%wx%h%O\n" info:  # Check bounds
-magick convert assets/image.png -crop WxH+X+Y +repage assets/image.png    # Crop in place
+magick convert web/assets/image.png -trim -fuzz 0% -format "%wx%h%O\n" info:  # Check bounds
+magick convert web/assets/image.png -crop WxH+X+Y +repage web/assets/image.png    # Crop in place
 ```
 This ensures consistent alignment across layered images (e.g., guillotine blade/rope/base must stay aligned).
 

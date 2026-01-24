@@ -127,65 +127,56 @@ juce_add_binary_data(GuillotineData
         web/components/display/blood-line.js
         # Web - assets
         web/assets/grunge-texture.jpg
-        # Assets - guillotine
-        assets/guillotine/base.png
-        assets/guillotine/base-outline.png
-        assets/guillotine/blade.png
-        assets/guillotine/blade-outline.png
-        assets/guillotine/rope.png
-        assets/guillotine/side-fill.png
-        assets/guillotine/side-outline.png
-        assets/guillotine-logo.png
-        # Assets - toggles
-        assets/toggles/toggle-base.png
-        assets/toggles/toggle-middle.png
-        assets/toggles/toggle-stem.png
-        # Assets - toggle icons (SVG)
+        web/assets/guillotine/base.png
+        web/assets/guillotine/base-outline.png
+        web/assets/guillotine/blade.png
+        web/assets/guillotine/blade-outline.png
+        web/assets/guillotine/rope.png
+        web/assets/guillotine/side-fill.png
+        web/assets/guillotine/side-outline.png
+        web/assets/guillotine-logo.png
+        web/assets/toggles/toggle-base.png
+        web/assets/toggles/toggle-middle.png
+        web/assets/toggles/toggle-stem.png
         web/assets/icon-linear-phase.svg
         web/assets/icon-min-phase.svg
         web/assets/icon-stereo-link.svg
         web/assets/icon-lr.svg
         web/assets/icon-ms.svg
         web/assets/icon-true-peak.svg
-        # Assets - numeric
-        assets/numeric/num-0.png
-        assets/numeric/num-1.png
-        assets/numeric/num-2.png
-        assets/numeric/num-3.png
-        assets/numeric/num-4.png
-        assets/numeric/num-5.png
-        assets/numeric/num-6.png
-        assets/numeric/num-7.png
-        assets/numeric/num-8.png
-        assets/numeric/num-9.png
-        assets/numeric/num-dot.png
-        # Assets - text
-        assets/text/text-1.png
-        assets/text/text-2.png
-        assets/text/text-lockslip.png
-        # Assets - text/controls
-        assets/text/controls/andy.png
-        assets/text/controls/blade.png
-        assets/text/controls/ceiling.png
-        assets/text/controls/dB.png
-        assets/text/controls/input.png
-        assets/text/controls/output.png
-        assets/text/controls/oversample.png
-        assets/text/controls/x.png
-        # Assets - text/controls/blades
-        assets/text/controls/blades/atan.png
-        assets/text/controls/blades/cubic.png
-        assets/text/controls/blades/hard.png
-        assets/text/controls/blades/knee.png
-        assets/text/controls/blades/quint.png
-        assets/text/controls/blades/t2.png
-        assets/text/controls/blades/tanh.png
-        # Assets - wood textures
-        assets/textures/wood-1.png
-        assets/textures/wood-2.png
-        assets/textures/wood-3.png
-        # Assets - fonts
-        assets/fonts/zeyada.ttf
+        web/assets/numeric/num-0.png
+        web/assets/numeric/num-1.png
+        web/assets/numeric/num-2.png
+        web/assets/numeric/num-3.png
+        web/assets/numeric/num-4.png
+        web/assets/numeric/num-5.png
+        web/assets/numeric/num-6.png
+        web/assets/numeric/num-7.png
+        web/assets/numeric/num-8.png
+        web/assets/numeric/num-9.png
+        web/assets/numeric/num-dot.png
+        web/assets/text/text-1.png
+        web/assets/text/text-2.png
+        web/assets/text/text-lockslip.png
+        web/assets/text/controls/andy.png
+        web/assets/text/controls/blade.png
+        web/assets/text/controls/ceiling.png
+        web/assets/text/controls/dB.png
+        web/assets/text/controls/input.png
+        web/assets/text/controls/output.png
+        web/assets/text/controls/oversample.png
+        web/assets/text/controls/x.png
+        web/assets/text/controls/blades/atan.png
+        web/assets/text/controls/blades/cubic.png
+        web/assets/text/controls/blades/hard.png
+        web/assets/text/controls/blades/knee.png
+        web/assets/text/controls/blades/quint.png
+        web/assets/text/controls/blades/t2.png
+        web/assets/text/controls/blades/tanh.png
+        web/assets/textures/wood-1.png
+        web/assets/textures/wood-2.png
+        web/assets/textures/wood-3.png
+        web/assets/fonts/zeyada.ttf
 )
 
 # Compile definitions
