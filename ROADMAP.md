@@ -1,28 +1,19 @@
 # Guillotine Roadmap
 
-## v1.0.3 - Dry/Wet Mix (Current)
-
-Focus: Phase-coherent dry/wet mixing.
-
-- [x] Dry/wet knob synced to DSP parameter
-- [x] Matched oversamplers for phase-coherent mixing
-- [x] True clip tests for M/S decode overshoot
-- [x] Dry/wet phase coherence test suite
-
-## v1.1 - Distribution & Install
+## v1.1 - Distribution & Install (Current)
 
 Focus: Make installation painless for users.
 
-- macOS code signing + notarization
-- Windows code signing
-- AAX build (Pro Tools)
-- Proper installers (PKG for macOS, Inno/WiX for Windows)
-- CI automation for signed releases
+- [x] macOS code signing + notarization
+- [x] Proper installers (PKG for macOS, NSIS for Windows)
+- [x] CI automation for signed releases (macOS signed, Windows unsigned)
+- [x] Linux VST3 build
 
 ## v1.2 - Features
 
 Focus: High-demand features from testers.
 
+- AAX build (Pro Tools) - requires PACE iLok wrapper license
 - Input/output clip lights (TBD: on guillotine legs vs separate meters by knobs)
 - Ceiling knob moves guillotine blade slightly up/down (visual connection to microscope)
 - Hard-soft curve control
@@ -30,6 +21,12 @@ Focus: High-demand features from testers.
 ---
 
 ## Completed
+
+### v1.0.3
+- [x] Dry/wet knob synced to DSP parameter
+- [x] Matched oversamplers for phase-coherent mixing
+- [x] True clip tests for M/S decode overshoot
+- [x] Dry/wet phase coherence test suite
 
 ### v1.0.2
 - [x] Atomic peak meters (thread safety)
