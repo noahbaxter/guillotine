@@ -186,8 +186,6 @@ juce_add_binary_data(GuillotineData
         assets/textures/wood-3.png
         # Assets - fonts
         assets/fonts/zeyada.ttf
-        assets/fonts/cedarville.ttf
-        assets/fonts/dawning.ttf
 )
 
 # Compile definitions

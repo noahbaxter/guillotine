@@ -295,8 +295,6 @@ std::optional<juce::WebBrowserComponent::Resource> GuillotineEditor::getResource
         { "assets/textures/wood-3.png", BinaryData::wood3_png,      BinaryData::wood3_pngSize,      "image/png" },
         // Fonts
         { "assets/fonts/zeyada.ttf",    BinaryData::zeyada_ttf,     BinaryData::zeyada_ttfSize,     "application/x-font-ttf" },
-        { "assets/fonts/cedarville.ttf", BinaryData::cedarville_ttf, BinaryData::cedarville_ttfSize, "application/x-font-ttf" },
-        { "assets/fonts/dawning.ttf",   BinaryData::dawning_ttf,    BinaryData::dawning_ttfSize,    "application/x-font-ttf" },
         // Textures
         { "assets/grunge-texture.jpg",  BinaryData::grungetexture_jpg, BinaryData::grungetexture_jpgSize, "image/jpeg" },
     };

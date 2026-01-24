@@ -38,8 +38,6 @@ import './lib/crt-effect.js';  // Initialize CRT effects (scanlines, jitter, vig
 const fontStyles = document.createElement('style');
 fontStyles.textContent = `
   @font-face { font-family: 'Zeyada'; src: url('assets/fonts/zeyada.ttf') format('truetype'); }
-  @font-face { font-family: 'Cedarville Cursive'; src: url('assets/fonts/cedarville.ttf') format('truetype'); }
-  @font-face { font-family: 'Dawning of a New Day'; src: url('assets/fonts/dawning.ttf') format('truetype'); }
 `;
 document.head.appendChild(fontStyles);
 
@@ -112,8 +110,6 @@ class GuillotineApp {
     this.currentMinDb = DEFAULT_MIN_DB;  // Current microscope scale (matches default preset)
     this.currentCurve = 0;      // Current curve type (0=Hard, 1=Quintic, etc.)
     this.currentExponent = 2.0; // Curve exponent (for Knee and T2)
-    this.fonts = ['Zeyada', 'Cedarville Cursive', 'Dawning of a New Day'];
-    this.fontIndex = 0;
 
     // Track if we're currently dragging to avoid feedback loops
     this.draggingParam = null;
@@ -487,10 +483,6 @@ class GuillotineApp {
 
     // Keyboard shortcuts
     document.addEventListener('keydown', (e) => {
-      // Font cycling with F key
-      if (e.key === 'f' || e.key === 'F') {
-        this.cycleFont();
-      }
       // Toggle readable mode with R key
       if (e.key === 'r' || e.key === 'R') {
         toggleReadableMode();
@@ -508,12 +500,6 @@ class GuillotineApp {
         document.body.classList.add('ready');
       });
     });
-  }
-
-  cycleFont() {
-    this.fontIndex = (this.fontIndex + 1) % this.fonts.length;
-    const font = this.fonts[this.fontIndex];
-    document.documentElement.style.setProperty('--cursive-font', `'${font}', cursive`);
   }
 
   initializeFromParams() {
