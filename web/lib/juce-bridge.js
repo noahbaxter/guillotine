@@ -13,7 +13,8 @@ const sliderStates = {
     stereoMode: Juce.getSliderState("stereoMode"),
     deltaMonitor: Juce.getSliderState("deltaMonitor"),
     bypassClipper: Juce.getSliderState("bypassClipper"),
-    enforceCeiling: Juce.getSliderState("enforceCeiling")
+    enforceCeiling: Juce.getSliderState("enforceCeiling"),
+    dryWet: Juce.getSliderState("dryWet")
 };
 
 // Set a parameter value (normalized 0-1)

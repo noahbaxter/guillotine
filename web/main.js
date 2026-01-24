@@ -342,7 +342,7 @@ class GuillotineApp {
     this.outputGainKnob.onChange = (v) => this.setOutputGain(v);
     bindDragTracking(this.outputGainKnob, 'outputGain', this);
 
-    // Dry/Wet mix (visual only for now - fades guillotine texture)
+    // Dry/Wet mix - fades guillotine texture and syncs to DSP parameter
     this.drywetKnob.onChange = (v) => {
       const normalized = v / 100;
       this.guillotine.setDryWet(normalized);
@@ -352,7 +352,10 @@ class GuillotineApp {
       if (sideMain) {
         sideMain.style.opacity = normalized;
       }
+      // Sync to DSP parameter
+      setParameterNormalized('dryWet', normalized);
     };
+    bindDragTracking(this.drywetKnob, 'dryWet', this);
 
     // Settings toggles
     this.filterTypeToggle.onChange = (v) => setFilterType(v ? 1 : 0);
@@ -438,6 +441,19 @@ class GuillotineApp {
         const normalized = getParameterNormalized('oversampling');
         const index = Math.round(normalized * 5);  // 0-5
         this.oversamplingKnob.setValue(index);
+      }
+    });
+
+    onParameterChange('dryWet', () => {
+      if (this.draggingParam !== 'dryWet') {
+        const normalized = getParameterNormalized('dryWet');
+        this.drywetKnob.setValue(normalized * 100);
+        this.guillotine.setDryWet(normalized);
+        this.lever.setDryWet(normalized);
+        const sideMain = document.querySelector('.guillotine-side__img--main');
+        if (sideMain) {
+          sideMain.style.opacity = normalized;
+        }
       }
     });
 
@@ -546,6 +562,16 @@ class GuillotineApp {
     if (deltaEnabled && !this.bypass) {
       this.deltaMode = true;
       setDeltaMode(true);
+    }
+
+    // Dry/Wet mix
+    const dryWetNorm = getParameterNormalized('dryWet');
+    this.drywetKnob.setValue(dryWetNorm * 100);
+    this.guillotine.setDryWet(dryWetNorm);
+    this.lever.setDryWet(dryWetNorm);
+    const sideMain = document.querySelector('.guillotine-side__img--main');
+    if (sideMain) {
+      sideMain.style.opacity = dryWetNorm;
     }
 
     // Hidden params (settings toggles)

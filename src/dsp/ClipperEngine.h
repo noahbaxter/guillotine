@@ -31,6 +31,7 @@ public:
     void setDeltaMonitor(bool enabled);
     void setEnforceCeiling(bool enabled);
     void setBypass(bool enabled);
+    void setDryWetMix(float mix);  // 0.0 = dry, 1.0 = wet
 
     int getLatencyInSamples() const;
     void applyPendingChanges();  // Force oversampler rebuild if pending (call from message thread)
@@ -49,11 +50,12 @@ private:
     Oversampler oversampler;
     Clipper clipper;
 
-    // Delta monitoring - requires separate oversampler for dry path
-    // Both oversamplers use the same filter type for phase-matched cancellation
+    // Dry path uses matched oversampler for phase-coherent dry/wet mixing
+    // (also used for delta monitoring - subtracting wet from dry)
     juce::AudioBuffer<float> dryBuffer;
     Oversampler dryOversampler;
     bool deltaMonitorEnabled = false;
+    juce::SmoothedValue<float, juce::ValueSmoothingTypes::Linear> smoothedMix{1.0f};
 
     // Envelope peaks for display (updated each process call)
     std::atomic<float> lastPreClipPeak{0.0f};

@@ -16,6 +16,7 @@ GuillotineEditor::GuillotineEditor(GuillotineProcessor& p)
       stereoModeRelay{"stereoMode"},
       deltaMonitorRelay{"deltaMonitor"},
       bypassClipperRelay{"bypassClipper"},
+      dryWetRelay{"dryWet"},
       // Initialize WebView with relays
       webView{
           juce::WebBrowserComponent::Options{}
@@ -37,6 +38,7 @@ GuillotineEditor::GuillotineEditor(GuillotineProcessor& p)
               .withOptionsFrom(stereoModeRelay)
               .withOptionsFrom(deltaMonitorRelay)
               .withOptionsFrom(bypassClipperRelay)
+              .withOptionsFrom(dryWetRelay)
       },
       // Initialize parameter attachments (connect relays to APVTS)
       inputGainAttachment{
@@ -68,7 +70,10 @@ GuillotineEditor::GuillotineEditor(GuillotineProcessor& p)
           deltaMonitorRelay, nullptr},
       bypassClipperAttachment{
           *audioProcessor.getAPVTS().getParameter("bypassClipper"),
-          bypassClipperRelay, nullptr}
+          bypassClipperRelay, nullptr},
+      dryWetAttachment{
+          *audioProcessor.getAPVTS().getParameter("dryWet"),
+          dryWetRelay, nullptr}
 {
     addAndMakeVisible(webView);
     webView.setWantsKeyboardFocus(false);

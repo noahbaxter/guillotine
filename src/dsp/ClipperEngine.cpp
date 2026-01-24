@@ -33,9 +33,12 @@ void ClipperEngine::prepare(double sampleRate, int maxBlockSize, int numChannels
         smoothedCeilingLinear.reset(sampleRate, 0.002);
     }
 
-    // Prepare dry buffer and oversampler for delta monitoring
+    // Prepare dry buffer and oversampler for phase-coherent dry/wet mixing
     dryBuffer.setSize(numChannels, maxBlockSize);
     dryOversampler.prepare(sampleRate, maxBlockSize, numChannels);
+
+    // Smooth mix parameter (5ms ramp to avoid zipper noise)
+    smoothedMix.reset(sampleRate, 0.005);
 }
 
 void ClipperEngine::reset()
@@ -113,6 +116,11 @@ void ClipperEngine::setBypass(bool enabled)
     bypassed = enabled;
 }
 
+void ClipperEngine::setDryWetMix(float mix)
+{
+    smoothedMix.setTargetValue(mix);
+}
+
 int ClipperEngine::getLatencyInSamples() const
 {
     return oversampler.getLatencyInSamples();
@@ -147,14 +155,10 @@ void ClipperEngine::process(juce::AudioBuffer<float>& buffer)
     }
     lastPreClipPeak.store(preClipPeak, std::memory_order_relaxed);
 
-    // Skip clipping and makeup gain when bypassed
-    // Input gain still applies so users can hear pre-clip level
+    // Skip clipping when bypassed (input gain still applies)
     if (bypassed)
     {
-        // When bypassed, post-clip = pre-clip (no clipping)
         lastPostClipPeak.store(preClipPeak, std::memory_order_relaxed);
-
-        // Still sanitize NaN/Inf even when bypassed
         for (int ch = 0; ch < numChannels; ++ch)
         {
             float* data = buffer.getWritePointer(ch);
@@ -167,77 +171,48 @@ void ClipperEngine::process(juce::AudioBuffer<float>& buffer)
         return;
     }
 
-    // Store dry signal for delta monitoring (after input gain)
-    if (deltaMonitorEnabled)
+    // 2. Determine if dry path needed (for delta monitoring or dry/wet mixing)
+    float currentMix = smoothedMix.getCurrentValue();
+    float targetMix = smoothedMix.getTargetValue();
+    bool needsDryPath = deltaMonitorEnabled || currentMix < 0.999f || targetMix < 0.999f;
+
+    // 3. Copy dry signal (after input gain, before processing)
+    if (needsDryPath)
     {
         for (int ch = 0; ch < numChannels; ++ch)
             dryBuffer.copyFrom(ch, 0, buffer, ch, 0, numSamples);
     }
 
-    // 2. M/S encode (if enabled)
+    // 4. M/S encode both paths
     stereoProcessor.encodeToMidSide(buffer);
-    if (deltaMonitorEnabled)
+    if (needsDryPath)
         stereoProcessor.encodeToMidSide(dryBuffer);
 
-    // 3. Upsample
+    // 5. Upsample both (matched filters = phase aligned)
     int numOversampledSamples = 0;
     float* const* oversampledData = oversampler.processSamplesUp(buffer, numOversampledSamples);
 
-    // Process dry through same filter chain (for phase matching)
     int dryOversampledSamples = 0;
-    if (deltaMonitorEnabled)
+    if (needsDryPath)
         dryOversampler.processSamplesUp(dryBuffer, dryOversampledSamples);
 
-    // 4. Clip wet signal only (dry passes through unclipped)
+    // 6. Clip wet signal only (dry passes through unclipped)
     if (oversampledData != nullptr)
-    {
         clipper.processInternal(oversampledData, numChannels, numOversampledSamples);
-    }
     else
-    {
-        // 1x oversampling - process original buffer directly
-        clipper.process(buffer);
-    }
+        clipper.process(buffer);  // 1x oversampling
 
-    // 5. Downsample
+    // 7. Downsample both
     oversampler.processSamplesDown(buffer, numSamples);
-    if (deltaMonitorEnabled)
+    if (needsDryPath)
         dryOversampler.processSamplesDown(dryBuffer, numSamples);
 
-    // 6. M/S decode (if enabled)
+    // 8. M/S decode both
     stereoProcessor.decodeFromMidSide(buffer);
-    if (deltaMonitorEnabled)
+    if (needsDryPath)
         stereoProcessor.decodeFromMidSide(dryBuffer);
 
-    // 7. Capture post-clip peak (after clipping, before output gain)
-    float postClipPeak = 0.0f;
-    for (int ch = 0; ch < numChannels; ++ch)
-    {
-        const float* data = buffer.getReadPointer(ch);
-        for (int i = 0; i < numSamples; ++i)
-        {
-            float absVal = std::abs(data[i]);
-            if (absVal > postClipPeak)
-                postClipPeak = absVal;
-        }
-    }
-    lastPostClipPeak.store(postClipPeak, std::memory_order_relaxed);
-
-    // 8. Delta monitor: output = dry - wet (what was clipped off)
-    // Both signals have been through the same filter chain, so they're phase-aligned
-    if (deltaMonitorEnabled)
-    {
-        for (int ch = 0; ch < numChannels; ++ch)
-        {
-            float* wet = buffer.getWritePointer(ch);
-            const float* dry = dryBuffer.getReadPointer(ch);
-            for (int i = 0; i < numSamples; ++i)
-                wet[i] = dry[i] - wet[i];
-        }
-    }
-
-    // 9. Enforce ceiling (final hard limiter) - applies to both normal and delta output
-    // This ensures true peak limiting regardless of mode, pre-output-gain
+    // 9. Enforce ceiling on WET only (before mixing, so dry stays truly dry)
     if (enforceCeilingEnabled)
     {
         for (int i = 0; i < numSamples; ++i)
@@ -251,11 +226,54 @@ void ClipperEngine::process(juce::AudioBuffer<float>& buffer)
         }
     }
 
-    // 10. Output gain
+    // 10. Capture post-clip peak (wet signal after clipping, before mix/output gain)
+    float postClipPeak = 0.0f;
+    for (int ch = 0; ch < numChannels; ++ch)
+    {
+        const float* data = buffer.getReadPointer(ch);
+        for (int i = 0; i < numSamples; ++i)
+        {
+            float absVal = std::abs(data[i]);
+            if (absVal > postClipPeak)
+                postClipPeak = absVal;
+        }
+    }
+    lastPostClipPeak.store(postClipPeak, std::memory_order_relaxed);
+
+    // 11. Delta monitor OR phase-coherent dry/wet mix
+    if (deltaMonitorEnabled)
+    {
+        // Delta: output = dry - wet (what was clipped off)
+        for (int ch = 0; ch < numChannels; ++ch)
+        {
+            float* wet = buffer.getWritePointer(ch);
+            const float* dry = dryBuffer.getReadPointer(ch);
+            for (int i = 0; i < numSamples; ++i)
+                wet[i] = dry[i] - wet[i];
+        }
+    }
+    else if (needsDryPath)
+    {
+        // Mix: output = dry * (1-mix) + wet * mix
+        // Both signals passed through matched oversamplers, so they're phase-aligned
+        for (int i = 0; i < numSamples; ++i)
+        {
+            float m = smoothedMix.getNextValue();
+            float dryGain = 1.0f - m;
+            for (int ch = 0; ch < numChannels; ++ch)
+            {
+                float* wet = buffer.getWritePointer(ch);
+                const float* dry = dryBuffer.getReadPointer(ch);
+                wet[i] = dry[i] * dryGain + wet[i] * m;
+            }
+        }
+    }
+
+    // 12. Output gain
     juce::dsp::AudioBlock<float> outputBlock(buffer);
     outputGain.process(juce::dsp::ProcessContextReplacing<float>(outputBlock));
 
-    // 11. Sanitize output - replace NaN/Inf with 0 (defensive against oversimple bugs)
+    // 13. Sanitize output - replace NaN/Inf with 0
     for (int ch = 0; ch < numChannels; ++ch)
     {
         float* data = buffer.getWritePointer(ch);

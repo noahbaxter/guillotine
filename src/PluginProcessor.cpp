@@ -99,6 +99,13 @@ juce::AudioProcessorValueTreeState::ParameterLayout GuillotineProcessor::createP
         "True Clip",
         true));  // Default to enforced (true peak safe)
 
+    // Dry/Wet mix (0.0 = dry, 1.0 = wet)
+    params.push_back(std::make_unique<juce::AudioParameterFloat>(
+        juce::ParameterID{"dryWet", 1},
+        "Dry/Wet",
+        juce::NormalisableRange<float>(0.0f, 1.0f),
+        1.0f));
+
     return {params.begin(), params.end()};
 }
 
@@ -239,6 +246,7 @@ void GuillotineProcessor::processBlock(juce::AudioBuffer<float>& buffer, juce::M
     bool deltaMonitor = apvts.getRawParameterValue("deltaMonitor")->load() > 0.5f;
     bool bypassClipper = apvts.getRawParameterValue("bypassClipper")->load() > 0.5f;
     bool enforceCeiling = apvts.getRawParameterValue("enforceCeiling")->load() > 0.5f;
+    float dryWet = apvts.getRawParameterValue("dryWet")->load();
 
     // Choice index now directly maps to factor index: 0=1x, 1=2x, ... 5=32x
     int oversamplingFactor = oversamplingChoice;
@@ -254,6 +262,7 @@ void GuillotineProcessor::processBlock(juce::AudioBuffer<float>& buffer, juce::M
     clipperEngine.setStereoMode(stereoMode);  // 0=Stereo Link, 1=L/R, 2=M/S
     clipperEngine.setDeltaMonitor(deltaMonitor);
     clipperEngine.setEnforceCeiling(enforceCeiling);
+    clipperEngine.setDryWetMix(dryWet);
 
     // Update latency if changed
     int currentLatency = clipperEngine.getLatencyInSamples();
