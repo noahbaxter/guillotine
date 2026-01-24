@@ -262,8 +262,8 @@ class GuillotineApp {
         off: 'assets/icon-min-phase.svg'
       },
       tooltips: {
-        on: 'Min Phase',
-        off: 'Lin Phase'
+        on: 'Linear Phase',
+        off: 'Min Phase'
       }
     });
 
