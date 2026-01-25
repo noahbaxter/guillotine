@@ -782,7 +782,7 @@ class GuillotineApp {
 
 // Initialize
 if (document.readyState === 'loading') {
-  document.addEventListener('DOMContentLoaded', () => new GuillotineApp());
+  document.addEventListener('DOMContentLoaded', () => window.guillotineApp = new GuillotineApp());
 } else {
-  new GuillotineApp();
+  window.guillotineApp = new GuillotineApp();
 }
