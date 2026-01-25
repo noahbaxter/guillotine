@@ -15,21 +15,21 @@
 
 /* Front face */
 .lever__base__front {
-  background-image: url('assets/textures/wood-2.png');
+  background-image: url('../../assets/textures/wood-2.png');
   background-size: 3.75em 3.75em;
   background-position: center;
 }
 
 /* Top face */
 .lever__base__top {
-  background-image: url('assets/textures/wood-2.png');
+  background-image: url('../../assets/textures/wood-2.png');
   background-size: 3.75em 3.75em;
   background-position: center top;
 }
 
 /* Right face */
 .lever__base__right {
-  background-image: url('assets/textures/wood-2.png');
+  background-image: url('../../assets/textures/wood-2.png');
   background-size: 3.75em 3.75em;
   background-position: right center;
   filter: brightness(0.7);
@@ -51,7 +51,7 @@
   content: '';
   position: absolute;
   inset: 0;
-  background-image: url('assets/textures/wood-1.png');
+  background-image: url('../../assets/textures/wood-1.png');
   background-size: cover;
   background-position: center;
   border-radius: inherit;
