@@ -4,7 +4,7 @@
 import { loadStyles } from '../../lib/component-loader.js';
 import { pxToEm } from '../../lib/utils.js';
 
-const ASSET_PATH = 'assets/numeric/';
+const ASSET_PATH = 'assets/digits/';
 
 export class Digits {
   static stylesLoaded = false;
@@ -72,8 +72,8 @@ export class Digits {
         digit.className = 'digits__digit';
         digit.style.height = `${pxToEm(48 * s)}em`;
         digit.style.width = `${pxToEm(24 * s)}em`;
-        digit.style.maskImage = `url('${ASSET_PATH}num-${char}.png')`;
-        digit.style.webkitMaskImage = `url('${ASSET_PATH}num-${char}.png')`;
+        digit.style.maskImage = `url('${ASSET_PATH}${char}.png')`;
+        digit.style.webkitMaskImage = `url('${ASSET_PATH}${char}.png')`;
 
         cell.appendChild(digit);
         this.spriteContainer.appendChild(cell);
@@ -86,8 +86,8 @@ export class Digits {
         dot.className = 'digits__dot';
         dot.style.height = `${pxToEm(9 * s)}em`;
         dot.style.width = `${pxToEm(8 * s)}em`;
-        dot.style.maskImage = `url('${ASSET_PATH}num-dot.png')`;
-        dot.style.webkitMaskImage = `url('${ASSET_PATH}num-dot.png')`;
+        dot.style.maskImage = `url('${ASSET_PATH}dot.png')`;
+        dot.style.webkitMaskImage = `url('${ASSET_PATH}dot.png')`;
 
         cell.appendChild(dot);
         this.spriteContainer.appendChild(cell);

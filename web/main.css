@@ -122,7 +122,7 @@ body::before {
   content: '';
   position: absolute;
   inset: 0;
-  background: url('assets/grunge-texture.jpg') center/cover;
+  background: url('assets/textures/grunge.jpg') center/cover;
   opacity: 0.25;
   pointer-events: none;
 }
@@ -518,20 +518,20 @@ body::before {
 /* Base always visible */
 .toggle-layer--base {
   z-index: 1;
-  background-image: url('assets/toggles/toggle-base.png');
+  background-image: url('assets/toggles/base.png');
 }
 
 /* Middle visible only in mid state */
 .toggle-layer--middle {
   z-index: 2;
-  background-image: url('assets/toggles/toggle-middle.png');
+  background-image: url('assets/toggles/middle.png');
   opacity: 0;
 }
 
 /* Stem visible for on/off, flipped for off */
 .toggle-layer--stem {
   z-index: 3;
-  background-image: url('assets/toggles/toggle-stem.png');
+  background-image: url('assets/toggles/stem.png');
   opacity: 0;
 }
 
@@ -619,10 +619,10 @@ body::before {
 /* Version tag */
 #version-tag {
   position: fixed;
-  bottom: 0;
+  bottom: 0.5em;
   left: 0.75em;
-  font-family: var(--cursive-font);
-  font-size: 0.625em;
+  font-family: monospace;
+  font-size: 0.5em;
   color: var(--color-text-primary);
   pointer-events: none;
 }
@@ -630,14 +630,9 @@ body::before {
 #andy-sig {
   position: fixed;
   bottom: 0em;
-  left: 2.2em;
+  left: 2.5em;
   height: 1.25em;
   width: 4em;
   opacity: 0.7;
   pointer-events: none;
-}
-
-.readable-mode #version-tag {
-  font-size: 0.5em;
-  bottom: 0.5em;
 }

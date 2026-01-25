@@ -1,6 +1,6 @@
 #!/bin/bash
 # Auto-reload development server
-# Watches src/, assets/, web/ - rebuilds and relaunches on changes
+# Watches src/, web/ - rebuilds and relaunches on changes
 #
 # Usage: ./scripts/watch.sh
 
@@ -43,14 +43,14 @@ trap cleanup SIGINT SIGTERM
 
 # Initial build and launch
 echo -e "${CYAN}=== $PLUGIN_NAME Watch Mode ===${NC}"
-echo -e "Watching: src/, assets/, web/"
+echo -e "Watching: src/, web/"
 echo -e "Press Ctrl+C to stop\n"
 
 "$SCRIPT_DIR/standalone.sh"
 
 # Watch and rebuild
 # -l 0.5 = 500ms latency (debounce rapid changes)
-fswatch -o -l 0.5 "$PROJECT_ROOT/src" "$PROJECT_ROOT/assets" "$PROJECT_ROOT/web" | while read -r _; do
+fswatch -o -l 0.5 "$PROJECT_ROOT/src" "$PROJECT_ROOT/web" | while read -r _; do
     START=$(python3 -c 'import time; print(time.time())')
     echo -e "\n${YELLOW}Change detected, rebuilding...${NC}"
 
