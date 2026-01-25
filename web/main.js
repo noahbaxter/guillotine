@@ -243,7 +243,7 @@ class GuillotineApp {
       led: true,
       compact: true,  // Only has icon on top
       icons: {
-        on: 'assets/icon-true-peak.svg'
+        on: 'assets/icons/true-peak.svg'
       },
       tooltips: {
         on: 'True Peak',
@@ -254,8 +254,8 @@ class GuillotineApp {
     this.filterTypeToggle = new Toggle(this.togglesColumnContainer, {
       value: false,  // 0 = Min Phase (off), 1 = Linear Phase (on)
       icons: {
-        on: 'assets/icon-linear-phase.svg',
-        off: 'assets/icon-min-phase.svg'
+        on: 'assets/icons/linear-phase.svg',
+        off: 'assets/icons/min-phase.svg'
       },
       tooltips: {
         on: 'Linear Phase',
@@ -269,9 +269,9 @@ class GuillotineApp {
       value: true,  // Default to Stereo Link
       threeWay: true,
       icons: {
-        up: 'assets/icon-stereo-link.svg',
-        mid: 'assets/icon-lr.svg',
-        down: 'assets/icon-ms.svg'
+        up: 'assets/icons/stereo-link.svg',
+        mid: 'assets/icons/lr.svg',
+        down: 'assets/icons/ms.svg'
       },
       tooltips: {
         on: 'Stereo Link',

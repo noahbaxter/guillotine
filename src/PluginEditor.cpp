@@ -236,6 +236,12 @@ std::optional<juce::WebBrowserComponent::Resource> GuillotineEditor::getResource
         { "components/display/blood-line.js",   BinaryData::bloodline_js,   BinaryData::bloodline_jsSize,   "text/javascript" },
         // CSS - global
         { "main.css",                BinaryData::main_css,        BinaryData::main_cssSize,        "text/css" },
+        // Assets - branding
+        { "assets/branding/logo.png",         BinaryData::logo_png,        BinaryData::logo_pngSize,        "image/png" },
+        { "assets/branding/signature.png",    BinaryData::signature_png,   BinaryData::signature_pngSize,   "image/png" },
+        { "assets/branding/lockslip.png",     BinaryData::lockslip_png,    BinaryData::lockslip_pngSize,    "image/png" },
+        { "assets/branding/decorative-1.png", BinaryData::decorative1_png, BinaryData::decorative1_pngSize, "image/png" },
+        { "assets/branding/decorative-2.png", BinaryData::decorative2_png, BinaryData::decorative2_pngSize, "image/png" },
         // Assets - guillotine
         { "assets/guillotine/base.png",         BinaryData::base_png,        BinaryData::base_pngSize,        "image/png" },
         { "assets/guillotine/base-outline.png", BinaryData::baseoutline_png, BinaryData::baseoutline_pngSize, "image/png" },
@@ -244,59 +250,52 @@ std::optional<juce::WebBrowserComponent::Resource> GuillotineEditor::getResource
         { "assets/guillotine/rope.png",         BinaryData::rope_png,        BinaryData::rope_pngSize,        "image/png" },
         { "assets/guillotine/side-fill.png",    BinaryData::sidefill_png,    BinaryData::sidefill_pngSize,    "image/png" },
         { "assets/guillotine/side-outline.png", BinaryData::sideoutline_png, BinaryData::sideoutline_pngSize, "image/png" },
-        { "assets/guillotine-logo.png", BinaryData::guillotinelogo_png, BinaryData::guillotinelogo_pngSize, "image/png" },
+        // Assets - labels
+        { "assets/labels/input.png",      BinaryData::input_png,      BinaryData::input_pngSize,      "image/png" },
+        { "assets/labels/output.png",     BinaryData::output_png,     BinaryData::output_pngSize,     "image/png" },
+        { "assets/labels/ceiling.png",    BinaryData::ceiling_png,    BinaryData::ceiling_pngSize,    "image/png" },
+        { "assets/labels/blade.png",      BinaryData::blade_png2,     BinaryData::blade_png2Size,     "image/png" },
+        { "assets/labels/oversample.png", BinaryData::oversample_png, BinaryData::oversample_pngSize, "image/png" },
+        { "assets/labels/dB.png",         BinaryData::dB_png,         BinaryData::dB_pngSize,         "image/png" },
+        { "assets/labels/x.png",          BinaryData::x_png,          BinaryData::x_pngSize,          "image/png" },
+        // Assets - curves
+        { "assets/curves/hard.png",  BinaryData::hard_png,  BinaryData::hard_pngSize,  "image/png" },
+        { "assets/curves/tanh.png",  BinaryData::tanh_png,  BinaryData::tanh_pngSize,  "image/png" },
+        { "assets/curves/atan.png",  BinaryData::atan_png,  BinaryData::atan_pngSize,  "image/png" },
+        { "assets/curves/quint.png", BinaryData::quint_png, BinaryData::quint_pngSize, "image/png" },
+        { "assets/curves/cubic.png", BinaryData::cubic_png, BinaryData::cubic_pngSize, "image/png" },
+        { "assets/curves/knee.png",  BinaryData::knee_png,  BinaryData::knee_pngSize,  "image/png" },
+        { "assets/curves/t2.png",    BinaryData::t2_png,    BinaryData::t2_pngSize,    "image/png" },
+        // Assets - digits
+        { "assets/digits/0.png",   BinaryData::_0_png,   BinaryData::_0_pngSize,   "image/png" },
+        { "assets/digits/1.png",   BinaryData::_1_png,   BinaryData::_1_pngSize,   "image/png" },
+        { "assets/digits/2.png",   BinaryData::_2_png,   BinaryData::_2_pngSize,   "image/png" },
+        { "assets/digits/3.png",   BinaryData::_3_png,   BinaryData::_3_pngSize,   "image/png" },
+        { "assets/digits/4.png",   BinaryData::_4_png,   BinaryData::_4_pngSize,   "image/png" },
+        { "assets/digits/5.png",   BinaryData::_5_png,   BinaryData::_5_pngSize,   "image/png" },
+        { "assets/digits/6.png",   BinaryData::_6_png,   BinaryData::_6_pngSize,   "image/png" },
+        { "assets/digits/7.png",   BinaryData::_7_png,   BinaryData::_7_pngSize,   "image/png" },
+        { "assets/digits/8.png",   BinaryData::_8_png,   BinaryData::_8_pngSize,   "image/png" },
+        { "assets/digits/9.png",   BinaryData::_9_png,   BinaryData::_9_pngSize,   "image/png" },
+        { "assets/digits/dot.png", BinaryData::dot_png,  BinaryData::dot_pngSize,  "image/png" },
         // Assets - toggles
-        { "assets/toggles/toggle-base.png",   BinaryData::togglebase_png,   BinaryData::togglebase_pngSize,   "image/png" },
-        { "assets/toggles/toggle-middle.png", BinaryData::togglemiddle_png, BinaryData::togglemiddle_pngSize, "image/png" },
-        { "assets/toggles/toggle-stem.png",   BinaryData::togglestem_png,   BinaryData::togglestem_pngSize,   "image/png" },
-        // Toggle icons (SVG)
-        { "assets/icon-linear-phase.svg", BinaryData::iconlinearphase_svg, BinaryData::iconlinearphase_svgSize, "image/svg+xml" },
-        { "assets/icon-min-phase.svg",    BinaryData::iconminphase_svg,    BinaryData::iconminphase_svgSize,    "image/svg+xml" },
-        { "assets/icon-stereo-link.svg",  BinaryData::iconstereolink_svg,  BinaryData::iconstereolink_svgSize,  "image/svg+xml" },
-        { "assets/icon-lr.svg",           BinaryData::iconlr_svg,          BinaryData::iconlr_svgSize,          "image/svg+xml" },
-        { "assets/icon-ms.svg",           BinaryData::iconms_svg,          BinaryData::iconms_svgSize,          "image/svg+xml" },
-        { "assets/icon-true-peak.svg",    BinaryData::icontruepeak_svg,    BinaryData::icontruepeak_svgSize,    "image/svg+xml" },
-        // Numeric sprites
-        { "assets/numeric/num-0.png",   BinaryData::num0_png,       BinaryData::num0_pngSize,       "image/png" },
-        { "assets/numeric/num-1.png",   BinaryData::num1_png,       BinaryData::num1_pngSize,       "image/png" },
-        { "assets/numeric/num-2.png",   BinaryData::num2_png,       BinaryData::num2_pngSize,       "image/png" },
-        { "assets/numeric/num-3.png",   BinaryData::num3_png,       BinaryData::num3_pngSize,       "image/png" },
-        { "assets/numeric/num-4.png",   BinaryData::num4_png,       BinaryData::num4_pngSize,       "image/png" },
-        { "assets/numeric/num-5.png",   BinaryData::num5_png,       BinaryData::num5_pngSize,       "image/png" },
-        { "assets/numeric/num-6.png",   BinaryData::num6_png,       BinaryData::num6_pngSize,       "image/png" },
-        { "assets/numeric/num-7.png",   BinaryData::num7_png,       BinaryData::num7_pngSize,       "image/png" },
-        { "assets/numeric/num-8.png",   BinaryData::num8_png,       BinaryData::num8_pngSize,       "image/png" },
-        { "assets/numeric/num-9.png",   BinaryData::num9_png,       BinaryData::num9_pngSize,       "image/png" },
-        { "assets/numeric/num-dot.png", BinaryData::numdot_png,     BinaryData::numdot_pngSize,     "image/png" },
-        // Text artwork for comparison
-        { "assets/text/text-1.png",     BinaryData::text1_png,      BinaryData::text1_pngSize,      "image/png" },
-        { "assets/text/text-2.png",     BinaryData::text2_png,      BinaryData::text2_pngSize,      "image/png" },
-        { "assets/text/text-lockslip.png", BinaryData::textlockslip_png, BinaryData::textlockslip_pngSize, "image/png" },
-        // Control labels (replacing font-rendered text)
-        { "assets/text/controls/andy.png",      BinaryData::andy_png,        BinaryData::andy_pngSize,        "image/png" },
-        { "assets/text/controls/blade.png",     BinaryData::blade_png2,      BinaryData::blade_png2Size,      "image/png" },
-        { "assets/text/controls/ceiling.png",   BinaryData::ceiling_png,     BinaryData::ceiling_pngSize,     "image/png" },
-        { "assets/text/controls/dB.png",        BinaryData::dB_png,          BinaryData::dB_pngSize,          "image/png" },
-        { "assets/text/controls/input.png",     BinaryData::input_png,       BinaryData::input_pngSize,       "image/png" },
-        { "assets/text/controls/output.png",    BinaryData::output_png,      BinaryData::output_pngSize,      "image/png" },
-        { "assets/text/controls/oversample.png", BinaryData::oversample_png, BinaryData::oversample_pngSize, "image/png" },
-        { "assets/text/controls/x.png",         BinaryData::x_png,           BinaryData::x_pngSize,           "image/png" },
-        // Curve type labels
-        { "assets/text/controls/blades/atan.png",  BinaryData::atan_png,   BinaryData::atan_pngSize,   "image/png" },
-        { "assets/text/controls/blades/cubic.png", BinaryData::cubic_png,  BinaryData::cubic_pngSize,  "image/png" },
-        { "assets/text/controls/blades/hard.png",  BinaryData::hard_png,   BinaryData::hard_pngSize,   "image/png" },
-        { "assets/text/controls/blades/knee.png",  BinaryData::knee_png,   BinaryData::knee_pngSize,   "image/png" },
-        { "assets/text/controls/blades/quint.png", BinaryData::quint_png,  BinaryData::quint_pngSize,  "image/png" },
-        { "assets/text/controls/blades/t2.png",    BinaryData::t2_png,     BinaryData::t2_pngSize,     "image/png" },
-        { "assets/text/controls/blades/tanh.png",  BinaryData::tanh_png,   BinaryData::tanh_pngSize,   "image/png" },
-        // Wood textures
-        { "assets/textures/wood-1.png", BinaryData::wood1_png,      BinaryData::wood1_pngSize,      "image/png" },
-        { "assets/textures/wood-2.png", BinaryData::wood2_png,      BinaryData::wood2_pngSize,      "image/png" },
-        { "assets/textures/wood-3.png", BinaryData::wood3_png,      BinaryData::wood3_pngSize,      "image/png" },
-        // Fonts
-        { "assets/fonts/zeyada.ttf",    BinaryData::zeyada_ttf,     BinaryData::zeyada_ttfSize,     "application/x-font-ttf" },
-        // Textures
-        { "assets/grunge-texture.jpg",  BinaryData::grungetexture_jpg, BinaryData::grungetexture_jpgSize, "image/jpeg" },
+        { "assets/toggles/base.png",   BinaryData::base_png2,   BinaryData::base_png2Size,   "image/png" },
+        { "assets/toggles/middle.png", BinaryData::middle_png,  BinaryData::middle_pngSize,  "image/png" },
+        { "assets/toggles/stem.png",   BinaryData::stem_png,    BinaryData::stem_pngSize,    "image/png" },
+        // Assets - icons
+        { "assets/icons/true-peak.svg",    BinaryData::truepeak_svg,    BinaryData::truepeak_svgSize,    "image/svg+xml" },
+        { "assets/icons/linear-phase.svg", BinaryData::linearphase_svg, BinaryData::linearphase_svgSize, "image/svg+xml" },
+        { "assets/icons/min-phase.svg",    BinaryData::minphase_svg,    BinaryData::minphase_svgSize,    "image/svg+xml" },
+        { "assets/icons/stereo-link.svg",  BinaryData::stereolink_svg,  BinaryData::stereolink_svgSize,  "image/svg+xml" },
+        { "assets/icons/lr.svg",           BinaryData::lr_svg,          BinaryData::lr_svgSize,          "image/svg+xml" },
+        { "assets/icons/ms.svg",           BinaryData::ms_svg,          BinaryData::ms_svgSize,          "image/svg+xml" },
+        // Assets - textures
+        { "assets/textures/wood-1.png", BinaryData::wood1_png,  BinaryData::wood1_pngSize,  "image/png" },
+        { "assets/textures/wood-2.png", BinaryData::wood2_png,  BinaryData::wood2_pngSize,  "image/png" },
+        { "assets/textures/wood-3.png", BinaryData::wood3_png,  BinaryData::wood3_pngSize,  "image/png" },
+        { "assets/textures/grunge.jpg", BinaryData::grunge_jpg, BinaryData::grunge_jpgSize, "image/jpeg" },
+        // Assets - fonts
+        { "assets/fonts/zeyada.ttf",    BinaryData::zeyada_ttf, BinaryData::zeyada_ttfSize, "application/x-font-ttf" },
     };
 
     for (const auto& res : resources)

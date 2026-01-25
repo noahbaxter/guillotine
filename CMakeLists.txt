@@ -125,8 +125,13 @@ juce_add_binary_data(GuillotineData
         web/components/display/blood-pool.js
         web/components/display/blood-pool.css
         web/components/display/blood-line.js
-        # Web - assets
-        web/assets/grunge-texture.jpg
+        # Web - assets/branding
+        web/assets/branding/logo.png
+        web/assets/branding/signature.png
+        web/assets/branding/lockslip.png
+        web/assets/branding/decorative-1.png
+        web/assets/branding/decorative-2.png
+        # Web - assets/guillotine
         web/assets/guillotine/base.png
         web/assets/guillotine/base-outline.png
         web/assets/guillotine/blade.png
@@ -134,48 +139,51 @@ juce_add_binary_data(GuillotineData
         web/assets/guillotine/rope.png
         web/assets/guillotine/side-fill.png
         web/assets/guillotine/side-outline.png
-        web/assets/guillotine-logo.png
-        web/assets/toggles/toggle-base.png
-        web/assets/toggles/toggle-middle.png
-        web/assets/toggles/toggle-stem.png
-        web/assets/icon-linear-phase.svg
-        web/assets/icon-min-phase.svg
-        web/assets/icon-stereo-link.svg
-        web/assets/icon-lr.svg
-        web/assets/icon-ms.svg
-        web/assets/icon-true-peak.svg
-        web/assets/numeric/num-0.png
-        web/assets/numeric/num-1.png
-        web/assets/numeric/num-2.png
-        web/assets/numeric/num-3.png
-        web/assets/numeric/num-4.png
-        web/assets/numeric/num-5.png
-        web/assets/numeric/num-6.png
-        web/assets/numeric/num-7.png
-        web/assets/numeric/num-8.png
-        web/assets/numeric/num-9.png
-        web/assets/numeric/num-dot.png
-        web/assets/text/text-1.png
-        web/assets/text/text-2.png
-        web/assets/text/text-lockslip.png
-        web/assets/text/controls/andy.png
-        web/assets/text/controls/blade.png
-        web/assets/text/controls/ceiling.png
-        web/assets/text/controls/dB.png
-        web/assets/text/controls/input.png
-        web/assets/text/controls/output.png
-        web/assets/text/controls/oversample.png
-        web/assets/text/controls/x.png
-        web/assets/text/controls/blades/atan.png
-        web/assets/text/controls/blades/cubic.png
-        web/assets/text/controls/blades/hard.png
-        web/assets/text/controls/blades/knee.png
-        web/assets/text/controls/blades/quint.png
-        web/assets/text/controls/blades/t2.png
-        web/assets/text/controls/blades/tanh.png
+        # Web - assets/labels
+        web/assets/labels/input.png
+        web/assets/labels/output.png
+        web/assets/labels/ceiling.png
+        web/assets/labels/blade.png
+        web/assets/labels/oversample.png
+        web/assets/labels/dB.png
+        web/assets/labels/x.png
+        # Web - assets/curves
+        web/assets/curves/hard.png
+        web/assets/curves/tanh.png
+        web/assets/curves/atan.png
+        web/assets/curves/quint.png
+        web/assets/curves/cubic.png
+        web/assets/curves/knee.png
+        web/assets/curves/t2.png
+        # Web - assets/digits
+        web/assets/digits/0.png
+        web/assets/digits/1.png
+        web/assets/digits/2.png
+        web/assets/digits/3.png
+        web/assets/digits/4.png
+        web/assets/digits/5.png
+        web/assets/digits/6.png
+        web/assets/digits/7.png
+        web/assets/digits/8.png
+        web/assets/digits/9.png
+        web/assets/digits/dot.png
+        # Web - assets/toggles
+        web/assets/toggles/base.png
+        web/assets/toggles/middle.png
+        web/assets/toggles/stem.png
+        # Web - assets/icons
+        web/assets/icons/true-peak.svg
+        web/assets/icons/linear-phase.svg
+        web/assets/icons/min-phase.svg
+        web/assets/icons/stereo-link.svg
+        web/assets/icons/lr.svg
+        web/assets/icons/ms.svg
+        # Web - assets/textures
         web/assets/textures/wood-1.png
         web/assets/textures/wood-2.png
         web/assets/textures/wood-3.png
+        web/assets/textures/grunge.jpg
+        # Web - assets/fonts
         web/assets/fonts/zeyada.ttf
 )
 

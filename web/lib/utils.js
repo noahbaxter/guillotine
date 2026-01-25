@@ -7,26 +7,26 @@ export const pxToEm = (px) => px / 16;
 // Each entry has { text, src } so readable mode text is always defined alongside the image
 export const TEXT = {
   labels: {
-    blade: { text: 'Blade', src: 'assets/text/controls/blade.png' },
-    ceiling: { text: 'Ceiling', src: 'assets/text/controls/ceiling.png' },
-    oversample: { text: 'Oversample', src: 'assets/text/controls/oversample.png' },
-    input: { text: 'Input', src: 'assets/text/controls/input.png' },
-    output: { text: 'Output', src: 'assets/text/controls/output.png' },
-    mix: { text: 'Mix', src: 'assets/text/controls/mix.png' }
+    blade: { text: 'Blade', src: 'assets/labels/blade.png' },
+    ceiling: { text: 'Ceiling', src: 'assets/labels/ceiling.png' },
+    oversample: { text: 'Oversample', src: 'assets/labels/oversample.png' },
+    input: { text: 'Input', src: 'assets/labels/input.png' },
+    output: { text: 'Output', src: 'assets/labels/output.png' },
+    mix: { text: 'Mix', src: 'assets/labels/mix.png' }
   },
   suffixes: {
-    dB: { text: ' dB', src: 'assets/text/controls/dB.png' },
-    x: { text: 'x', src: 'assets/text/controls/x.png' },
+    dB: { text: ' dB', src: 'assets/labels/dB.png' },
+    x: { text: 'x', src: 'assets/labels/x.png' },
     percent: { text: '%', src: null }
   },
   blades: [
-    { text: 'Hard', src: 'assets/text/controls/blades/hard.png' },
-    { text: 'Quint', src: 'assets/text/controls/blades/quint.png' },
-    { text: 'Cubic', src: 'assets/text/controls/blades/cubic.png' },
-    { text: 'Tanh', src: 'assets/text/controls/blades/tanh.png' },
-    { text: 'Atan', src: 'assets/text/controls/blades/atan.png' },
-    { text: 'Knee', src: 'assets/text/controls/blades/knee.png' },
-    { text: 'T2', src: 'assets/text/controls/blades/t2.png' }
+    { text: 'Hard', src: 'assets/curves/hard.png' },
+    { text: 'Quint', src: 'assets/curves/quint.png' },
+    { text: 'Cubic', src: 'assets/curves/cubic.png' },
+    { text: 'Tanh', src: 'assets/curves/tanh.png' },
+    { text: 'Atan', src: 'assets/curves/atan.png' },
+    { text: 'Knee', src: 'assets/curves/knee.png' },
+    { text: 'T2', src: 'assets/curves/t2.png' }
   ]
 };
 
