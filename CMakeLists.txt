@@ -12,6 +12,9 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 # Use existing JUCE submodule
 add_subdirectory(third_party/JUCE)
 
+# CLAP support via clap-juce-extensions
+add_subdirectory(third_party/clap-juce-extensions EXCLUDE_FROM_ALL)
+
 # On Windows with MSVC, install WebView2 if not present
 if(MSVC)
     set(WEBVIEW2_VERSION "1.0.3485.44")
@@ -41,7 +44,7 @@ juce_add_plugin(Guillotine
     BUNDLE_ID "com.dichoticstudios.guillotine"
     PLUGIN_MANUFACTURER_CODE Dich
     PLUGIN_CODE Gltn
-    FORMATS VST3 AU Standalone
+    FORMATS VST3 AU LV2 Standalone
     PRODUCT_NAME "Guillotine"
     PLUGIN_DESC "A clipping plugin with guillotine visualization"
 
@@ -58,6 +61,13 @@ juce_add_plugin(Guillotine
 
     # VST3 category
     VST3_CATEGORIES Fx
+)
+
+# CLAP plugin wrapper
+clap_juce_extensions_plugin(
+    TARGET Guillotine
+    CLAP_ID "com.dichoticstudios.guillotine"
+    CLAP_FEATURES audio-effect distortion
 )
 
 # Generate JuceHeader.h (without 'using namespace juce')

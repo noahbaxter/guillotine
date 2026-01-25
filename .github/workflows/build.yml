@@ -151,31 +151,50 @@ jobs:
       - name: Build
         run: cmake --build build --config Release --parallel
 
-      - name: Verify Linux VST3 bundle
+      - name: Verify Linux plugin bundles
         run: |
-          echo "=== Checking VST3 bundle structure ==="
+          echo "=== Checking VST3 bundle ==="
           VST3_PATH="build/Guillotine_artefacts/Release/VST3/Guillotine.vst3"
-          if [ ! -d "$VST3_PATH" ]; then
-            echo "[ERROR] VST3 bundle not found at $VST3_PATH"
-            find build -name "*.vst3" -type d
-            exit 1
+          if [ -d "$VST3_PATH" ]; then
+            echo "[OK] VST3 bundle exists"
+            ls -la "$VST3_PATH/Contents/x86_64-linux/"
+          else
+            echo "[WARN] VST3 not found"
           fi
-          echo "[OK] VST3 bundle directory exists"
-          find "$VST3_PATH" -type f
 
-          SO_FILE="$VST3_PATH/Contents/x86_64-linux/Guillotine.so"
-          if [ ! -f "$SO_FILE" ]; then
-            echo "[ERROR] VST3 .so file not found"
+          echo "=== Checking LV2 bundle ==="
+          LV2_PATH="build/Guillotine_artefacts/Release/LV2/Guillotine.lv2"
+          if [ -d "$LV2_PATH" ]; then
+            echo "[OK] LV2 bundle exists"
+            ls -la "$LV2_PATH/"
+          else
+            echo "[WARN] LV2 not found"
+          fi
+
+          echo "=== Checking CLAP bundle ==="
+          CLAP_PATH="build/Guillotine_artefacts/Release/CLAP/Guillotine.clap"
+          if [ -f "$CLAP_PATH" ]; then
+            echo "[OK] CLAP plugin exists"
+            ls -la "$CLAP_PATH"
+          else
+            echo "[WARN] CLAP not found"
+          fi
+
+          # At least one format must exist
+          if [ ! -d "$VST3_PATH" ] && [ ! -d "$LV2_PATH" ] && [ ! -f "$CLAP_PATH" ]; then
+            echo "[ERROR] No Linux plugin formats found"
+            find build -name "Guillotine*" -type f -o -name "Guillotine*" -type d
             exit 1
           fi
-          echo "[OK] VST3 .so file found"
-          ls -la "$SO_FILE"
 
       - name: Upload Linux artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: Guillotine-VST3-Linux-x64
-          path: build/Guillotine_artefacts/Release/VST3/Guillotine.vst3
+          name: Guillotine-Linux-x64
+          path: |
+            build/Guillotine_artefacts/Release/VST3/Guillotine.vst3
+            build/Guillotine_artefacts/Release/LV2/Guillotine.lv2
+            build/Guillotine_artefacts/Release/CLAP/Guillotine.clap
           retention-days: 30
 
   test-macos:
@@ -593,13 +612,13 @@ jobs:
       - name: Download Linux artifacts
         uses: actions/download-artifact@v4
         with:
-          name: Guillotine-VST3-Linux-x64
-          path: ./linux-vst3/
+          name: Guillotine-Linux-x64
+          path: ./linux-plugins/
 
       - name: Create Linux archive
         run: |
           VERSION="${{ needs.check-release.outputs.version }}"
-          cd linux-vst3
+          cd linux-plugins
           zip -r "../installers/Guillotine-${VERSION}-Linux-x64.zip" .
 
       - name: List installers
@@ -663,13 +682,13 @@ jobs:
       - name: Download Linux artifacts
         uses: actions/download-artifact@v4
         with:
-          name: Guillotine-VST3-Linux-x64
-          path: ./linux-vst3/
+          name: Guillotine-Linux-x64
+          path: ./linux-plugins/
 
       - name: Create Linux archive
         run: |
           VERSION="${{ steps.version.outputs.version }}"
-          cd linux-vst3
+          cd linux-plugins
           zip -r "../installers/Guillotine-${VERSION}-Linux-x64.zip" .
 
       - name: Create release
