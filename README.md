@@ -5,18 +5,19 @@ A hard clipping plugin with extra soft clipping modes, oversampling, and an anim
 ## Installation
 
 **macOS** (signed & notarized)
-- Download the `.pkg` installer from [Releases](https://github.com/dichoticstudios/guillotine/releases)
+- Download the `.pkg` installer from [Releases](https://github.com/noahbaxter/guillotine/releases)
 - Double-click to install
 - VST3 and AU plugins install to `/Library/Audio/Plug-Ins/`
 
 **Windows**
-- Download the `.exe` installer from [Releases](https://github.com/dichoticstudios/guillotine/releases)
+- Download the `.exe` installer from [Releases](https://github.com/noahbaxter/guillotine/releases)
 - If SmartScreen appears, click "More info" → "Run anyway" (plugin is not signed)
 - Plugin installs to `C:\Program Files\Common Files\VST3\`
 
 **Linux**
-- Download the `.zip` from [Releases](https://github.com/dichoticstudios/guillotine/releases)
-- Extract to `~/.vst3/`
+- Download the `.zip` from [Releases](https://github.com/noahbaxter/guillotine/releases)
+- Contains VST3, LV2, and CLAP formats
+- Extract to `~/.vst3/`, `~/.lv2/`, or `~/.clap/` as appropriate
 
 ## Quick Start
 
@@ -227,4 +228,4 @@ pytest tests/ -v
 
 ## License
 
-MIT
+GPL-3.0 - See [LICENSE](LICENSE) for details.

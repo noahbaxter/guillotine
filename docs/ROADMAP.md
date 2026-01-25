@@ -1,26 +1,34 @@
 # Guillotine Roadmap
 
-## v1.1 - Distribution & Install (Current)
-
-Focus: Make installation painless for users.
-
-- [x] macOS code signing + notarization
-- [x] Proper installers (PKG for macOS, NSIS for Windows)
-- [x] CI automation for signed releases (macOS signed, Windows unsigned)
-- [x] Linux VST3 build
-
-## v1.2 - Features
+## v1.2 - Features (Current)
 
 Focus: High-demand features from testers.
 
 - AAX build (Pro Tools) - requires PACE iLok wrapper license
 - Input/output clip lights (TBD: on guillotine legs vs separate meters by knobs)
-- Ceiling knob moves guillotine blade slightly up/down (visual connection to microscope)
 - Hard-soft curve control
 
 ---
 
 ## Completed
+
+### v1.1.2
+- [x] Linux builds: LV2, CLAP formats
+- [x] Demo/embed initialization support (GUILLOTINE_DEFAULTS)
+- [x] Web asset paths fixed for submodule embedding
+- [x] GPL license added
+
+### v1.1.1
+- [x] Fixed filter type tooltip labels
+- [x] Fixed Windows installer file lock issue
+- [x] Removed font cycling feature
+
+### v1.1.0 - Distribution & Install
+- [x] macOS code signing + notarization
+- [x] Proper installers (PKG for macOS, NSIS for Windows)
+- [x] CI automation for signed releases (macOS signed, Windows unsigned)
+- [x] Linux builds: VST3
+- [x] Ceiling knob linked to guillotine blade position
 
 ### v1.0.3
 - [x] Dry/wet knob synced to DSP parameter

@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-Guillotine is a JUCE-based audio plugin (VST3/AU) implementing a clipping effect with animated guillotine visualization. Built for macOS with Dichotic Studios branding.
+Guillotine is a JUCE-based audio plugin implementing a clipping effect with animated guillotine visualization. Supports VST3/AU on macOS, VST3 on Windows, and VST3/LV2/CLAP on Linux. Built by Dichotic Studios.
 
 ## Build Commands
 
@@ -66,6 +66,32 @@ Test types:
 
 **Assets:**
 - `web/assets/` - All images: guillotine graphics, toggles, numeric digits, text labels, textures, fonts
+
+**DSP Chain (ClipperEngine.cpp):**
+```
+Input → InputGain → M/S Encode → Upsample → Clipper → Downsample → M/S Decode → EnforceCeiling → OutputGain → Delta Monitor → Output
+       ↓                                                                                                              ↓
+       └──────────────────────────────── Dry (matched oversample) ──────────────────────────────────────────────→ Mix → Output
+```
+
+**Parameters:**
+| Parameter | Range | Notes |
+|-----------|-------|-------|
+| curve | 0-6 | Hard, Tanh, Atan, Quint, Cubic, Knee, T2 |
+| curveExponent | 0.1-10 | Smoothed (2ms ramp) |
+| oversampling | 0-5 | 1x/2x/4x/8x/16x/32x |
+| inputGain | -24 to +24 dB | |
+| outputGain | -24 to +24 dB | |
+| ceiling | -24 to 0 dB | Smoothed, linked to blade position |
+| filterType | 0-1 | Linear phase / Min phase |
+| stereoMode | 0-1 | L/R / M/S |
+| enforceCeiling | bool | Hard limit on output |
+| deltaMonitor | bool | Output clipped signal only |
+| dryWet | 0-100% | Phase-coherent mixing |
+| bypass | bool | Blade up/down |
+
+**Known Limitations:**
+- Min-phase group delay: IIR filters have frequency-dependent delay not reflected in reported latency. Use linear phase when timing precision matters.
 
 ## Adding New Web Assets
 
