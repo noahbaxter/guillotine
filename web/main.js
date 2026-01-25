@@ -503,69 +503,60 @@ class GuillotineApp {
   }
 
   initializeFromParams() {
-    // Read all parameter values from C++ and update UI
+    // Demo/embed defaults (window.GUILLOTINE_DEFAULTS) override C++ parameter values
+    // Values use user-friendly units: dB for ceiling/gains, % for dryWet, indices for choices
+    const d = window.GUILLOTINE_DEFAULTS;
+
+    // Helpers: get value from defaults or juce-bridge, optionally set on a control
+    const get = (key, fromJuce) => d?.[key] ?? fromJuce();
+    const init = (control, key, fromJuce) => control.setValue(get(key, fromJuce));
+
     // Bypass
-    this.bypass = getBypassClipper();
+    this.bypass = get('bypass', getBypassClipper);
     this.updateBypassVisual();
 
-    // Ceiling -> threshold (inverted: 0dB = 0 threshold, -60dB = 1 threshold)
-    const ceilingNorm = getParameterNormalized('ceiling');
-    this.setThreshold(1 - ceilingNorm, 'init');
+    // Ceiling: dB → threshold (inverted: 0dB = 0, -60dB = 1)
+    this.setThreshold(this.dbToThreshold(get('ceiling', () => this.thresholdToDb(1 - getParameterNormalized('ceiling')))), 'init');
 
-    // Curve (0-6 choice)
-    const curveNorm = getParameterNormalized('curve');
-    const curveIndex = Math.round(curveNorm * 6);  // 7 curves: 0-6
+    // Curve (0-6: Hard, Quint, Cubic, Tanh, Atan, Knee, T2)
+    const curveIndex = get('curve', () => Math.round(getParameterNormalized('curve') * 6));
     this.currentCurve = curveIndex;
     this.curveKnob.setValue(curveIndex);
     this.microscope.setCurveMode(curveIndex);
-    // Enable exponent knob for Knee (5) and T2 (6)
     this.curveExponentKnob.setDisabled(curveIndex < 5);
 
-    // Curve exponent (1.0-4.0, knob display is inverted)
-    const expNorm = getParameterNormalized('curveExponent');
-    const exponent = 1.0 + expNorm * 3.0;
-    this.currentExponent = exponent;
-    this.curveExponentKnob.setValue(exponent);
-    this.microscope.setCurveExponent(exponent);
-
-    // Update blade sharpness based on curve
+    // Curve exponent (1.0-4.0, for Knee/T2)
+    this.currentExponent = get('curveExponent', () => 1.0 + getParameterNormalized('curveExponent') * 3.0);
+    this.curveExponentKnob.setValue(this.currentExponent);
+    this.microscope.setCurveExponent(this.currentExponent);
     this.updateSharpnessFromCurve();
 
-    // Oversampling (0-5 choice)
-    const oversamplingNorm = getParameterNormalized('oversampling');
-    const oversamplingIndex = Math.round(oversamplingNorm * 5);
-    this.oversamplingKnob.setValue(oversamplingIndex);
+    // Simple knobs
+    init(this.oversamplingKnob, 'oversampling', () => Math.round(getParameterNormalized('oversampling') * 5));
+    init(this.inputGainKnob, 'inputGain', () => this.normalizedToDb(getParameterNormalized('inputGain')));
+    init(this.outputGainKnob, 'outputGain', () => this.normalizedToDb(getParameterNormalized('outputGain')));
 
-    // Input/Output gains (-24 to 24 dB)
-    const inputGainNorm = getParameterNormalized('inputGain');
-    this.inputGainKnob.setValue(this.normalizedToDb(inputGainNorm));
-
-    const outputGainNorm = getParameterNormalized('outputGain');
-    this.outputGainKnob.setValue(this.normalizedToDb(outputGainNorm));
-
-    // Delta mode (only if blade is down)
-    const deltaEnabled = getDeltaMonitor();
-    if (deltaEnabled && !this.bypass) {
+    // Delta mode (only active when blade is down)
+    if (get('deltaMode', getDeltaMonitor) && !this.bypass) {
       this.deltaMode = true;
       setDeltaMode(true);
     }
 
-    // Dry/Wet mix
-    const dryWetNorm = getParameterNormalized('dryWet');
-    this.drywetKnob.setValue(dryWetNorm * 100);
-    this.guillotine.setDryWet(dryWetNorm);
-    this.lever.setDryWet(dryWetNorm);
-    const sideMain = document.querySelector('.guillotine-side__img--main');
-    if (sideMain) {
-      sideMain.style.opacity = dryWetNorm;
-    }
+    // Dry/Wet mix (0-100%) - needs to update multiple components
+    const dryWet = get('dryWet', () => getParameterNormalized('dryWet') * 100) / 100;
+    this.drywetKnob.setValue(dryWet * 100);
+    this.guillotine.setDryWet(dryWet);
+    this.lever.setDryWet(dryWet);
+    document.querySelector('.guillotine-side__img--main')?.style.setProperty('opacity', dryWet);
 
-    // Hidden params (settings toggles)
-    this.filterTypeToggle.setValue(getFilterType() === 1);
-    // Stereo mode: 0 = Stereo Link (true), 1 = L/R (null), 2 = M/S (false)
-    const stereoMode = getStereoMode();
+    // Settings toggles
+    this.filterTypeToggle.setValue(get('filterType', getFilterType) === 1);
+    const stereoMode = get('stereoMode', getStereoMode);
     this.stereoModeToggle.setValue(stereoMode === 0 ? true : stereoMode === 1 ? null : false);
-    this.trueclipToggle.setValue(getEnforceCeiling());
+    this.trueclipToggle.setValue(get('truePeak', getEnforceCeiling));
+
+    // Microscope zoom
+    if (d?.zoom !== undefined) this.microscope.setScale(d.zoom);
   }
 
   setupDeltaModeHandlers() {
