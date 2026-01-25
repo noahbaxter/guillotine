@@ -61,6 +61,9 @@ juce_add_plugin(Guillotine
 
     # VST3 category
     VST3_CATEGORIES Fx
+
+    # LV2 URI (required for LV2 format)
+    LV2_URI "https://dichoticstudios.com/plugins/guillotine"
 )
 
 # CLAP plugin wrapper
