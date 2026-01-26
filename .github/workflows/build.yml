@@ -195,6 +195,7 @@ jobs:
             build/Guillotine_artefacts/Release/VST3/Guillotine.vst3
             build/Guillotine_artefacts/Release/LV2/Guillotine.lv2
             build/Guillotine_artefacts/Release/CLAP/Guillotine.clap
+            installer/linux/README.txt
           retention-days: 30
 
   test-macos:

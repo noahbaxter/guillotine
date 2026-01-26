@@ -18,6 +18,20 @@ A hard clipping plugin with extra soft clipping modes, oversampling, and an anim
 - Download the `.zip` from [Releases](https://github.com/noahbaxter/guillotine/releases)
 - Contains VST3, LV2, and CLAP formats
 - Extract to `~/.vst3/`, `~/.lv2/`, or `~/.clap/` as appropriate
+- **Requires WebKitGTK** for the UI (see below)
+
+### Linux UI Requirements
+
+The plugin UI uses WebKitGTK. Without it, you'll see a white screen instead of the interface.
+
+| Distro | Install Command |
+|--------|-----------------|
+| Ubuntu/Debian | `sudo apt install libwebkit2gtk-4.1-0` |
+| Fedora | `sudo dnf install webkit2gtk4.1` |
+| Arch | `sudo pacman -S webkit2gtk-4.1` |
+| openSUSE | `sudo zypper install libwebkit2gtk-4_1-0` |
+
+If version 4.1 isn't available, 4.0 works too (e.g., `libwebkit2gtk-4.0-37` on Ubuntu).
 
 ## Quick Start
 
