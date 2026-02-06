@@ -10,25 +10,43 @@ import { DISPLAY_CONFIG, WAVEFORM_CONFIG } from '../../lib/config.js';
 const ENVELOPE = {
   readOffset: 4,          // Samples behind write head (race condition safety margin)
   releaseMs: 300,         // Decay time to 1% (higher = smoother, lower = snappier)
+  peakHoldSamples: 1,     // Hold peak for N samples before releasing (0 = off, try 5-10)
+  roundJoins: true,       // Round line joins/caps (softens corners for free)
 };
 
-const RELEASE_COEFF = Math.exp(Math.log(0.01) / (ENVELOPE.releaseMs / 1000 * 100));
+const RELEASE_COEFF = Math.exp(Math.log(0.01) / (ENVELOPE.releaseMs / 1000 * WAVEFORM_CONFIG.pointsPerSecond));
+
+function ballisticPass(input, startIdx, pointsToShow, bufferSize) {
+  const output = new Float32Array(pointsToShow);
+  let env = 0;
+  let holdCounter = 0;
+
+  for (let i = 0; i < pointsToShow; i++) {
+    const idx = (startIdx + i) % bufferSize;
+    const raw = input[idx];
+    if (raw >= env) {
+      env = raw;
+      holdCounter = ENVELOPE.peakHoldSamples;
+    } else if (holdCounter > 0) {
+      holdCounter--;
+    } else {
+      env = raw + RELEASE_COEFF * (env - raw);
+    }
+    output[i] = env;
+  }
+  return output;
+}
 
 function smoothEnvelope(envelope, writePos, pointsToShow) {
   const bufferSize = envelope.length;
   const smoothed = new Float32Array(bufferSize);
   const startIdx = (writePos - pointsToShow - ENVELOPE.readOffset + bufferSize) % bufferSize;
 
-  let env = 0;
+  // Forward pass (left-to-right): smooth decay after peaks
+  const forward = ballisticPass(envelope, startIdx, pointsToShow, bufferSize);
+
   for (let i = 0; i < pointsToShow; i++) {
-    const idx = (startIdx + i) % bufferSize;
-    const raw = envelope[idx];
-    if (raw >= env) {
-      env = raw;  // Instant attack
-    } else {
-      env = raw + RELEASE_COEFF * (env - raw);  // Exponential decay
-    }
-    smoothed[idx] = env;
+    smoothed[(startIdx + i) % bufferSize] = forward[i];
   }
 
   return smoothed;
@@ -104,6 +122,10 @@ export class Waveform {
 
   // Stroke helper - draws outline along points
   strokePath(points) {
+    if (ENVELOPE.roundJoins) {
+      this.ctx.lineJoin = 'round';
+      this.ctx.lineCap = 'round';
+    }
     this.ctx.beginPath();
     this.ctx.moveTo(points[0].x, points[0].y);
     for (let i = 1; i < points.length; i++) this.ctx.lineTo(points[i].x, points[i].y);
