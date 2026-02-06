@@ -386,9 +386,9 @@ export class Microscope {
         if (!response.ok) return;
 
         const buffer = await response.arrayBuffer();
-        // Binary format: 400 floats + 1 uint32 = 1604 bytes
-        const floats = new Float32Array(buffer, 0, 400);
-        const writePos = new DataView(buffer).getUint32(1600, true); // little-endian
+        const floatCount = (buffer.byteLength - 4) / 4;
+        const floats = new Float32Array(buffer, 0, floatCount);
+        const writePos = new DataView(buffer).getUint32(floatCount * 4, true);
 
         this.waveform.updateData({ preClip: floats, writePos });
       } catch {

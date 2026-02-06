@@ -181,7 +181,7 @@ export class Waveform {
     this.ctx.strokeStyle = 'rgba(255, 255, 255, 0.2)';
     this.ctx.lineWidth = 1;
 
-    for (let db = 0; db >= -60; db -= 12) {
+    for (let db = 0; db >= -DISPLAY_CONFIG.rangeDb; db -= WAVEFORM_CONFIG.gridStepDb) {
       if (db < minDb || db > maxDb) continue;
       const y = Math.round((maxDb - db) / dbRange * height) + 0.5;
       this.ctx.beginPath();

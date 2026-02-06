@@ -4,6 +4,7 @@
 // Scale presets for microscope zoom cycling
 // Each preset shows a different minimum dB while maintaining 0dB as max
 const SCALE_PRESETS = [
+  { label: '-6',  minDb: -6  },
   { label: '-12', minDb: -12 },
   { label: '-24', minDb: -24 },
   { label: '-36', minDb: -36 },
@@ -37,11 +38,13 @@ export const DISPLAY_CONFIG = {
 };
 
 // Waveform display settings
+const WAVEFORM_POINTS_PER_SECOND = 200; // NOTE: must match envelopePointsPerSecond in src/PluginProcessor.h
+const WAVEFORM_DISPLAY_SECONDS = 3;
+
 export const WAVEFORM_CONFIG = {
-  // Fixed number of envelope points to display (independent of window size)
-  // At 10ms per point: 300 points = 3 seconds of history
-  // This ensures consistent scroll speed regardless of UI scale
-  pointsToShow: 300
+  pointsPerSecond: WAVEFORM_POINTS_PER_SECOND,
+  pointsToShow: WAVEFORM_DISPLAY_SECONDS * WAVEFORM_POINTS_PER_SECOND,
+  gridStepDb: 12,
 };
 
 // Export individual values for convenience

@@ -170,7 +170,7 @@ std::optional<juce::WebBrowserComponent::Resource> GuillotineEditor::getResource
         const int writePos = audioProcessor.getEnvelopeWritePosition();
         constexpr int bufSize = GuillotineProcessor::envelopeBufferSize;
 
-        // Binary format: 400 floats (preClip) + 1 uint32 (writePos) = 1604 bytes
+        // Binary format: N floats (preClip) + 1 uint32 (writePos)
         constexpr size_t floatBytes = bufSize * sizeof(float);
         constexpr size_t totalBytes = floatBytes + sizeof(uint32_t);
 

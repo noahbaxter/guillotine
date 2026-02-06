@@ -11,11 +11,9 @@ class EnvelopeBuffer
 {
 public:
     static constexpr size_t kBufferSize = BufferSize;
-    static constexpr double kDefaultPointDuration = 0.01;  // 10ms per point
-
     EnvelopeBuffer() = default;
 
-    void prepare(double sampleRate, double pointDuration = kDefaultPointDuration)
+    void prepare(double sampleRate, double pointDuration)
     {
         sampleRate_ = sampleRate;
         samplesPerPoint_ = static_cast<int>(sampleRate * pointDuration);

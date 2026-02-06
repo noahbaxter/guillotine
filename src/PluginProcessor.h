@@ -13,9 +13,11 @@ public:
     static constexpr float displayDbRange = 60.0f;
 
     // Envelope buffer for waveform display
-    // 400 points at 10ms intervals = 4 seconds of history
-    static constexpr int envelopeBufferSize = 400;
-    static constexpr double envelopePointDuration = 0.01;  // 10ms per point (sample-rate independent)
+    // NOTE: envelopePointsPerSecond must match WAVEFORM_POINTS_PER_SECOND in web/lib/config.js
+    static constexpr int envelopePointsPerSecond = 200;
+    static constexpr double envelopeHistorySeconds = 5.0;   // Total history length
+    static constexpr double envelopePointDuration = 1.0 / envelopePointsPerSecond;
+    static constexpr int envelopeBufferSize = static_cast<int>(envelopeHistorySeconds * envelopePointsPerSecond);
     GuillotineProcessor();
     ~GuillotineProcessor() override;
 
