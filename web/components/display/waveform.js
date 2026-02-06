@@ -73,6 +73,7 @@ export class Waveform {
     this.curveMode = 0;
     this.ceilingLinear = 1.0;
     this.curveExponent = 2.0;
+    this.pointsToShow = WAVEFORM_CONFIG.pointsToShow;
 
     this.ready = this.init();
     this.render = this.render.bind(this);
@@ -104,6 +105,7 @@ export class Waveform {
   setCurveMode(mode) { this.curveMode = mode; }
   setCeilingLinear(v) { this.ceilingLinear = Math.max(0.0001, v); }
   setCurveExponent(v) { this.curveExponent = Math.max(1.0, Math.min(4.0, v)); }
+  setPointsToShow(n) { this.pointsToShow = n; }
   updateData(data) { this.data = data; }
 
   // Animation
@@ -140,7 +142,7 @@ export class Waveform {
     const width = this.canvas.width / (window.devicePixelRatio || 1);
     const height = this.canvas.height / (window.devicePixelRatio || 1);
     const bufferSize = envelope.length;
-    const pointsToShow = Math.min(bufferSize, WAVEFORM_CONFIG.pointsToShow);
+    const pointsToShow = Math.min(bufferSize, this.pointsToShow);
 
     this.ctx.clearRect(0, 0, width, height);
     if (pointsToShow < 2) return;

@@ -39,16 +39,27 @@ export const DISPLAY_CONFIG = {
 
 // Waveform display settings
 const WAVEFORM_POINTS_PER_SECOND = 200; // NOTE: must match envelopePointsPerSecond in src/PluginProcessor.h
-const WAVEFORM_DISPLAY_SECONDS = 3;
+
+// Time scale presets for microscope X axis (seconds shown)
+const TIME_PRESETS = [
+  { label: '1s',    seconds: 1 },
+  { label: '2s',    seconds: 2 },
+  { label: '3s',    seconds: 3 },
+  { label: '4s',    seconds: 4 },
+];
+
+const DEFAULT_TIME_PRESET_INDEX = 1;
 
 export const WAVEFORM_CONFIG = {
   pointsPerSecond: WAVEFORM_POINTS_PER_SECOND,
-  pointsToShow: WAVEFORM_DISPLAY_SECONDS * WAVEFORM_POINTS_PER_SECOND,
+  pointsToShow: TIME_PRESETS[DEFAULT_TIME_PRESET_INDEX].seconds * WAVEFORM_POINTS_PER_SECOND,
   gridStepDb: 12,
+  timePresets: TIME_PRESETS,
+  defaultTimePresetIndex: DEFAULT_TIME_PRESET_INDEX,
 };
 
 // Export individual values for convenience
 export const DEFAULT_MIN_DB = DISPLAY_CONFIG.defaultMinDb;
 export const MAX_CEILING_DB = DISPLAY_CONFIG.maxCeilingDb;
 export const DISPLAY_DB_RANGE = DISPLAY_CONFIG.rangeDb;  // Always 60 (full range)
-export { SCALE_PRESETS };
+export { SCALE_PRESETS, TIME_PRESETS };

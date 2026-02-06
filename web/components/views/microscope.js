@@ -7,7 +7,7 @@ import { Waveform } from '../display/waveform.js';
 import { Digits } from '../display/digits.js';
 import { Dropdown } from '../controls/dropdown.js';
 import { getThresholdColor, onDeltaModeChange } from '../../lib/theme.js';
-import { SCALE_PRESETS, DISPLAY_CONFIG, DISPLAY_DB_RANGE } from '../../lib/config.js';
+import { SCALE_PRESETS, TIME_PRESETS, DISPLAY_CONFIG, DISPLAY_DB_RANGE, WAVEFORM_CONFIG } from '../../lib/config.js';
 import { pxToEm, createDbSuffix } from '../../lib/utils.js';
 
 const MAX_JITTER = 25;
@@ -34,6 +34,7 @@ export class Microscope {
     this.onScaleChange = null;
     this.dragging = false;
     this.currentPresetIndex = DISPLAY_CONFIG.defaultScalePresetIndex;
+    this.currentTimePresetIndex = WAVEFORM_CONFIG.defaultTimePresetIndex;
 
     this.ready = this.init();
   }
@@ -58,6 +59,17 @@ export class Microscope {
       options: SCALE_PRESETS.map(p => ({ label: `${p.minDb}dB`, value: p.minDb })),
       value: this.currentPresetIndex,
       onChange: (idx) => this.setScale(SCALE_PRESETS[idx].minDb)
+    });
+
+    // Time scale dropdown
+    this.timeDropdownContainer = document.createElement('div');
+    this.timeDropdownContainer.className = 'microscope__time-dropdown';
+    this.container.appendChild(this.timeDropdownContainer);
+
+    this.timeDropdown = new Dropdown(this.timeDropdownContainer, {
+      options: TIME_PRESETS.map(p => ({ label: p.label, value: p.seconds })),
+      value: this.currentTimePresetIndex,
+      onChange: (idx) => this.setTimeScale(idx)
     });
 
     // Threshold line container with canvas, label, and drag handle
@@ -177,6 +189,14 @@ export class Microscope {
     const len = SCALE_PRESETS.length;
     this.currentPresetIndex = (this.currentPresetIndex + direction + len) % len;
     this.setScale(SCALE_PRESETS[this.currentPresetIndex].minDb);
+  }
+
+  setTimeScale(index) {
+    this.currentTimePresetIndex = index;
+    const preset = TIME_PRESETS[index];
+    const pointsToShow = preset.seconds * WAVEFORM_CONFIG.pointsPerSecond;
+    this.waveform.setPointsToShow(pointsToShow);
+    this.timeDropdown.setValue(index);
   }
 
   bindEvents() {
@@ -417,8 +437,10 @@ export class Microscope {
     if (this.labelTopDigits) this.labelTopDigits.destroy();
     if (this.labelBottomDigits) this.labelBottomDigits.destroy();
     this.scaleDropdown.destroy();
+    this.timeDropdown.destroy();
     this.thresholdLine.remove();
     this.waveformArea.remove();
     this.scaleDropdownContainer.remove();
+    this.timeDropdownContainer.remove();
   }
 }
