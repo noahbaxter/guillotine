@@ -16,6 +16,7 @@ GuillotineEditor::GuillotineEditor(GuillotineProcessor& p)
       stereoModeRelay{"stereoMode"},
       deltaMonitorRelay{"deltaMonitor"},
       bypassClipperRelay{"bypassClipper"},
+      enforceCeilingRelay{"enforceCeiling"},
       dryWetRelay{"dryWet"},
       // Initialize WebView with relays
       webView{
@@ -38,6 +39,7 @@ GuillotineEditor::GuillotineEditor(GuillotineProcessor& p)
               .withOptionsFrom(stereoModeRelay)
               .withOptionsFrom(deltaMonitorRelay)
               .withOptionsFrom(bypassClipperRelay)
+              .withOptionsFrom(enforceCeilingRelay)
               .withOptionsFrom(dryWetRelay)
       },
       // Initialize parameter attachments (connect relays to APVTS)
@@ -71,6 +73,9 @@ GuillotineEditor::GuillotineEditor(GuillotineProcessor& p)
       bypassClipperAttachment{
           *audioProcessor.getAPVTS().getParameter("bypassClipper"),
           bypassClipperRelay, nullptr},
+      enforceCeilingAttachment{
+          *audioProcessor.getAPVTS().getParameter("enforceCeiling"),
+          enforceCeilingRelay, nullptr},
       dryWetAttachment{
           *audioProcessor.getAPVTS().getParameter("dryWet"),
           dryWetRelay, nullptr}
