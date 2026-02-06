@@ -170,21 +170,12 @@ std::optional<juce::WebBrowserComponent::Resource> GuillotineEditor::getResource
         const int writePos = audioProcessor.getEnvelopeWritePosition();
         constexpr int bufSize = GuillotineProcessor::envelopeBufferSize;
 
-        // Apply 3-point moving average smoothing before sending
-        std::array<float, bufSize> smoothed;
-        for (int i = 0; i < bufSize; ++i)
-        {
-            const int prev = (i - 1 + bufSize) % bufSize;
-            const int next = (i + 1) % bufSize;
-            smoothed[i] = (preClip[prev] + preClip[i] + preClip[next]) / 3.0f;
-        }
-
-        // Binary format: 400 floats (smoothed preClip) + 1 uint32 (writePos) = 1604 bytes
+        // Binary format: 400 floats (preClip) + 1 uint32 (writePos) = 1604 bytes
         constexpr size_t floatBytes = bufSize * sizeof(float);
         constexpr size_t totalBytes = floatBytes + sizeof(uint32_t);
 
         std::vector<std::byte> bytes(totalBytes);
-        std::memcpy(bytes.data(), smoothed.data(), floatBytes);
+        std::memcpy(bytes.data(), preClip.data(), floatBytes);
 
         uint32_t writePosU32 = static_cast<uint32_t>(writePos);
         std::memcpy(bytes.data() + floatBytes, &writePosU32, sizeof(uint32_t));

@@ -6,31 +6,31 @@ import { applyJitter } from '../../lib/crt-effect.js';
 import { applyWithCeiling } from '../../lib/saturation-curves.js';
 import { DISPLAY_CONFIG, WAVEFORM_CONFIG } from '../../lib/config.js';
 
-const READ_OFFSET = 4;  // Offset to avoid reading actively-written samples
+// Envelope follower tuning
+const ENVELOPE = {
+  readOffset: 4,          // Samples behind write head (race condition safety margin)
+  releaseMs: 300,         // Decay time to 1% (higher = smoother, lower = snappier)
+};
 
-// Scale-dependent smoothing - tighter zoom = more smoothing
-function smoothEnvelope(envelope, writePos, pointsToShow, displayMinDb) {
-  const t = Math.max(0, Math.min(1, (displayMinDb + 12) / -48));
-  const radius = Math.round(3 * (1 - t));
-  if (radius === 0) return envelope;
+const RELEASE_COEFF = Math.exp(Math.log(0.01) / (ENVELOPE.releaseMs / 1000 * 100));
 
+function smoothEnvelope(envelope, writePos, pointsToShow) {
   const bufferSize = envelope.length;
   const smoothed = new Float32Array(bufferSize);
-  const startIdx = (writePos - pointsToShow - READ_OFFSET + bufferSize) % bufferSize;
+  const startIdx = (writePos - pointsToShow - ENVELOPE.readOffset + bufferSize) % bufferSize;
 
+  let env = 0;
   for (let i = 0; i < pointsToShow; i++) {
     const idx = (startIdx + i) % bufferSize;
-    let sum = 0;
-    for (let r = -radius; r <= radius; r++) {
-      sum += envelope[(startIdx + i + r + bufferSize) % bufferSize];
+    const raw = envelope[idx];
+    if (raw >= env) {
+      env = raw;  // Instant attack
+    } else {
+      env = raw + RELEASE_COEFF * (env - raw);  // Exponential decay
     }
-    smoothed[idx] = sum / (radius * 2 + 1);
+    smoothed[idx] = env;
   }
 
-  // Copy unsmoothed portions
-  for (let i = 0; i < bufferSize; i++) {
-    if (smoothed[i] === 0 && envelope[i] !== 0) smoothed[i] = envelope[i];
-  }
   return smoothed;
 }
 
@@ -127,7 +127,7 @@ export class Waveform {
     this.drawGridlines(width, height, displayMinDb, displayMaxDb);
 
     // Compute points
-    const smoothed = smoothEnvelope(envelope, writePos, pointsToShow, displayMinDb);
+    const smoothed = smoothEnvelope(envelope, writePos, pointsToShow);
     const { rawPoints, clippedPoints } = this.computePoints(smoothed, writePos, pointsToShow, bufferSize, width, height);
 
     // Apply jitter
@@ -198,7 +198,7 @@ export class Waveform {
     const clippedPoints = [];
 
     for (let i = 0; i < pointsToShow; i++) {
-      const bufIdx = (writePos - pointsToShow - READ_OFFSET + i + bufferSize) % bufferSize;
+      const bufIdx = (writePos - pointsToShow - ENVELOPE.readOffset + i + bufferSize) % bufferSize;
       const env = envelope[bufIdx];
       const x = (i / (pointsToShow - 1)) * width;
 
