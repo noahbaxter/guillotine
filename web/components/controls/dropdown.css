@@ -7,7 +7,7 @@
   padding: 0.125em 0.375em;
   font-size: inherit;
   font-family: monospace;
-  background: var(--color-white-10);
+  background: var(--color-surface-control);
   border: 0.0625em solid var(--color-white-20);
   border-radius: 0.1875em;
   color: var(--color-white-70);
@@ -17,7 +17,7 @@
 
 .dropdown__trigger:hover,
 .dropdown__trigger:focus {
-  background: var(--color-white-15);
+  background: var(--color-surface-control-hover);
 }
 
 .dropdown__menu {

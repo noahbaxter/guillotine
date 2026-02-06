@@ -37,6 +37,10 @@ const COLORS = {
   white80: 'rgba(255, 255, 255, 0.8)',
   white90: 'rgba(255, 255, 255, 0.9)',
 
+  // Opaque surface colors (white overlays pre-composited on black)
+  surfaceControl: 'rgb(26, 26, 26)',
+  surfaceControlHover: 'rgb(38, 38, 38)',
+
   // Black shadows
   shadow40: 'rgba(0, 0, 0, 0.4)',
   shadow50: 'rgba(0, 0, 0, 0.5)',
