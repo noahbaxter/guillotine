@@ -148,11 +148,6 @@ body.delta-mode #lockslip-text .text-mask {
 
 /* Microscope scale labels use Digits component - delta styling handled by .digits rules above */
 
-/* Microscope dB suffix uses mask */
-body.delta-mode .microscope__db-suffix__image {
-  background-color: var(--color-delta-text) !important;
-}
-
 /* dB labels in microscope sidebar */
 body.delta-mode .image-text__image.text-mask {
   background-color: var(--color-delta-text) !important;

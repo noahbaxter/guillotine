@@ -6,9 +6,10 @@ import { setScale as setCrtScale } from '../../lib/crt-effect.js';
 import { Waveform } from '../display/waveform.js';
 import { Digits } from '../display/digits.js';
 import { Dropdown } from '../controls/dropdown.js';
-import { getThresholdColor, onDeltaModeChange } from '../../lib/theme.js';
+import { getThresholdColor, getNeonColors } from '../../lib/theme.js';
+import { setGlowSource, isGlowing, onGlowChange, onSharpnessChange } from '../../lib/blade-state.js';
 import { SCALE_PRESETS, TIME_PRESETS, DISPLAY_CONFIG, DISPLAY_DB_RANGE, WAVEFORM_CONFIG } from '../../lib/config.js';
-import { pxToEm, createDbSuffix } from '../../lib/utils.js';
+import { pxToEm } from '../../lib/utils.js';
 
 const MAX_JITTER = 25;
 
@@ -33,6 +34,7 @@ export class Microscope {
     this.onThresholdChange = null;
     this.onScaleChange = null;
     this.dragging = false;
+    this.hoverGlow = false;   // Hover state (threshold line)
     this.currentPresetIndex = DISPLAY_CONFIG.defaultScalePresetIndex;
     this.currentTimePresetIndex = WAVEFORM_CONFIG.defaultTimePresetIndex;
 
@@ -81,10 +83,6 @@ export class Microscope {
     this.bladeCanvas.className = 'microscope__blade-canvas';
     this.thresholdLine.appendChild(this.bladeCanvas);
 
-    this.thresholdLabelContainer = document.createElement('div');
-    this.thresholdLabelContainer.className = 'microscope__threshold-label';
-    this.thresholdLine.appendChild(this.thresholdLabelContainer);
-
     this.dragHandle = document.createElement('div');
     this.dragHandle.className = 'microscope__drag-handle';
     this.thresholdLine.appendChild(this.dragHandle);
@@ -93,18 +91,6 @@ export class Microscope {
 
     // Create waveform
     this.waveform = new Waveform(this.waveformArea, this.options);
-
-    // Create digits for threshold label
-    this.thresholdLabel = new Digits(this.thresholdLabelContainer, {
-      scale: 0.3,
-      color: 'red',
-      glow: false
-    });
-    await this.thresholdLabel.ready;
-
-    // Add dB suffix as sibling to digits (appended to container so it won't be cleared by render)
-    const { container: dbSuffix } = createDbSuffix('microscope__db-suffix');
-    this.thresholdLabelContainer.appendChild(dbSuffix);
 
     // External scale labels (in HTML, outside microscope) - use Digits for consistent transitions
     this.labelTop = document.getElementById('label-top');
@@ -122,8 +108,12 @@ export class Microscope {
     }
 
 
-    // Redraw blade when delta mode changes
-    onDeltaModeChange(() => this.drawJitteryBlade());
+    // Subscribe to centralized blade state
+    this.unsubGlow = onGlowChange(() => this.drawJitteryBlade());
+    this.unsubSharpness = onSharpnessChange((value) => {
+      this.sharpness = value;
+      this.drawJitteryBlade();
+    });
 
     this.updateScaleDropdown();
     this.bindEvents();
@@ -165,9 +155,6 @@ export class Microscope {
     const rect = this.container.getBoundingClientRect();
     const y = this.lineYFrac * rect.height;
     this.thresholdLine.style.top = y + 'px';
-
-    const db = this.yFracToDb(this.lineYFrac);
-    this.thresholdLabel.setValue(db.toFixed(1));
   }
 
   setScale(minDb) {
@@ -200,9 +187,18 @@ export class Microscope {
   }
 
   bindEvents() {
+    const onMouseEnter = () => {
+      this.hoverGlow = true;
+      this.updateGlow();
+    };
+    const onMouseLeave = () => {
+      this.hoverGlow = false;
+      this.updateGlow();
+    };
+
     const onMouseDown = (e) => {
       this.dragging = true;
-      this.thresholdLine.classList.add('microscope__threshold-line--dragging');
+      this.updateGlow();
       e.preventDefault();
     };
 
@@ -229,10 +225,12 @@ export class Microscope {
 
     const onMouseUp = () => {
       this.dragging = false;
-      this.thresholdLine.classList.remove('microscope__threshold-line--dragging');
+      this.updateGlow();
     };
 
     this.thresholdLine.addEventListener('mousedown', onMouseDown);
+    this.thresholdLine.addEventListener('mouseenter', onMouseEnter);
+    this.thresholdLine.addEventListener('mouseleave', onMouseLeave);
     this.dragHandle.addEventListener('mousedown', onMouseDown);
     document.addEventListener('mousemove', onMouseMove);
     document.addEventListener('mouseup', onMouseUp);
@@ -255,6 +253,8 @@ export class Microscope {
 
     this.cleanup = () => {
       this.thresholdLine.removeEventListener('mousedown', onMouseDown);
+      this.thresholdLine.removeEventListener('mouseenter', onMouseEnter);
+      this.thresholdLine.removeEventListener('mouseleave', onMouseLeave);
       this.dragHandle.removeEventListener('mousedown', onMouseDown);
       document.removeEventListener('mousemove', onMouseMove);
       document.removeEventListener('mouseup', onMouseUp);
@@ -273,7 +273,8 @@ export class Microscope {
 
   setupBladeCanvas(width) {
     const dpr = window.devicePixelRatio || 1;
-    const heightPx = MAX_JITTER * 2;  // Tall enough for max jitter (40px at base)
+    const glowPadding = 14;  // Room for neon glow shadow blur
+    const heightPx = MAX_JITTER * 2 + glowPadding;
     this.bladeCanvas.width = width * dpr;
     this.bladeCanvas.height = heightPx * dpr;
     this.bladeCanvas.style.width = '100%';
@@ -292,6 +293,11 @@ export class Microscope {
     }
   }
 
+  updateGlow() {
+    setGlowSource('lineHover', this.hoverGlow);
+    setGlowSource('lineDrag', this.dragging);
+  }
+
   drawJitteryBlade() {
     if (!this.bladeCanvas || !this.bladeBasePattern.length) return;
 
@@ -302,6 +308,18 @@ export class Microscope {
     const centerY = this.bladeHeight / 2;
     const jitterScale = (1 - this.sharpness) * MAX_JITTER;
 
+    const glowing = isGlowing();
+
+    // Apply neon glow when hovering, dragging, or in delta mode
+    if (glowing) {
+      const neon = getNeonColors();
+      ctx.shadowColor = neon.redGlow;
+      ctx.shadowBlur = neon.glowBlur;
+    } else {
+      ctx.shadowColor = 'transparent';
+      ctx.shadowBlur = 0;
+    }
+
     ctx.beginPath();
     ctx.moveTo(0, centerY + this.bladeBasePattern[0] * jitterScale);
 
@@ -311,22 +329,23 @@ export class Microscope {
       ctx.lineTo(x, y);
     }
 
-    // Solid line when active, dotted when bypassed
-    ctx.strokeStyle = getThresholdColor(this.active);
-    if (this.active) {
+    // Use neon color when glowing, normal threshold color otherwise
+    if (glowing) {
+      const neon = getNeonColors();
+      ctx.strokeStyle = neon.red;
+      ctx.setLineDash([]);
+      ctx.lineWidth = 2.5;
+    } else if (this.active) {
+      ctx.strokeStyle = getThresholdColor(true);
       ctx.setLineDash([]);
       ctx.lineWidth = 2;
     } else {
+      ctx.strokeStyle = getThresholdColor(false);
       ctx.setLineDash([8, 6]);
       ctx.lineWidth = 2.5;
     }
     ctx.stroke();
     ctx.setLineDash([]);
-  }
-
-  setSharpness(value) {
-    this.sharpness = Math.max(0, Math.min(1, value));
-    this.drawJitteryBlade();
   }
 
   setActive(active) {
@@ -351,14 +370,6 @@ export class Microscope {
     });
 
     this.waveform.setActive(active);
-  }
-
-  showThresholdLabel() {
-    this.thresholdLine.classList.add('microscope__threshold-line--dragging');
-  }
-
-  hideThresholdLabel() {
-    this.thresholdLine.classList.remove('microscope__threshold-line--dragging');
   }
 
   setThreshold(value) {
@@ -431,9 +442,10 @@ export class Microscope {
   destroy() {
     this.stop();
     if (this.cancelCutAnimation) this.cancelCutAnimation();
+    if (this.unsubGlow) this.unsubGlow();
+    if (this.unsubSharpness) this.unsubSharpness();
     if (this.cleanup) this.cleanup();
     this.waveform.destroy();
-    this.thresholdLabel.destroy();
     if (this.labelTopDigits) this.labelTopDigits.destroy();
     if (this.labelBottomDigits) this.labelBottomDigits.destroy();
     this.scaleDropdown.destroy();

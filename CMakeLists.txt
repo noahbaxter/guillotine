@@ -114,6 +114,7 @@ juce_add_binary_data(GuillotineData
         web/lib/delta-mode.css
         web/lib/crt-effects.css
         web/lib/utils.js
+        web/lib/blade-state.js
         # Web - JUCE frontend lib
         web/lib/juce/index.js
         web/lib/juce/check_native_interop.js

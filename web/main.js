@@ -32,6 +32,7 @@ import {
   onStereoModeChange
 } from './lib/juce-bridge.js';
 import { setDeltaMode, toggleReadableMode } from './lib/theme.js';
+import { setGlowSource, setSharpness } from './lib/blade-state.js';
 import './lib/crt-effect.js';  // Initialize CRT effects (scanlines, jitter, vignette)
 
 // Load locally embedded fonts
@@ -317,9 +318,17 @@ class GuillotineApp {
       this.setThreshold(value, 'knob');
     };
     bindDragTracking(this.thresholdKnob, 'ceiling', this,
-      () => this.microscope.showThresholdLabel(),
-      () => this.microscope.hideThresholdLabel()
+      () => setGlowSource('knobDrag', true),
+      () => setGlowSource('knobDrag', false)
     );
+
+    // Hover on ceiling knob triggers blade glow
+    this.thresholdKnob.element.addEventListener('mouseenter', () => {
+      setGlowSource('knobHover', true);
+    });
+    this.thresholdKnob.element.addEventListener('mouseleave', () => {
+      setGlowSource('knobHover', false);
+    });
 
     // Wire up other knob changes
     this.curveKnob.onChange = (v) => this.setCurve(v);
@@ -698,16 +707,15 @@ class GuillotineApp {
     // Map curve type to blade sharpness (1.0 = sharp/flat, 0 = jittery/dull)
     // Hard clips = sharp blade, soft saturation = dull blade
     const curveSharpness = [1.0, 0.85, 0.7, 0.35, 0.15, null, null];
-    let sharpness = curveSharpness[this.currentCurve];
+    let value = curveSharpness[this.currentCurve];
 
     // Knee (5) and T2 (6): exponent controls sharpness (inverted)
     // Exponent 1 = sharp (0.9), exponent 4 = very soft (0.05)
-    if (sharpness === null) {
-      sharpness = 0.05 + (4.0 - this.currentExponent) / 3 * 0.85;
+    if (value === null) {
+      value = 0.05 + (4.0 - this.currentExponent) / 3 * 0.85;
     }
 
-    this.microscope.setSharpness(sharpness);
-    this.guillotine.setSharpness(sharpness);
+    setSharpness(value);
   }
 
   setOversampling(value) {

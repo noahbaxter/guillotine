@@ -2,7 +2,8 @@
 // Renders the blood cut line on the guillotine blade with jitter effect
 // Uses two canvases: one inside guillotine (normal), one outside (delta glow)
 
-import { getBloodColors, getNeonColors, isDeltaMode, onDeltaModeChange } from '../../lib/theme.js';
+import { getBloodColors, getNeonColors } from '../../lib/theme.js';
+import { isGlowing, onGlowChange, onSharpnessChange } from '../../lib/blade-state.js';
 
 const BLADE_NATURAL = { width: 300, height: 344 };
 const BLOOD_LINE_P1 = { x: 108, y: 63 };
@@ -52,8 +53,9 @@ export class BloodLine {
     this.sharpness = 1.0;
     this.bladeOffset = 0;
 
-    this.unsubscribe = onDeltaModeChange(() => this.updateVisibility());
-    this.updateVisibility();
+    this.unsubGlow = onGlowChange((glowing) => this.updateVisibility(glowing));
+    this.unsubSharpness = onSharpnessChange((value) => this.setSharpness(value));
+    this.updateVisibility(isGlowing());
     this.resize();
   }
 
@@ -61,10 +63,9 @@ export class BloodLine {
     return Array.from({ length: PATTERN_LENGTH + 1 }, () => Math.random() - 0.5);
   }
 
-  updateVisibility() {
-    const delta = isDeltaMode();
-    this.normalCanvas.style.opacity = delta ? '0' : '1';
-    this.deltaCanvas.style.opacity = delta ? '1' : '0';
+  updateVisibility(glowing) {
+    this.normalCanvas.style.opacity = glowing ? '0' : '1';
+    this.deltaCanvas.style.opacity = glowing ? '1' : '0';
   }
 
   resize() {
@@ -188,7 +189,8 @@ export class BloodLine {
   }
 
   destroy() {
-    if (this.unsubscribe) this.unsubscribe();
+    if (this.unsubGlow) this.unsubGlow();
+    if (this.unsubSharpness) this.unsubSharpness();
     this.normalCanvas.remove();
     this.deltaCanvas.remove();
   }

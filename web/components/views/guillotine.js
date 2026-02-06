@@ -187,12 +187,6 @@ export class Guillotine {
     this.elements = {};
   }
 
-  setSharpness(value) {
-    if (this.bloodLine) {
-      this.bloodLine.setSharpness(value);
-    }
-  }
-
   setCeilingOffset(value) {
     this.ceilingOffset = Math.max(0, Math.min(1, value));
     this.updateVisuals();

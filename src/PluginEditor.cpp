@@ -199,6 +199,7 @@ std::optional<juce::WebBrowserComponent::Resource> GuillotineEditor::getResource
         { "lib/saturation-curves.js", BinaryData::saturationcurves_js, BinaryData::saturationcurves_jsSize, "text/javascript" },
         { "lib/config.js",            BinaryData::config_js,         BinaryData::config_jsSize,         "text/javascript" },
         { "lib/utils.js",             BinaryData::utils_js,          BinaryData::utils_jsSize,          "text/javascript" },
+        { "lib/blade-state.js",      BinaryData::bladestate_js,     BinaryData::bladestate_jsSize,     "text/javascript" },
         { "lib/delta-mode.css",      BinaryData::deltamode_css,     BinaryData::deltamode_cssSize,     "text/css" },
         { "lib/crt-effects.css",     BinaryData::crteffects_css,    BinaryData::crteffects_cssSize,    "text/css" },
         // JUCE frontend library
