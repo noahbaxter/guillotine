@@ -53,3 +53,9 @@ body.crt-enabled #microscope-container {
 body.crt-enabled .microscope__threshold-line {
   z-index: 110;
 }
+
+/* Dropdowns: above threshold line so they're always clickable */
+body.crt-enabled .microscope__scale-dropdown,
+body.crt-enabled .microscope__time-dropdown {
+  z-index: 120;
+}
