@@ -39,6 +39,12 @@ void ClipperEngine::prepare(double sampleRate, int maxBlockSize, int numChannels
 
     // Smooth mix parameter (5ms ramp to avoid zipper noise)
     smoothedMix.reset(sampleRate, 0.005);
+
+    // Envelope follower: instant attack, 100ms release
+    envReleaseCoeff_ = std::exp(-1.0f / static_cast<float>(sampleRate * 0.100));
+    envFollowerState_ = 0.0f;
+    envSampleData_.resize(static_cast<size_t>(maxBlockSize), 0.0f);
+    envSampleCount_ = 0;
 }
 
 void ClipperEngine::reset()
@@ -141,24 +147,31 @@ void ClipperEngine::process(juce::AudioBuffer<float>& buffer)
     juce::dsp::AudioBlock<float> block(buffer);
     inputGain.process(juce::dsp::ProcessContextReplacing<float>(block));
 
-    // Capture pre-clip peak (after input gain, before clipping)
-    float preClipPeak = 0.0f;
-    for (int ch = 0; ch < numChannels; ++ch)
+    // Capture pre-clip envelope per sample (after input gain, before clipping)
+    // Envelope follower: instant attack, exponential release
+    envSampleCount_ = numSamples;
+    for (int i = 0; i < numSamples; ++i)
     {
-        const float* data = buffer.getReadPointer(ch);
-        for (int i = 0; i < numSamples; ++i)
+        float maxAbs = 0.0f;
+        for (int ch = 0; ch < numChannels; ++ch)
         {
-            float absVal = std::abs(data[i]);
-            if (absVal > preClipPeak)
-                preClipPeak = absVal;
+            float absVal = std::abs(buffer.getReadPointer(ch)[i]);
+            if (absVal > maxAbs)
+                maxAbs = absVal;
         }
+
+        if (maxAbs > envFollowerState_)
+            envFollowerState_ = maxAbs;
+        else
+            envFollowerState_ *= envReleaseCoeff_;
+
+        envSampleData_[static_cast<size_t>(i)] = envFollowerState_;
     }
-    lastPreClipPeak.store(preClipPeak, std::memory_order_relaxed);
 
     // Skip clipping when bypassed (input gain still applies)
     if (bypassed)
     {
-        lastPostClipPeak.store(preClipPeak, std::memory_order_relaxed);
+        lastPostClipPeak.store(envFollowerState_, std::memory_order_relaxed);
         for (int ch = 0; ch < numChannels; ++ch)
         {
             float* data = buffer.getWritePointer(ch);

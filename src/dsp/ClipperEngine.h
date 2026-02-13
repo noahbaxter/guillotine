@@ -36,10 +36,11 @@ public:
     int getLatencyInSamples() const;
     void applyPendingChanges();  // Force oversampler rebuild if pending (call from message thread)
 
-    // Envelope peaks for display (captured during processing)
-    // PreClip = after input gain, before clipping (RED)
-    // PostClip = after clipping, before output gain (WHITE)
-    float getLastPreClipPeak() const { return lastPreClipPeak.load(std::memory_order_relaxed); }
+    // Per-sample envelope data for waveform display (filled each process call)
+    const std::vector<float>& getEnvelopeData() const { return envSampleData_; }
+    int getEnvelopeSampleCount() const { return envSampleCount_; }
+
+    // Post-clip peak (single value per block, used by EnvelopeBuffer for postClip)
     float getLastPostClipPeak() const { return lastPostClipPeak.load(std::memory_order_relaxed); }
 
 private:
@@ -57,8 +58,11 @@ private:
     bool deltaMonitorEnabled = false;
     juce::SmoothedValue<float, juce::ValueSmoothingTypes::Linear> smoothedMix{1.0f};
 
-    // Envelope peaks for display (updated each process call)
-    std::atomic<float> lastPreClipPeak{0.0f};
+    // Per-sample envelope follower output (pre-clip, for waveform display)
+    std::vector<float> envSampleData_;
+    int envSampleCount_ = 0;
+
+    // Post-clip peak (single value per block)
     std::atomic<float> lastPostClipPeak{0.0f};
 
     // Enforce ceiling (final hard limiter after downsampling)
@@ -68,6 +72,10 @@ private:
 
     // Bypass clipper (still applies input/output gain)
     bool bypassed = false;
+
+    // Envelope follower for smooth waveform display
+    float envFollowerState_ = 0.0f;
+    float envReleaseCoeff_ = 0.99977f;  // ~100ms at 44.1kHz
 
     // State
     double currentSampleRate = 44100.0;

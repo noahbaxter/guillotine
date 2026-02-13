@@ -302,11 +302,12 @@ void GuillotineProcessor::processBlock(juce::AudioBuffer<float>& buffer, juce::M
     clipperEngine.setBypass(bypassClipper);
     clipperEngine.process(buffer);
 
-    // Get peaks from engine and update envelope buffer
-    float preClipPeak = clipperEngine.getLastPreClipPeak();
+    // Feed per-sample envelope data into buffer (true sample-level resolution)
     float postClipPeak = clipperEngine.getLastPostClipPeak();
     float threshold = -ceilingDb / displayDbRange;
-    envelopeBuffer.process(preClipPeak, postClipPeak, threshold, buffer.getNumSamples());
+    envelopeBuffer.processSamples(clipperEngine.getEnvelopeData().data(),
+                                  clipperEngine.getEnvelopeSampleCount(),
+                                  postClipPeak, threshold);
 }
 
 bool GuillotineProcessor::hasEditor() const

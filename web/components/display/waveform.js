@@ -6,51 +6,12 @@ import { applyJitter } from '../../lib/crt-effect.js';
 import { applyWithCeiling } from '../../lib/saturation-curves.js';
 import { DISPLAY_CONFIG, WAVEFORM_CONFIG } from '../../lib/config.js';
 
-// Envelope follower tuning
+// Envelope display tuning
 const ENVELOPE = {
   readOffset: 4,          // Samples behind write head (race condition safety margin)
-  releaseMs: 300,         // Decay time to 1% (higher = smoother, lower = snappier)
-  peakHoldSamples: 1,     // Hold peak for N samples before releasing (0 = off, try 5-10)
   roundJoins: true,       // Round line joins/caps (softens corners for free)
+  outlineRatio: 0.016,    // Outline width as fraction of canvas height
 };
-
-const RELEASE_COEFF = Math.exp(Math.log(0.01) / (ENVELOPE.releaseMs / 1000 * WAVEFORM_CONFIG.pointsPerSecond));
-
-function ballisticPass(input, startIdx, pointsToShow, bufferSize) {
-  const output = new Float32Array(pointsToShow);
-  let env = 0;
-  let holdCounter = 0;
-
-  for (let i = 0; i < pointsToShow; i++) {
-    const idx = (startIdx + i) % bufferSize;
-    const raw = input[idx];
-    if (raw >= env) {
-      env = raw;
-      holdCounter = ENVELOPE.peakHoldSamples;
-    } else if (holdCounter > 0) {
-      holdCounter--;
-    } else {
-      env = raw + RELEASE_COEFF * (env - raw);
-    }
-    output[i] = env;
-  }
-  return output;
-}
-
-function smoothEnvelope(envelope, writePos, pointsToShow) {
-  const bufferSize = envelope.length;
-  const smoothed = new Float32Array(bufferSize);
-  const startIdx = (writePos - pointsToShow - ENVELOPE.readOffset + bufferSize) % bufferSize;
-
-  // Forward pass (left-to-right): smooth decay after peaks
-  const forward = ballisticPass(envelope, startIdx, pointsToShow, bufferSize);
-
-  for (let i = 0; i < pointsToShow; i++) {
-    smoothed[(startIdx + i) % bufferSize] = forward[i];
-  }
-
-  return smoothed;
-}
 
 export class Waveform {
   static stylesLoaded = false;
@@ -113,11 +74,29 @@ export class Waveform {
   stop() { if (this.animationId) { cancelAnimationFrame(this.animationId); this.animationId = null; } }
   render() { this.draw(); this.animationId = requestAnimationFrame(this.render); }
 
+  // Smooth curve through points using quadratic bezier via midpoints
+  smoothCurveTo(points) {
+    if (points.length < 3) {
+      for (let i = 1; i < points.length; i++) this.ctx.lineTo(points[i].x, points[i].y);
+      return;
+    }
+    const midX = (points[0].x + points[1].x) / 2;
+    const midY = (points[0].y + points[1].y) / 2;
+    this.ctx.lineTo(midX, midY);
+    for (let i = 1; i < points.length - 1; i++) {
+      const mx = (points[i].x + points[i + 1].x) / 2;
+      const my = (points[i].y + points[i + 1].y) / 2;
+      this.ctx.quadraticCurveTo(points[i].x, points[i].y, mx, my);
+    }
+    this.ctx.lineTo(points[points.length - 1].x, points[points.length - 1].y);
+  }
+
   // Path helper - builds closed waveform path from points
   buildPath(points, width, height) {
     this.ctx.beginPath();
     this.ctx.moveTo(0, height);
-    for (const p of points) this.ctx.lineTo(p.x, p.y);
+    this.ctx.lineTo(points[0].x, points[0].y);
+    this.smoothCurveTo(points);
     this.ctx.lineTo(width, height);
     this.ctx.closePath();
   }
@@ -130,7 +109,7 @@ export class Waveform {
     }
     this.ctx.beginPath();
     this.ctx.moveTo(points[0].x, points[0].y);
-    for (let i = 1; i < points.length; i++) this.ctx.lineTo(points[i].x, points[i].y);
+    this.smoothCurveTo(points);
     this.ctx.stroke();
   }
 
@@ -144,6 +123,8 @@ export class Waveform {
     const bufferSize = envelope.length;
     const pointsToShow = Math.min(bufferSize, this.pointsToShow);
 
+    const outlineWidth = Math.max(1.5, height * ENVELOPE.outlineRatio);
+
     this.ctx.clearRect(0, 0, width, height);
     if (pointsToShow < 2) return;
 
@@ -151,8 +132,7 @@ export class Waveform {
     this.drawGridlines(width, height, displayMinDb, displayMaxDb);
 
     // Compute points
-    const smoothed = smoothEnvelope(envelope, writePos, pointsToShow);
-    const { rawPoints, clippedPoints } = this.computePoints(smoothed, writePos, pointsToShow, bufferSize, width, height);
+    const { rawPoints, clippedPoints } = this.computePoints(envelope, writePos, pointsToShow, bufferSize, width, height);
 
     // Apply jitter
     const jitteredRaw = applyJitter(rawPoints);
@@ -171,7 +151,7 @@ export class Waveform {
 
       if (clippedOutline) {
         this.ctx.strokeStyle = clippedOutline;
-        this.ctx.lineWidth = 1.5;
+        this.ctx.lineWidth = outlineWidth;
         this.strokePath(jitteredRaw);
       }
     }
@@ -196,7 +176,7 @@ export class Waveform {
 
     // Outline
     this.ctx.strokeStyle = colors.outline;
-    this.ctx.lineWidth = 1.5;
+    this.ctx.lineWidth = outlineWidth;
     this.strokePath(points);
   }
 

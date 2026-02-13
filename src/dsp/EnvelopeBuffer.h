@@ -33,30 +33,35 @@ public:
         thresholdBuffer_.fill(0.0f);
     }
 
-    void process(float preClipPeak, float postClipPeak, float threshold, int numSamples)
+    // Per-sample pre-clip envelope + per-block post-clip peak
+    void processSamples(const float* envData, int numSamples,
+                        float postClipPeak, float threshold)
     {
-        // Accumulate peaks
-        if (preClipPeak > currentPrePeak_)
-            currentPrePeak_ = preClipPeak;
         if (postClipPeak > currentPostPeak_)
             currentPostPeak_ = postClipPeak;
 
-        samplesSinceWrite_ += numSamples;
-
-        // Write points when enough samples accumulated
-        while (samplesSinceWrite_ >= samplesPerPoint_)
+        for (int i = 0; i < numSamples; ++i)
         {
-            int pos = writePos_.load(std::memory_order_relaxed);
-            preClipBuffer_[pos] = currentPrePeak_;
-            postClipBuffer_[pos] = currentPostPeak_;
-            thresholdBuffer_[pos] = threshold;
+            float env = envData[i];
+            if (env > currentPrePeak_)
+                currentPrePeak_ = env;
 
-            pos = (pos + 1) % static_cast<int>(BufferSize);
-            writePos_.store(pos, std::memory_order_relaxed);
+            samplesSinceWrite_++;
 
-            samplesSinceWrite_ -= samplesPerPoint_;
-            currentPrePeak_ = 0.0f;
-            currentPostPeak_ = 0.0f;
+            if (samplesSinceWrite_ >= samplesPerPoint_)
+            {
+                int pos = writePos_.load(std::memory_order_relaxed);
+                preClipBuffer_[pos] = currentPrePeak_;
+                postClipBuffer_[pos] = currentPostPeak_;
+                thresholdBuffer_[pos] = threshold;
+
+                pos = (pos + 1) % static_cast<int>(BufferSize);
+                writePos_.store(pos, std::memory_order_relaxed);
+
+                samplesSinceWrite_ = 0;
+                currentPrePeak_ = 0.0f;
+                currentPostPeak_ = 0.0f;
+            }
         }
     }
 
