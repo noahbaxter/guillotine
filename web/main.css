@@ -140,6 +140,7 @@ body::before {
 /* Left column: Title + Guillotine + Bucket Text */
 #left-panel {
   position: relative;
+  z-index: 1;
   display: flex;
   flex-direction: column;
   width: 55%;
@@ -296,6 +297,8 @@ body::before {
 
 /* Right column: Microscope + Knobs */
 #right-panel {
+  position: relative;
+  z-index: 2;
   display: flex;
   flex-direction: column;
   width: 45%;

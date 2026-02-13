@@ -50,51 +50,8 @@ export class Microscope {
     this.waveformArea.className = 'microscope__waveform';
     this.container.appendChild(this.waveformArea);
 
-    // Scale trigger button + popup panel
-    this.scaleTrigger = document.createElement('button');
-    this.scaleTrigger.className = 'microscope__scale-trigger';
-    this.scaleTrigger.textContent = '▾';
-    this.container.appendChild(this.scaleTrigger);
-
-    this.scalePanel = document.createElement('div');
-    this.scalePanel.className = 'microscope__scale-panel';
-    this.scalePanel.innerHTML = `
-      <div class="microscope__scale-column" data-type="scale">
-        <div class="microscope__scale-header">Scale</div>
-        ${SCALE_PRESETS.map((p, i) => `<button class="microscope__scale-option" data-index="${i}">${p.minDb}dB</button>`).join('')}
-      </div>
-      <div class="microscope__scale-column" data-type="time">
-        <div class="microscope__scale-header">Time</div>
-        ${TIME_PRESETS.map((p, i) => `<button class="microscope__scale-option" data-index="${i}">${p.label}</button>`).join('')}
-      </div>
-    `;
-    this.scaleTrigger.appendChild(this.scalePanel);
-
-    this.scalePanel.addEventListener('click', (e) => {
-      const option = e.target.closest('.microscope__scale-option');
-      if (!option) return;
-      const column = option.closest('.microscope__scale-column');
-      const idx = parseInt(option.dataset.index, 10);
-      if (column.dataset.type === 'scale') {
-        this.setScale(SCALE_PRESETS[idx].minDb);
-      } else {
-        this.setTimeScale(idx);
-      }
-    });
-
-    this.scaleTrigger.addEventListener('click', (e) => {
-      if (e.target.closest('.microscope__scale-panel')) return;
-      this.toggleScalePanel();
-    });
-
-    this.onScalePanelClickOutside = (e) => {
-      if (!this.scaleTrigger.contains(e.target)) {
-        this.closeScalePanel();
-      }
-    };
-    document.addEventListener('click', this.onScalePanelClickOutside);
-
     // Threshold line container with canvas, label, and drag handle
+    // (appended before scale trigger so trigger renders on top)
     this.thresholdLine = document.createElement('div');
     this.thresholdLine.className = 'microscope__threshold-line';
 
@@ -108,6 +65,51 @@ export class Microscope {
     this.thresholdLine.appendChild(this.dragHandle);
 
     this.container.appendChild(this.thresholdLine);
+
+    // Scale trigger appended to wrapper (parent) to escape container's
+    // stacking context — canvas compositor layers ignore z-index within it
+    this.scaleTrigger = document.createElement('button');
+    this.scaleTrigger.className = 'microscope__scale-trigger';
+    this.scaleTrigger.textContent = '▾';
+    this.container.parentElement.appendChild(this.scaleTrigger);
+
+    this.scalePanel = document.createElement('div');
+    this.scalePanel.className = 'microscope__scale-panel';
+    this.scalePanel.innerHTML = `
+      <div class="microscope__scale-column" data-type="scale">
+        <div class="microscope__scale-header">Scale</div>
+        ${SCALE_PRESETS.map((p, i) => `<button class="microscope__scale-option" data-index="${i}">${p.minDb}dB</button>`).join('')}
+      </div>
+      <div class="microscope__scale-column" data-type="time">
+        <div class="microscope__scale-header">Time</div>
+        ${TIME_PRESETS.map((p, i) => `<button class="microscope__scale-option" data-index="${i}">${p.label}</button>`).join('')}
+      </div>
+    `;
+    // Portal to body to escape all stacking contexts (canvas compositor layers)
+    document.body.appendChild(this.scalePanel);
+
+    this.scalePanel.addEventListener('click', (e) => {
+      const option = e.target.closest('.microscope__scale-option');
+      if (!option) return;
+      const column = option.closest('.microscope__scale-column');
+      const idx = parseInt(option.dataset.index, 10);
+      if (column.dataset.type === 'scale') {
+        this.setScale(SCALE_PRESETS[idx].minDb);
+      } else {
+        this.setTimeScale(idx);
+      }
+    });
+
+    this.scaleTrigger.addEventListener('click', () => {
+      this.toggleScalePanel();
+    });
+
+    this.onScalePanelClickOutside = (e) => {
+      if (!this.scaleTrigger.contains(e.target) && !this.scalePanel.contains(e.target)) {
+        this.closeScalePanel();
+      }
+    };
+    document.addEventListener('click', this.onScalePanelClickOutside);
 
     // Create waveform
     this.waveform = new Waveform(this.waveformArea, this.options);
@@ -126,8 +128,17 @@ export class Microscope {
 
   toggleScalePanel() {
     const opening = !this.scalePanel.classList.contains('microscope__scale-panel--open');
+    if (opening) this.positionScalePanel();
     this.scalePanel.classList.toggle('microscope__scale-panel--open');
     this.scaleTrigger.classList.toggle('microscope__scale-trigger--open', opening);
+  }
+
+  positionScalePanel() {
+    const rect = this.scaleTrigger.getBoundingClientRect();
+    const fontSize = getComputedStyle(this.scaleTrigger).fontSize;
+    this.scalePanel.style.fontSize = fontSize;
+    this.scalePanel.style.left = rect.left + 'px';
+    this.scalePanel.style.bottom = (window.innerHeight - rect.top + 4) + 'px';
   }
 
   closeScalePanel() {
@@ -484,5 +495,6 @@ export class Microscope {
     this.thresholdLine.remove();
     this.waveformArea.remove();
     this.scaleTrigger.remove();
+    this.scalePanel.remove();
   }
 }
