@@ -4,7 +4,6 @@ import { loadStyles } from '../../lib/component-loader.js';
 import { animateValue } from '../../lib/guillotine-utils.js';
 import { setScale as setCrtScale } from '../../lib/crt-effect.js';
 import { Waveform } from '../display/waveform.js';
-import { Digits } from '../display/digits.js';
 import { Dropdown } from '../controls/dropdown.js';
 import { getThresholdColor, getNeonColors } from '../../lib/theme.js';
 import { setGlowSource, isGlowing, onGlowChange, onSharpnessChange } from '../../lib/blade-state.js';
@@ -15,7 +14,7 @@ const MAX_JITTER = 25;
 
 const DEFAULTS = {
   displayMinDb: SCALE_PRESETS[DISPLAY_CONFIG.defaultScalePresetIndex].minDb,
-  displayMaxDb: DISPLAY_CONFIG.maxCeilingDb
+  displayMaxDb: DISPLAY_CONFIG.displayMaxDb
 };
 
 export class Microscope {
@@ -92,22 +91,6 @@ export class Microscope {
     // Create waveform
     this.waveform = new Waveform(this.waveformArea, this.options);
 
-    // External scale labels (in HTML, outside microscope) - use Digits for consistent transitions
-    this.labelTop = document.getElementById('label-top');
-    this.labelBottom = document.getElementById('label-bottom');
-    const labelTopContainer = this.labelTop?.querySelector('.microscope-label__num');
-    const labelBottomContainer = this.labelBottom?.querySelector('.microscope-label__num');
-
-    if (labelTopContainer) {
-      this.labelTopDigits = new Digits(labelTopContainer, { scale: 0.35 });
-      this.labelTopDigits.ready.then(() => this.labelTopDigits.setValue('0'));
-    }
-    if (labelBottomContainer) {
-      this.labelBottomDigits = new Digits(labelBottomContainer, { scale: 0.35 });
-      this.labelBottomDigits.ready.then(() => this.labelBottomDigits.setValue(this.options.displayMinDb));
-    }
-
-
     // Subscribe to centralized blade state
     this.unsubGlow = onGlowChange(() => this.drawJitteryBlade());
     this.unsubSharpness = onSharpnessChange((value) => {
@@ -158,14 +141,17 @@ export class Microscope {
   }
 
   setScale(minDb) {
+    const preset = SCALE_PRESETS.find(p => p.minDb === minDb);
     this.options.displayMinDb = minDb;
-    if (this.labelBottomDigits) {
-      this.labelBottomDigits.setValue(minDb);
-    }
     this.waveform.options.displayMinDb = minDb;
 
-    const idx = SCALE_PRESETS.findIndex(p => p.minDb === minDb);
-    if (idx !== -1) this.currentPresetIndex = idx;
+    if (preset) {
+      this.options.displayMaxDb = preset.maxDb;
+      this.waveform.options.displayMaxDb = preset.maxDb;
+      this.waveform.gridStep = preset.gridStep;
+      const idx = SCALE_PRESETS.indexOf(preset);
+      if (idx !== -1) this.currentPresetIndex = idx;
+    }
     this.updateScaleDropdown();
 
     this.updateFromThreshold();
@@ -207,7 +193,8 @@ export class Microscope {
 
       const rect = this.container.getBoundingClientRect();
       const y = e.clientY - rect.top;
-      const yFrac = Math.max(0, Math.min(1, y / rect.height));
+      const minYFrac = this.dbToYFrac(0);  // 0dB ceiling limit
+      const yFrac = Math.max(minYFrac, Math.min(1, y / rect.height));
 
       this.lineYFrac = yFrac;
       this.updateVisuals();
@@ -446,8 +433,6 @@ export class Microscope {
     if (this.unsubSharpness) this.unsubSharpness();
     if (this.cleanup) this.cleanup();
     this.waveform.destroy();
-    if (this.labelTopDigits) this.labelTopDigits.destroy();
-    if (this.labelBottomDigits) this.labelBottomDigits.destroy();
     this.scaleDropdown.destroy();
     this.timeDropdown.destroy();
     this.thresholdLine.remove();

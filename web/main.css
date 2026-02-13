@@ -267,18 +267,6 @@ body::before {
   overflow: visible;
 }
 
-/* 0dB label inside microscope */
-.microscope-label {
-  position: absolute;
-  top: 0.5em;
-  left: 0.5em;
-  font-size: 0.625em;
-  font-family: monospace;
-  color: var(--color-white-70);
-  opacity: 0.7;
-  z-index: 5;
-  pointer-events: none;
-}
 
 #microscope-container {
   width: 100%;

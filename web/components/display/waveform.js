@@ -19,7 +19,7 @@ export class Waveform {
   constructor(container, options = {}) {
     this.options = {
       displayMinDb: DISPLAY_CONFIG.defaultMinDb,
-      displayMaxDb: DISPLAY_CONFIG.maxCeilingDb,
+      displayMaxDb: DISPLAY_CONFIG.displayMaxDb,
       ...options
     };
     this.container = container;
@@ -35,6 +35,7 @@ export class Waveform {
     this.ceilingLinear = 1.0;
     this.curveExponent = 2.0;
     this.pointsToShow = WAVEFORM_CONFIG.pointsToShow;
+    this.gridStep = WAVEFORM_CONFIG.defaultGridStepDb;
 
     this.ready = this.init();
     this.render = this.render.bind(this);
@@ -128,7 +129,7 @@ export class Waveform {
     this.ctx.clearRect(0, 0, width, height);
     if (pointsToShow < 2) return;
 
-    // Draw gridlines
+    // Draw gridlines (lines only, labels drawn after waveform)
     this.drawGridlines(width, height, displayMinDb, displayMaxDb);
 
     // Compute points
@@ -178,20 +179,51 @@ export class Waveform {
     this.ctx.strokeStyle = colors.outline;
     this.ctx.lineWidth = outlineWidth;
     this.strokePath(points);
+
+    // Draw dB labels on top of waveforms
+    this.drawGridLabels(width, height, displayMinDb, displayMaxDb);
   }
 
   drawGridlines(width, height, minDb, maxDb) {
     const dbRange = maxDb - minDb;
+    const step = this.gridStep;
     this.ctx.strokeStyle = 'rgba(255, 255, 255, 0.2)';
     this.ctx.lineWidth = 1;
 
-    for (let db = 0; db >= -DISPLAY_CONFIG.rangeDb; db -= WAVEFORM_CONFIG.gridStepDb) {
+    for (let db = 0; db >= -DISPLAY_CONFIG.rangeDb; db -= step) {
       if (db < minDb || db > maxDb) continue;
       const y = Math.round((maxDb - db) / dbRange * height) + 0.5;
       this.ctx.beginPath();
       this.ctx.moveTo(0, y);
       this.ctx.lineTo(width, y);
       this.ctx.stroke();
+    }
+  }
+
+  drawGridLabels(_width, height, minDb, maxDb) {
+    const dbRange = maxDb - minDb;
+    const step = this.gridStep;
+    const fontSize = Math.max(8, height * 0.04);
+    const labelPad = 6;
+    const labelOffset = fontSize * 0.25;
+
+    this.ctx.font = `${fontSize}px monospace`;
+    this.ctx.textBaseline = 'top';
+
+    for (let db = 0; db >= -DISPLAY_CONFIG.rangeDb; db -= step) {
+      if (db < minDb || db > maxDb) continue;
+      if (db === minDb) continue;
+
+      const y = Math.round((maxDb - db) / dbRange * height) + 0.5;
+      const label = (db >= 0 ? `+${db}` : `${db}`) + 'dB';
+      this.ctx.fillStyle = 'rgba(255, 255, 255, 0.35)';
+      this.ctx.fillText(label, labelPad, y + labelOffset);
+    }
+
+    // Top label — hide when range is too wide (36dB+)
+    if (maxDb > 0 && dbRange <= 30) {
+      this.ctx.fillStyle = 'rgba(255, 255, 255, 0.35)';
+      this.ctx.fillText(`+${maxDb}dB`, labelPad, labelPad);
     }
   }
 
