@@ -180,5 +180,8 @@ export function onStereoModeChange(callback) {
     }
 }
 
+// Native function bridge (for C++ functions registered via withNativeFunction)
+export const getNativeFunction = Juce.getNativeFunction;
+
 // Export JUCE library for direct access if needed
 export { Juce };

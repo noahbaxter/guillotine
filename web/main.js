@@ -29,7 +29,8 @@ import {
   onFilterTypeChange,
   setStereoMode,
   getStereoMode,
-  onStereoModeChange
+  onStereoModeChange,
+  getNativeFunction
 } from './lib/juce-bridge.js';
 import { setDeltaMode, toggleReadableMode } from './lib/theme.js';
 import { setGlowSource, setSharpness } from './lib/blade-state.js';
@@ -51,11 +52,13 @@ const KNOB_SIZE = {
 };
 
 // Dynamic root font-size for proportional scaling
-const BASE_WIDTH = 600;
+// Derived from HEIGHT (not width) so mode toggles never cause font recalculation.
+// WebView width = height * 1.2, so: fontSize = height * 1.2 / 600 * 16 = height / 500 * 16
+const BASE_HEIGHT = 500;
 const BASE_FONT_SIZE = 16;
 const resizeObserver = new ResizeObserver(entries => {
-  const width = entries[0].contentRect.width;
-  document.documentElement.style.fontSize = (width / BASE_WIDTH) * BASE_FONT_SIZE + 'px';
+  const height = entries[0].contentRect.height;
+  document.documentElement.style.fontSize = (height / BASE_HEIGHT) * BASE_FONT_SIZE + 'px';
 });
 resizeObserver.observe(document.body);
 
@@ -114,6 +117,10 @@ class GuillotineApp {
 
     // Track if we're currently dragging to avoid feedback loops
     this.draggingParam = null;
+
+    // View mode
+    this.viewMode = 'advanced';
+    this.nativeSetViewMode = getNativeFunction('setViewMode');
 
     this.init();
   }
@@ -310,6 +317,13 @@ class GuillotineApp {
       this.trueclipToggle.ready
     ]);
 
+    // View toggle — chevron + label, positioned at top-right of app
+    this.viewToggle = document.createElement('button');
+    this.viewToggle.className = 'view-toggle';
+    this.viewToggle.innerHTML = '<span class="view-toggle__chevron"></span>';
+    this.viewToggle.addEventListener('click', () => this.toggleViewMode());
+    document.getElementById('left-panel').appendChild(this.viewToggle);
+
     // Start with exponent knob disabled (only enable for T²)
     this.curveExponentKnob.setDisabled(true);
 
@@ -485,6 +499,11 @@ class GuillotineApp {
 
     // Initialize all UI state from C++ parameter values
     this.initializeFromParams();
+
+    // Restore view mode preference
+    if (localStorage.getItem('guillotine-view-mode') === 'basic') {
+      this.toggleViewMode();
+    }
 
     // Mark animated components as initialized (enables animations for subsequent changes)
     this.guillotine.markInitialized();
@@ -745,6 +764,31 @@ class GuillotineApp {
     if (this.bypass === value) return;
     this.bypass = value;
     this.updateBypassVisual();
+  }
+
+  toggleViewMode() {
+    const goingBasic = this.viewMode === 'advanced';
+    this.viewMode = goingBasic ? 'basic' : 'advanced';
+
+    // Toggle right panel visibility (layout unchanged — WebView stays at advanced width)
+    document.getElementById('app').classList.toggle('basic-mode', goingBasic);
+
+    if (goingBasic) {
+      this.microscope.pause();
+    } else {
+      this.microscope.resume();
+    }
+
+    // Force pointer cursor during resize — native setSize() shifts the button
+    // out from under the cursor, causing it to revert to default
+    document.body.style.cursor = 'pointer';
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => { document.body.style.cursor = ''; });
+    });
+
+    // Resize editor window (right panel clips off-screen or becomes visible)
+    this.nativeSetViewMode(String(!goingBasic));
+    localStorage.setItem('guillotine-view-mode', this.viewMode);
   }
 
   updateBypassVisual() {

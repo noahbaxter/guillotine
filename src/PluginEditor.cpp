@@ -41,6 +41,11 @@ GuillotineEditor::GuillotineEditor(GuillotineProcessor& p)
               .withOptionsFrom(bypassClipperRelay)
               .withOptionsFrom(enforceCeilingRelay)
               .withOptionsFrom(dryWetRelay)
+              .withNativeFunction("setViewMode", [this](const auto& args, auto complete) {
+                  bool advanced = args.size() > 0 && args[0].toString() == "true";
+                  setViewMode(advanced);
+                  complete({});
+              })
       },
       // Initialize parameter attachments (connect relays to APVTS)
       inputGainAttachment{
@@ -112,7 +117,14 @@ void GuillotineEditor::paint(juce::Graphics& g)
 
 void GuillotineEditor::resized()
 {
-    webView.setBounds(getLocalBounds());
+    auto bounds = getLocalBounds();
+
+    // In basic mode, keep the WebView at advanced-mode width so the HTML layout
+    // never changes. The editor window simply clips the right panel off-screen.
+    if (!advancedMode)
+        bounds.setWidth(juce::roundToInt(bounds.getHeight() * (600.0 / 500.0)));
+
+    webView.setBounds(bounds);
 }
 
 void GuillotineEditor::timerCallback()
@@ -135,6 +147,32 @@ void GuillotineEditor::pushVersionOnce()
     });
 }
 
+
+void GuillotineEditor::setViewMode(bool advanced)
+{
+    advancedMode = advanced;
+
+    int currentHeight = getHeight();
+
+    if (advanced)
+    {
+        double ratio = 600.0 / 500.0;  // 1.2:1
+        getConstrainer()->setFixedAspectRatio(ratio);
+        setResizeLimits(480, 400, 1200, 1000);
+        int newWidth = juce::roundToInt(currentHeight * ratio);
+        newWidth = juce::jlimit(480, 1200, newWidth);
+        setSize(newWidth, currentHeight);
+    }
+    else
+    {
+        double ratio = 2.0 / 3.0;  // 0.667:1
+        getConstrainer()->setFixedAspectRatio(ratio);
+        setResizeLimits(300, 450, 670, 1000);
+        int newWidth = juce::roundToInt(currentHeight * ratio);
+        newWidth = juce::jlimit(300, 670, newWidth);
+        setSize(newWidth, currentHeight);
+    }
+}
 
 std::optional<juce::WebBrowserComponent::Resource> GuillotineEditor::getResource(const juce::String& url)
 {

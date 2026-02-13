@@ -432,6 +432,16 @@ export class Microscope {
     this.waveform.stop();
   }
 
+  pause() {
+    this.stopEnvelopePolling();
+    this.waveform.stop();
+  }
+
+  resume() {
+    this.waveform.start();
+    this.startEnvelopePolling();
+  }
+
   startEnvelopePolling() {
     if (this.envelopePollId) return;
 

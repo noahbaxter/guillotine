@@ -122,7 +122,7 @@ body::before {
   content: '';
   position: absolute;
   inset: 0;
-  background: url('assets/textures/grunge.jpg') center/cover;
+  background: url('assets/textures/grunge.jpg') center / cover;
   opacity: 0.25;
   pointer-events: none;
 }
@@ -246,6 +246,52 @@ body::before {
   width: 100%;
   opacity: 1.0;
   background-color: var(--color-text-tertiary);
+}
+
+/* ==========================================================================
+   Basic Mode - Right panel clipped off-screen by narrower editor window.
+   WebView stays at advanced width so layout never changes.
+   ========================================================================== */
+.basic-mode #right-panel {
+  opacity: 0;
+  pointer-events: none;
+}
+
+/* View toggle — aligned with logo, right side of left panel */
+.view-toggle {
+  position: absolute;
+  top: 6.0em;
+  right: 1em;
+  z-index: 20;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 4.5em;
+  height: 4.5em;
+  background: none;
+  border: none;
+  cursor: pointer;
+  opacity: 0.6;
+  padding: 0;
+}
+
+.view-toggle:hover {
+  opacity: 1;
+}
+
+/* Blade tip — filled triangle, like a blade edge indicating direction */
+.view-toggle__chevron {
+  width: 0;
+  height: 0;
+  border-top: 1.1em solid transparent;
+  border-bottom: 1.1em solid transparent;
+  border-right: 1.4em solid var(--color-text-tertiary, #aaa);
+  pointer-events: none;
+}
+
+.basic-mode .view-toggle__chevron {
+  border-right: none;
+  border-left: 1.4em solid var(--color-text-tertiary, #aaa);
 }
 
 /* Right column: Microscope + Knobs */
