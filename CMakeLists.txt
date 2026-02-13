@@ -45,7 +45,7 @@ juce_add_plugin(Guillotine
     PLUGIN_MANUFACTURER_CODE Dich
     PLUGIN_CODE Gltn
     FORMATS VST3 AU LV2 Standalone
-    PRODUCT_NAME "Guillotine"
+    PRODUCT_NAME "Guillotine Clip"
     PLUGIN_DESC "A clipping plugin with guillotine visualization"
 
     # WebView requirements
