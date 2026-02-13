@@ -34,6 +34,7 @@ import {
 } from './lib/juce-bridge.js';
 import { setDeltaMode, toggleReadableMode } from './lib/theme.js';
 import { setGlowSource, setSharpness } from './lib/blade-state.js';
+import { initUpdateChecker } from './lib/update-checker.js';
 import './lib/crt-effect.js';  // Initialize CRT effects (scanlines, jitter, vignette)
 
 // Load locally embedded fonts
@@ -517,8 +518,11 @@ class GuillotineApp {
       }
     });
 
-    // Disable browser context menu (commented out for dev tools access)
-    // document.addEventListener('contextmenu', e => e.preventDefault());
+    // Update checker (C++ pushes window.onUpdateAvailable if newer version exists)
+    initUpdateChecker(getNativeFunction('openURL'));
+
+    // Disable browser context menu
+    document.addEventListener('contextmenu', e => e.preventDefault());
 
     // Remove loading class (re-enables transitions) and fade in
     // Use double RAF to ensure DOM has settled with correct initial values

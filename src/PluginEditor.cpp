@@ -1,6 +1,8 @@
 #include "PluginProcessor.h"
 #include "PluginEditor.h"
 #include "BinaryData.h"
+#include <thread>
+#include <array>
 
 GuillotineEditor::GuillotineEditor(GuillotineProcessor& p)
     : AudioProcessorEditor(&p),
@@ -44,6 +46,11 @@ GuillotineEditor::GuillotineEditor(GuillotineProcessor& p)
               .withNativeFunction("setViewMode", [this](const auto& args, auto complete) {
                   bool advanced = args.size() > 0 && args[0].toString() == "true";
                   setViewMode(advanced);
+                  complete({});
+              })
+              .withNativeFunction("openURL", [](const auto& args, auto complete) {
+                  if (args.size() > 0)
+                      juce::URL(args[0].toString()).launchInDefaultBrowser();
                   complete({});
               })
       },
@@ -129,24 +136,99 @@ void GuillotineEditor::resized()
 
 void GuillotineEditor::timerCallback()
 {
+    ++timerTicks;
     pushVersionOnce();
+
+    // Trigger update check ~2s after construction (page will be loaded by then)
+    if (!updateCheckDone && timerTicks >= 120)
+        checkForUpdate();
 }
 
 void GuillotineEditor::pushVersionOnce()
 {
     if (versionPushed) return;
 
-    // Only mark as pushed if the element exists (page is loaded)
-    juce::String js = "if (document.getElementById('version-num')) { "
-                      "document.getElementById('version-num').textContent = 'v" JucePlugin_VersionString "'; "
-                      "true; } else { false; }";
-    webView.evaluateJavascript(js, [this](juce::WebBrowserComponent::EvaluationResult result) {
-        if (result.getResult() && result.getResult()->toString() == "true") {
-            versionPushed = true;
-        }
-    });
+    // Keep pushing until the element exists (fire-and-forget, no callback)
+    juce::String js = "(() => { "
+                      "const el = document.getElementById('version-num'); "
+                      "if (!el) return false; "
+                      "el.textContent = 'v" JucePlugin_VersionString "'; "
+                      "return true; })()";
+    webView.evaluateJavascript(js, nullptr);
+
+    // Stop retrying after 2s — if version-num exists, it's set by now
+    if (timerTicks >= 120)
+        versionPushed = true;
 }
 
+
+void GuillotineEditor::checkForUpdate()
+{
+    if (updateCheckDone) return;
+    updateCheckDone = true;
+
+    // Run on background thread to avoid blocking UI
+    auto safeThis = juce::Component::SafePointer<GuillotineEditor>(this);
+
+    std::thread([safeThis]() {
+        // Fetch latest release from GitHub API
+        juce::URL url("https://api.github.com/repos/noahbaxter/guillotine/releases/latest");
+        auto options = juce::URL::InputStreamOptions(juce::URL::ParameterHandling::inAddress)
+                           .withConnectionTimeoutMs(5000)
+                           .withNumRedirectsToFollow(5)
+                           .withHttpRequestCmd("GET")
+                           .withExtraHeaders("User-Agent: Guillotine-Plugin\r\nAccept: application/vnd.github+json");
+
+        auto stream = url.createInputStream(options);
+        if (!stream)
+            return;
+
+        auto response = stream->readEntireStreamAsString();
+        if (response.isEmpty())
+            return;
+
+        // Parse tag_name from JSON
+        auto json = juce::JSON::parse(response);
+        auto tagName = json.getProperty("tag_name", {}).toString();
+        if (tagName.isEmpty())
+            return;
+
+        // Strip leading 'v' if present
+        if (tagName.startsWithChar('v') || tagName.startsWithChar('V'))
+            tagName = tagName.substring(1);
+
+        // Compare semver: split both into major.minor.patch
+        auto splitVersion = [](const juce::String& v) -> std::array<int, 3> {
+            juce::StringArray parts;
+            parts.addTokens(v, ".", "");
+            return {
+                parts.size() > 0 ? parts[0].getIntValue() : 0,
+                parts.size() > 1 ? parts[1].getIntValue() : 0,
+                parts.size() > 2 ? parts[2].getIntValue() : 0
+            };
+        };
+
+        auto remote = splitVersion(tagName);
+        auto local = splitVersion(JucePlugin_VersionString);
+
+        bool isNewer = false;
+        for (int i = 0; i < 3; ++i) {
+            if (remote[i] > local[i]) { isNewer = true; break; }
+            if (remote[i] < local[i]) break;
+        }
+
+        if (!isNewer)
+            return;
+
+        // Push to WebView on message thread
+        juce::MessageManager::callAsync([safeThis, tagName]() {
+            if (safeThis != nullptr) {
+                juce::String js = "if (window.onUpdateAvailable) window.onUpdateAvailable('" + tagName + "');";
+                safeThis->webView.evaluateJavascript(js, nullptr);
+            }
+        });
+    }).detach();
+}
 
 void GuillotineEditor::setViewMode(bool advanced)
 {
@@ -243,6 +325,7 @@ std::optional<juce::WebBrowserComponent::Resource> GuillotineEditor::getResource
         { "lib/config.js",            BinaryData::config_js,         BinaryData::config_jsSize,         "text/javascript" },
         { "lib/utils.js",             BinaryData::utils_js,          BinaryData::utils_jsSize,          "text/javascript" },
         { "lib/blade-state.js",      BinaryData::bladestate_js,     BinaryData::bladestate_jsSize,     "text/javascript" },
+        { "lib/update-checker.js",   BinaryData::updatechecker_js,  BinaryData::updatechecker_jsSize,  "text/javascript" },
         { "lib/delta-mode.css",      BinaryData::deltamode_css,     BinaryData::deltamode_cssSize,     "text/css" },
         { "lib/crt-effects.css",     BinaryData::crteffects_css,    BinaryData::crteffects_cssSize,    "text/css" },
         // JUCE frontend library

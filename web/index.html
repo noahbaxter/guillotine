@@ -67,7 +67,7 @@
       <div id="delta-text">
         <div class="text-mask" style="--mask-src: url(assets/branding/decorative-2.png)"></div>
       </div>
-      <div id="version-tag"><span id="version-num"></span></div>
+      <div id="version-tag"><span id="update-indicator">!</span><span id="version-num"></span></div>
       <div id="andy-sig" class="text-mask" style="--mask-src: url(assets/branding/signature.png)"></div>
     </div>
 
@@ -85,6 +85,17 @@
             <div id="output-knob-container"></div>
           </div>
         </div>
+      </div>
+    </div>
+  </div>
+  <!-- Update prompt overlay -->
+  <div id="update-prompt-overlay">
+    <div class="update-prompt">
+      <div class="update-prompt__title">Update Available</div>
+      <div class="update-prompt__message">Guillotine <span class="update-prompt__version"></span> is out.</div>
+      <div class="update-prompt__buttons">
+        <button class="update-prompt__no">Dismiss</button>
+        <button class="update-prompt__yes">Download</button>
       </div>
     </div>
   </div>

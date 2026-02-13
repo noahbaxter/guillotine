@@ -16,11 +16,14 @@ private:
     void timerCallback() override;
     std::optional<juce::WebBrowserComponent::Resource> getResource(const juce::String& url);
     void pushVersionOnce();
+    void checkForUpdate();
     void setViewMode(bool advanced);
 
     GuillotineProcessor& audioProcessor;
     bool versionPushed = false;
+    bool updateCheckDone = false;
     bool advancedMode = true;
+    int timerTicks = 0;
 
     // WebView relay objects (bridge between WebView and parameters)
     juce::WebSliderRelay inputGainRelay;
