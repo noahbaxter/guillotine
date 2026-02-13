@@ -66,7 +66,7 @@ All knobs work the same way:
 |---------|-------------|
 | **True Peak** | Hard ceiling at output - guarantees signal never exceeds ceiling |
 | **Filter Type** | Min Phase (low latency) or Linear Phase (no phase distortion) |
-| **Stereo Mode** | Stereo Link / L+R Independent / Mid-Side |
+| **Stereo Mode** | Stereo Link / Dual Mono / M/S |
 
 ### Microscope View
 
@@ -74,7 +74,9 @@ The waveform display on the right shows your signal in detail:
 - **White** = signal below ceiling
 - **Red** = signal being clipped
 - **Red line** = ceiling threshold (drag to adjust)
-- **Scroll wheel** = zoom in/out (12dB to 60dB range)
+- **dB labels** along gridlines show the current scale
+- **Dropdown (▾)** = scale presets (-12dB to -60dB) and time window (1.5s or 3.0s)
+- **Scroll wheel** = cycle through scale presets
 
 ## Keyboard Shortcuts
 
