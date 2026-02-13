@@ -4,7 +4,6 @@ import { loadStyles } from '../../lib/component-loader.js';
 import { animateValue } from '../../lib/guillotine-utils.js';
 import { setScale as setCrtScale } from '../../lib/crt-effect.js';
 import { Waveform } from '../display/waveform.js';
-import { Dropdown } from '../controls/dropdown.js';
 import { getThresholdColor, getNeonColors } from '../../lib/theme.js';
 import { setGlowSource, isGlowing, onGlowChange, onSharpnessChange } from '../../lib/blade-state.js';
 import { SCALE_PRESETS, TIME_PRESETS, DISPLAY_CONFIG, DISPLAY_DB_RANGE, WAVEFORM_CONFIG } from '../../lib/config.js';
@@ -51,27 +50,49 @@ export class Microscope {
     this.waveformArea.className = 'microscope__waveform';
     this.container.appendChild(this.waveformArea);
 
-    // Scale dropdown
-    this.scaleDropdownContainer = document.createElement('div');
-    this.scaleDropdownContainer.className = 'microscope__scale-dropdown';
-    this.container.appendChild(this.scaleDropdownContainer);
+    // Scale trigger button + popup panel
+    this.scaleTrigger = document.createElement('button');
+    this.scaleTrigger.className = 'microscope__scale-trigger';
+    this.scaleTrigger.textContent = '▾';
+    this.container.appendChild(this.scaleTrigger);
 
-    this.scaleDropdown = new Dropdown(this.scaleDropdownContainer, {
-      options: SCALE_PRESETS.map(p => ({ label: `${p.minDb}dB`, value: p.minDb })),
-      value: this.currentPresetIndex,
-      onChange: (idx) => this.setScale(SCALE_PRESETS[idx].minDb)
+    this.scalePanel = document.createElement('div');
+    this.scalePanel.className = 'microscope__scale-panel';
+    this.scalePanel.innerHTML = `
+      <div class="microscope__scale-column" data-type="scale">
+        <div class="microscope__scale-header">Scale</div>
+        ${SCALE_PRESETS.map((p, i) => `<button class="microscope__scale-option" data-index="${i}">${p.minDb}dB</button>`).join('')}
+      </div>
+      <div class="microscope__scale-column" data-type="time">
+        <div class="microscope__scale-header">Time</div>
+        ${TIME_PRESETS.map((p, i) => `<button class="microscope__scale-option" data-index="${i}">${p.label}</button>`).join('')}
+      </div>
+    `;
+    this.scaleTrigger.appendChild(this.scalePanel);
+
+    this.scalePanel.addEventListener('click', (e) => {
+      const option = e.target.closest('.microscope__scale-option');
+      if (!option) return;
+      const column = option.closest('.microscope__scale-column');
+      const idx = parseInt(option.dataset.index, 10);
+      if (column.dataset.type === 'scale') {
+        this.setScale(SCALE_PRESETS[idx].minDb);
+      } else {
+        this.setTimeScale(idx);
+      }
     });
 
-    // Time scale dropdown
-    this.timeDropdownContainer = document.createElement('div');
-    this.timeDropdownContainer.className = 'microscope__time-dropdown';
-    this.container.appendChild(this.timeDropdownContainer);
-
-    this.timeDropdown = new Dropdown(this.timeDropdownContainer, {
-      options: TIME_PRESETS.map(p => ({ label: p.label, value: p.seconds })),
-      value: this.currentTimePresetIndex,
-      onChange: (idx) => this.setTimeScale(idx)
+    this.scaleTrigger.addEventListener('click', (e) => {
+      if (e.target.closest('.microscope__scale-panel')) return;
+      this.toggleScalePanel();
     });
+
+    this.onScalePanelClickOutside = (e) => {
+      if (!this.scaleTrigger.contains(e.target)) {
+        this.closeScalePanel();
+      }
+    };
+    document.addEventListener('click', this.onScalePanelClickOutside);
 
     // Threshold line container with canvas, label, and drag handle
     this.thresholdLine = document.createElement('div');
@@ -98,13 +119,31 @@ export class Microscope {
       this.drawJitteryBlade();
     });
 
-    this.updateScaleDropdown();
+    this.updateScalePanel();
     this.bindEvents();
     this.updateFromThreshold();
   }
 
-  updateScaleDropdown() {
-    this.scaleDropdown.setValue(this.currentPresetIndex);
+  toggleScalePanel() {
+    const opening = !this.scalePanel.classList.contains('microscope__scale-panel--open');
+    this.scalePanel.classList.toggle('microscope__scale-panel--open');
+    this.scaleTrigger.classList.toggle('microscope__scale-trigger--open', opening);
+  }
+
+  closeScalePanel() {
+    this.scalePanel.classList.remove('microscope__scale-panel--open');
+    this.scaleTrigger.classList.remove('microscope__scale-trigger--open');
+  }
+
+  updateScalePanel() {
+    const columns = this.scalePanel.querySelectorAll('.microscope__scale-column');
+    columns.forEach(col => {
+      const type = col.dataset.type;
+      const activeIndex = type === 'scale' ? this.currentPresetIndex : this.currentTimePresetIndex;
+      col.querySelectorAll('.microscope__scale-option').forEach((el, idx) => {
+        el.classList.toggle('microscope__scale-option--active', idx === activeIndex);
+      });
+    });
   }
 
   yFracToDb(yFrac) {
@@ -152,7 +191,7 @@ export class Microscope {
       const idx = SCALE_PRESETS.indexOf(preset);
       if (idx !== -1) this.currentPresetIndex = idx;
     }
-    this.updateScaleDropdown();
+    this.updateScalePanel();
 
     this.updateFromThreshold();
     if (this.onScaleChange) this.onScaleChange(minDb);
@@ -169,7 +208,7 @@ export class Microscope {
     const preset = TIME_PRESETS[index];
     const pointsToShow = preset.seconds * WAVEFORM_CONFIG.pointsPerSecond;
     this.waveform.setPointsToShow(pointsToShow);
-    this.timeDropdown.setValue(index);
+    this.updateScalePanel();
   }
 
   bindEvents() {
@@ -215,10 +254,9 @@ export class Microscope {
       this.updateGlow();
     };
 
-    this.thresholdLine.addEventListener('mousedown', onMouseDown);
-    this.thresholdLine.addEventListener('mouseenter', onMouseEnter);
-    this.thresholdLine.addEventListener('mouseleave', onMouseLeave);
     this.dragHandle.addEventListener('mousedown', onMouseDown);
+    this.dragHandle.addEventListener('mouseenter', onMouseEnter);
+    this.dragHandle.addEventListener('mouseleave', onMouseLeave);
     document.addEventListener('mousemove', onMouseMove);
     document.addEventListener('mouseup', onMouseUp);
 
@@ -239,10 +277,9 @@ export class Microscope {
     this.resizeObserver.observe(this.container);
 
     this.cleanup = () => {
-      this.thresholdLine.removeEventListener('mousedown', onMouseDown);
-      this.thresholdLine.removeEventListener('mouseenter', onMouseEnter);
-      this.thresholdLine.removeEventListener('mouseleave', onMouseLeave);
       this.dragHandle.removeEventListener('mousedown', onMouseDown);
+      this.dragHandle.removeEventListener('mouseenter', onMouseEnter);
+      this.dragHandle.removeEventListener('mouseleave', onMouseLeave);
       document.removeEventListener('mousemove', onMouseMove);
       document.removeEventListener('mouseup', onMouseUp);
       this.container.removeEventListener('wheel', onWheel);
@@ -433,11 +470,9 @@ export class Microscope {
     if (this.unsubSharpness) this.unsubSharpness();
     if (this.cleanup) this.cleanup();
     this.waveform.destroy();
-    this.scaleDropdown.destroy();
-    this.timeDropdown.destroy();
+    document.removeEventListener('click', this.onScalePanelClickOutside);
     this.thresholdLine.remove();
     this.waveformArea.remove();
-    this.scaleDropdownContainer.remove();
-    this.timeDropdownContainer.remove();
+    this.scaleTrigger.remove();
   }
 }

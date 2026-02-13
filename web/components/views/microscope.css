@@ -4,32 +4,94 @@
   overflow: visible;
 }
 
-.microscope__scale-dropdown {
+.microscope__scale-trigger {
   position: absolute;
   bottom: 0.5em;
   left: 0.5em;
   font-size: 0.5625em;
   z-index: 20;
+  padding: 0.125em 0.375em;
+  font-family: monospace;
+  background: var(--color-surface-control);
+  border: 0.0625em solid var(--color-white-20);
+  border-radius: 0.1875em;
+  color: var(--color-white-70);
+  cursor: pointer;
+  outline: none;
   opacity: 0.7;
   transition: opacity 0.15s;
 }
 
-.microscope__scale-dropdown:hover {
+.microscope__scale-trigger:hover,
+.microscope__scale-trigger:focus,
+.microscope__scale-trigger--open {
   opacity: 1;
+  background: var(--color-surface-control-hover);
 }
 
-.microscope__time-dropdown {
+.microscope__scale-panel {
   position: absolute;
-  bottom: 0.5em;
-  right: 0.5em;
-  font-size: 0.5625em;
-  z-index: 20;
-  opacity: 0.7;
-  transition: opacity 0.15s;
+  bottom: 100%;
+  left: 0;
+  margin-bottom: 0.375em;
+  display: flex;
+  gap: 0.0625em;
+  background: var(--color-surface-panel);
+  border: 0.0625em solid var(--color-white-20);
+  border-radius: 0.1875em;
+  box-shadow: 0 0.25em 0.5em var(--color-shadow-50);
+  opacity: 0;
+  visibility: hidden;
+  transform: translateY(0.25em);
+  transition: opacity 0.15s, transform 0.15s, visibility 0.15s;
+  z-index: 100;
 }
 
-.microscope__time-dropdown:hover {
-  opacity: 1;
+.microscope__scale-panel--open {
+  opacity: 0.9;
+  visibility: visible;
+  transform: translateY(0);
+}
+
+.microscope__scale-column {
+  display: flex;
+  flex-direction: column;
+}
+
+.microscope__scale-column + .microscope__scale-column {
+  border-left: 0.0625em solid var(--color-white-20);
+}
+
+.microscope__scale-header {
+  padding: 0.25em 0.5em;
+  color: var(--color-white-40);
+  font-size: 0.875em;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  white-space: nowrap;
+}
+
+.microscope__scale-option {
+  display: block;
+  width: 100%;
+  padding: 0.25em 0.5em;
+  font-size: inherit;
+  font-family: monospace;
+  background: transparent;
+  border: none;
+  color: var(--color-white-70);
+  cursor: pointer;
+  text-align: left;
+  white-space: nowrap;
+}
+
+.microscope__scale-option:hover {
+  background: var(--color-white-10);
+}
+
+.microscope__scale-option--active {
+  color: var(--color-text-primary);
+  background: var(--color-white-15);
 }
 
 .microscope__threshold-line {
@@ -38,15 +100,10 @@
   right: 0;
   height: 2.5em;
   transform: translateY(-50%);
-  cursor: grab;
   z-index: 10;
   pointer-events: auto;
   overflow: visible;
   touch-action: none;
-}
-
-.microscope__threshold-line:active {
-  cursor: grabbing;
 }
 
 .microscope__blade-canvas {
@@ -61,8 +118,13 @@
   position: absolute;
   left: 0;
   right: 0;
+  top: 50%;
   height: 1em;
-  transform: translateY(-0.4375em);
-  cursor: ns-resize;
+  transform: translateY(-50%);
+  cursor: grab;
   z-index: 11;
+}
+
+.microscope__drag-handle:active {
+  cursor: grabbing;
 }

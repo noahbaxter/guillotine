@@ -45,7 +45,7 @@ const WAVEFORM_POINTS_PER_SECOND = 200; // NOTE: must match envelopePointsPerSec
 // Time scale presets for microscope X axis (seconds shown)
 const TIME_PRESETS = [
   { label: '1.5s',  seconds: 1.5 },
-  { label: '3s',    seconds: 3 },
+  { label: '3.0s',  seconds: 3 },
 ];
 
 const DEFAULT_TIME_PRESET_INDEX = 0;
