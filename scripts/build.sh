@@ -84,6 +84,14 @@ configure_cmake() {
         # CMakeLists.txt is newer than cache - files were added/removed
         echo -e "${YELLOW}CMakeLists.txt changed, reconfiguring...${NC}"
         need_configure=true
+    elif [ -f "$PROJECT_ROOT/VERSION" ]; then
+        local current_ver cached_ver
+        current_ver=$(cat "$PROJECT_ROOT/VERSION" | tr -d '[:space:]')
+        cached_ver=$(grep "^CMAKE_PROJECT_VERSION:STATIC=" "$cache_file" 2>/dev/null | cut -d= -f2)
+        if [ "$current_ver" != "$cached_ver" ]; then
+            echo -e "${YELLOW}VERSION changed ($cached_ver → $current_ver), reconfiguring...${NC}"
+            need_configure=true
+        fi
     fi
 
     if [ "$need_configure" = true ]; then
