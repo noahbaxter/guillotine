@@ -14,7 +14,8 @@ const sliderStates = {
     deltaMonitor: Juce.getSliderState("deltaMonitor"),
     bypassClipper: Juce.getSliderState("bypassClipper"),
     enforceCeiling: Juce.getSliderState("enforceCeiling"),
-    dryWet: Juce.getSliderState("dryWet")
+    dryWet: Juce.getSliderState("dryWet"),
+    gainMode: Juce.getSliderState("gainMode")
 };
 
 // Set a parameter value (normalized 0-1)
@@ -173,6 +174,28 @@ export function getStereoMode() {
 
 export function onStereoModeChange(callback) {
     const state = sliderStates.stereoMode;
+    if (state) {
+        state.valueChangedEvent.addListener(() => {
+            callback(Math.round(state.getNormalisedValue() * 2));
+        });
+    }
+}
+
+// Gain mode helpers - 0 = Manual, 1 = Gain Match, 2 = Maximize
+export function setGainMode(index) {
+    const state = sliderStates.gainMode;
+    if (state) {
+        state.setNormalisedValue(index / 2);  // 0, 1, 2 -> 0, 0.5, 1
+    }
+}
+
+export function getGainMode() {
+    const state = sliderStates.gainMode;
+    return state ? Math.round(state.getNormalisedValue() * 2) : 0;
+}
+
+export function onGainModeChange(callback) {
+    const state = sliderStates.gainMode;
     if (state) {
         state.valueChangedEvent.addListener(() => {
             callback(Math.round(state.getNormalisedValue() * 2));

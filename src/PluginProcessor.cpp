@@ -106,6 +106,13 @@ juce::AudioProcessorValueTreeState::ParameterLayout GuillotineProcessor::createP
         juce::NormalisableRange<float>(0.0f, 1.0f),
         1.0f));
 
+    // Gain mode: Manual (0), Gain Match (1), Maximize (2)
+    params.push_back(std::make_unique<juce::AudioParameterChoice>(
+        juce::ParameterID{"gainMode", 1},
+        "Gain Mode",
+        juce::StringArray{"Manual", "Gain Match", "Maximize"},
+        0));  // Default to Manual
+
     return {params.begin(), params.end()};
 }
 

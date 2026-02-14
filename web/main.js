@@ -9,6 +9,7 @@ import { BloodPool } from './components/display/blood-pool.js';
 import { Knob } from './components/controls/knob.js';
 import { Lever } from './components/controls/lever.js';
 import { Toggle } from './components/controls/toggle.js';
+
 import {
   setParameterNormalized,
   getParameterNormalized,
@@ -30,6 +31,9 @@ import {
   setStereoMode,
   getStereoMode,
   onStereoModeChange,
+  setGainMode,
+  getGainMode,
+  onGainModeChange,
   getNativeFunction
 } from './lib/juce-bridge.js';
 import { setDeltaMode, toggleReadableMode } from './lib/theme.js';
@@ -204,6 +208,23 @@ class GuillotineApp {
       wrapperClass: 'knob-wrapper--threshold'
     }));
 
+    // Gain mode toggle (Manual / Gain Match / Maximize) - 3-way toggle
+    // true = Manual (0), null = Gain Match (1), false = Maximize (2)
+    this.gainModeToggle = new Toggle(document.getElementById('gain-mode-container'), {
+      value: true,
+      threeWay: true,
+      icons: {
+        up: 'assets/icons/gain-manual.svg',
+        mid: 'assets/icons/gain-match.svg',
+        down: 'assets/icons/gain-maximize.svg'
+      },
+      tooltips: {
+        on: 'Manual',
+        mid: 'Gain Match',
+        off: 'Maximize'
+      }
+    });
+
     // Dry/Wet mix knob (0% = dry, 100% = wet)
     this.drywetKnob = new Knob(this.drywetContainer, createSpriteKnob({
       label: TEXT.labels.mix,
@@ -315,7 +336,8 @@ class GuillotineApp {
       this.outputGainKnob.ready,
       this.filterTypeToggle.ready,
       this.stereoModeToggle.ready,
-      this.trueclipToggle.ready
+      this.trueclipToggle.ready,
+      this.gainModeToggle.ready
     ]);
 
     // View toggle — chevron + label, positioned at top-right of app
@@ -385,6 +407,11 @@ class GuillotineApp {
       setStereoMode(mode);
     };
     this.trueclipToggle.onChange = (v) => setEnforceCeiling(v);
+    // Gain mode: true = Manual (0), null = Gain Match (1), false = Maximize (2)
+    this.gainModeToggle.onChange = (v) => {
+      const mode = v === true ? 0 : v === null ? 1 : 2;
+      setGainMode(mode);
+    };
 
     // Wire up threshold changes from microscope drag
     this.microscope.onThresholdChange = (value) => {
@@ -492,6 +519,11 @@ class GuillotineApp {
       this.trueclipToggle.setValue(enabled);
     });
 
+    onGainModeChange((mode) => {
+      const toggleValue = mode === 0 ? true : mode === 1 ? null : false;
+      this.gainModeToggle.setValue(toggleValue);
+    });
+
     // Listen for bypass changes from C++ (DAW automation)
     onBypassClipperChange((bypassed) => {
       this.setBypass(bypassed);
@@ -586,6 +618,8 @@ class GuillotineApp {
     const stereoMode = get('stereoMode', getStereoMode);
     this.stereoModeToggle.setValue(stereoMode === 0 ? true : stereoMode === 1 ? null : false);
     this.trueclipToggle.setValue(get('truePeak', getEnforceCeiling));
+    const gainMode = get('gainMode', getGainMode);
+    this.gainModeToggle.setValue(gainMode === 0 ? true : gainMode === 1 ? null : false);
 
     // Microscope zoom
     if (d?.zoom !== undefined) this.microscope.setScale(d.zoom);

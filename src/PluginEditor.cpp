@@ -20,6 +20,7 @@ GuillotineEditor::GuillotineEditor(GuillotineProcessor& p)
       bypassClipperRelay{"bypassClipper"},
       enforceCeilingRelay{"enforceCeiling"},
       dryWetRelay{"dryWet"},
+      gainModeRelay{"gainMode"},
       // Initialize WebView with relays
       webView{
           juce::WebBrowserComponent::Options{}
@@ -43,6 +44,7 @@ GuillotineEditor::GuillotineEditor(GuillotineProcessor& p)
               .withOptionsFrom(bypassClipperRelay)
               .withOptionsFrom(enforceCeilingRelay)
               .withOptionsFrom(dryWetRelay)
+              .withOptionsFrom(gainModeRelay)
               .withNativeFunction("setViewMode", [this](const auto& args, auto complete) {
                   bool advanced = args.size() > 0 && args[0].toString() == "true";
                   setViewMode(advanced);
@@ -90,7 +92,10 @@ GuillotineEditor::GuillotineEditor(GuillotineProcessor& p)
           enforceCeilingRelay, nullptr},
       dryWetAttachment{
           *audioProcessor.getAPVTS().getParameter("dryWet"),
-          dryWetRelay, nullptr}
+          dryWetRelay, nullptr},
+      gainModeAttachment{
+          *audioProcessor.getAPVTS().getParameter("gainMode"),
+          gainModeRelay, nullptr}
 {
     addAndMakeVisible(webView);
     webView.setWantsKeyboardFocus(false);
@@ -407,6 +412,9 @@ std::optional<juce::WebBrowserComponent::Resource> GuillotineEditor::getResource
         { "assets/icons/stereo-link.svg",  BinaryData::stereolink_svg,  BinaryData::stereolink_svgSize,  "image/svg+xml" },
         { "assets/icons/lr.svg",           BinaryData::lr_svg,          BinaryData::lr_svgSize,          "image/svg+xml" },
         { "assets/icons/ms.svg",           BinaryData::ms_svg,          BinaryData::ms_svgSize,          "image/svg+xml" },
+        { "assets/icons/gain-manual.svg",   BinaryData::gainmanual_svg,   BinaryData::gainmanual_svgSize,   "image/svg+xml" },
+        { "assets/icons/gain-match.svg",    BinaryData::gainmatch_svg,    BinaryData::gainmatch_svgSize,    "image/svg+xml" },
+        { "assets/icons/gain-maximize.svg", BinaryData::gainmaximize_svg, BinaryData::gainmaximize_svgSize, "image/svg+xml" },
         // Assets - textures
         { "assets/textures/wood-1.png", BinaryData::wood1_png,  BinaryData::wood1_pngSize,  "image/png" },
         { "assets/textures/wood-2.png", BinaryData::wood2_png,  BinaryData::wood2_pngSize,  "image/png" },

@@ -193,6 +193,9 @@ juce_add_binary_data(GuillotineData
         web/assets/icons/stereo-link.svg
         web/assets/icons/lr.svg
         web/assets/icons/ms.svg
+        web/assets/icons/gain-manual.svg
+        web/assets/icons/gain-match.svg
+        web/assets/icons/gain-maximize.svg
         # Web - assets/textures
         web/assets/textures/wood-1.png
         web/assets/textures/wood-2.png

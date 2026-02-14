@@ -392,7 +392,14 @@ body::before {
 #ceiling-container {
   position: absolute;
   right: 0.25em;
-  top: 8em;
+  top: 6em;
+  z-index: 10;
+}
+
+#gain-mode-container {
+  position: absolute;
+  right: -0.25em;
+  top: 6em;
   z-index: 10;
 }
 
