@@ -45,6 +45,9 @@ elif ! grep -q "CMAKE_HOME_DIRECTORY:INTERNAL=$PROJECT_ROOT" "$CMAKE_BUILD_DIR/C
     echo -e "${YELLOW}Project path changed, reconfiguring...${NC}"
     rm -rf "$CMAKE_BUILD_DIR"
     need_configure=true
+elif [ "$PROJECT_ROOT/CMakeLists.txt" -nt "$CMAKE_BUILD_DIR/CMakeCache.txt" ]; then
+    echo -e "${YELLOW}CMakeLists.txt changed, reconfiguring...${NC}"
+    need_configure=true
 elif [ -f "$PROJECT_ROOT/VERSION" ]; then
     CURRENT_VERSION=$(cat "$PROJECT_ROOT/VERSION" | tr -d '[:space:]')
     CACHED_VERSION=$(grep "^CMAKE_PROJECT_VERSION:STATIC=" "$CMAKE_BUILD_DIR/CMakeCache.txt" 2>/dev/null | cut -d= -f2)
