@@ -217,7 +217,7 @@ jobs:
       - name: Install plugin to expected location
         run: |
           mkdir -p ~/Library/Audio/Plug-Ins/VST3
-          cp -R ./plugin/VST3/Guillotine Clip.vst3 ~/Library/Audio/Plug-Ins/VST3/
+          cp -R "./plugin/VST3/Guillotine Clip.vst3" ~/Library/Audio/Plug-Ins/VST3/
 
       - name: Setup Python
         uses: actions/setup-python@v5
@@ -357,15 +357,15 @@ jobs:
 
           # Handle different artifact structures
           if [ -d "./artifacts/VST3/Guillotine Clip.vst3" ]; then
-            cp -R ./artifacts/VST3/Guillotine Clip.vst3 build/Guillotine_artefacts/Release/VST3/
+            cp -R "./artifacts/VST3/Guillotine Clip.vst3" build/Guillotine_artefacts/Release/VST3/
           elif [ -d "./artifacts/Guillotine Clip.vst3" ]; then
-            cp -R ./artifacts/Guillotine Clip.vst3 build/Guillotine_artefacts/Release/VST3/
+            cp -R "./artifacts/Guillotine Clip.vst3" build/Guillotine_artefacts/Release/VST3/
           fi
 
           if [ -d "./artifacts/AU/Guillotine Clip.component" ]; then
-            cp -R ./artifacts/AU/Guillotine Clip.component build/Guillotine_artefacts/Release/AU/
+            cp -R "./artifacts/AU/Guillotine Clip.component" build/Guillotine_artefacts/Release/AU/
           elif [ -d "./artifacts/Guillotine Clip.component" ]; then
-            cp -R ./artifacts/Guillotine Clip.component build/Guillotine_artefacts/Release/AU/
+            cp -R "./artifacts/Guillotine Clip.component" build/Guillotine_artefacts/Release/AU/
           fi
 
           echo "=== Build structure ==="
@@ -439,8 +439,8 @@ jobs:
           mkdir -p "$PKG_OUT"
 
           # Copy plugins
-          cp -R build/Guillotine_artefacts/Release/VST3/Guillotine Clip.vst3 "$PKG_ROOT/Library/Audio/Plug-Ins/VST3/"
-          cp -R build/Guillotine_artefacts/Release/AU/Guillotine Clip.component "$PKG_ROOT/Library/Audio/Plug-Ins/Components/"
+          cp -R "build/Guillotine_artefacts/Release/VST3/Guillotine Clip.vst3" "$PKG_ROOT/Library/Audio/Plug-Ins/VST3/"
+          cp -R "build/Guillotine_artefacts/Release/AU/Guillotine Clip.component" "$PKG_ROOT/Library/Audio/Plug-Ins/Components/"
 
           # Sign plugins
           echo "=== Signing VST3 ==="
