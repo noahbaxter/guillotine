@@ -111,7 +111,7 @@ juce::AudioProcessorValueTreeState::ParameterLayout GuillotineProcessor::createP
         juce::ParameterID{"gainMode", 1},
         "Gain Mode",
         juce::StringArray{"Manual", "Gain Match", "Maximize"},
-        0));  // Default to Manual
+        1));  // Default to Match
 
     return {params.begin(), params.end()};
 }

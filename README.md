@@ -59,6 +59,7 @@ All knobs work the same way:
 | **Oversampling** | 1x–32x | Quality vs CPU tradeoff |
 | **Input Gain** | ±24 dB | Drive signal into clipper |
 | **Output Gain** | ±24 dB | Compensate for volume changes |
+| **Gain Mode** | 3-way | Manual / Match / Maximize (see Gain Mode below) |
 
 ### Toggles
 
@@ -101,6 +102,44 @@ Click the guillotine blade or lever to bypass. When bypassed:
 - Blade raises up
 - No processing occurs
 - Dry/wet at 0% has the same effect
+
+## Gain Mode
+
+The three-way toggle above the output knob controls how output gain is managed:
+
+| Mode | Behavior | As you clip harder |
+|------|----------|--------------------|
+| **Manual** | You control output gain | Output gets quieter |
+| **Match (=)** | Auto-compensates for lost energy | Output stays roughly the same |
+| **Maximize (↑)** | Boosts by ceiling amount (back to 0 dBFS) | Output gets louder |
+
+### How Match Mode Works
+
+Match mode doesn't analyze your audio in real-time. Instead, it runs two static reference signals through your current curve and ceiling settings and measures how much RMS energy each one loses:
+
+- **Transient reference** — an exponential decay (~12 dB crest factor), modeling a drum hit where only the peak tip gets clipped
+- **Tonal reference** — a Gaussian bell curve (~6 dB crest factor), modeling sustained content like guitars or synths where more energy sits near the ceiling
+
+These two references give different compensation values because signal shape matters: at the same crest factor, a Gaussian loses ~2 dB more energy to clipping than an exponential decay. The final compensation blends between them based on ceiling depth:
+
+- **Above -6 dB** ceiling → pure transient reference (light clipping mostly affects peaks)
+- **Below -18 dB** ceiling → pure tonal reference (heavy clipping eats into sustained energy)
+- **Between -6 and -18 dB** → linear blend
+
+A small progressive reduction (-2 dB across the full 0 to -60 dB range) pulls the compensation back slightly at extreme settings where it tends to run hot. The result is clamped so match mode never boosts more than maximize mode.
+
+This approach was validated against all 7 curves across the full ceiling and exponent range. The exact crest factor values don't matter much — compensation converges above ~6 dB CF for any given shape. What matters is the shape difference between transient and tonal content, which is consistent across curves.
+
+The compensation recalculates whenever you change the ceiling, curve, exponent, or input gain. It's not perfect for every source — it's meant to get you in the ballpark. Use Manual mode when you need precise control.
+
+### Quick Decision Guide
+
+| Situation | Recommended |
+|-----------|-------------|
+| Getting started, just exploring | Match |
+| A/B comparing clipped vs dry | Match |
+| Precise gain staging for mastering | Manual |
+| Maximum loudness, don't care about matching | Maximize |
 
 ## Curves
 
