@@ -30,7 +30,7 @@ jobs:
       - name: Verify VST3 bundle
         shell: pwsh
         run: |
-          $vst3Path = "build/Guillotine_artefacts/Release/VST3/Guillotine.vst3"
+          $vst3Path = "build/Guillotine_artefacts/Release/VST3/Guillotine Clip.vst3"
           if (-not (Test-Path $vst3Path)) {
             Write-Error "VST3 bundle not found at $vst3Path"
             Get-ChildItem -Recurse build -Filter "*.vst3" | ForEach-Object { Write-Host $_.FullName }
@@ -52,7 +52,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: Guillotine-VST3-Windows-x64
-          path: build/Guillotine_artefacts/Release/VST3/Guillotine.vst3
+          path: build/Guillotine_artefacts/Release/VST3/Guillotine Clip.vst3
           retention-days: 30
 
   build-macos:
@@ -82,7 +82,7 @@ jobs:
       - name: Verify builds
         run: |
           echo "=== Verifying VST3 bundle ==="
-          VST3_PATH="build/Guillotine_artefacts/Release/VST3/Guillotine.vst3"
+          VST3_PATH="build/Guillotine_artefacts/Release/VST3/Guillotine Clip.vst3"
           if [ ! -d "$VST3_PATH" ]; then
             echo "[ERROR] VST3 not found at $VST3_PATH"
             find build -name "*.vst3" -type d
@@ -90,7 +90,7 @@ jobs:
           fi
           echo "[OK] VST3 bundle exists"
 
-          BINARY="$VST3_PATH/Contents/MacOS/Guillotine"
+          BINARY="$VST3_PATH/Contents/MacOS/Guillotine Clip"
           if [ -f "$BINARY" ]; then
             lipo -info "$BINARY"
             SIZE=$(stat -f%z "$BINARY")
@@ -99,21 +99,21 @@ jobs:
           fi
 
           echo "=== Verifying AU bundle ==="
-          AU_PATH="build/Guillotine_artefacts/Release/AU/Guillotine.component"
+          AU_PATH="build/Guillotine_artefacts/Release/AU/Guillotine Clip.component"
           if [ ! -d "$AU_PATH" ]; then
             echo "[ERROR] AU not found at $AU_PATH"
             exit 1
           fi
           echo "[OK] AU bundle exists"
-          lipo -info "$AU_PATH/Contents/MacOS/Guillotine"
+          lipo -info "$AU_PATH/Contents/MacOS/Guillotine Clip"
 
       - name: Upload macOS artifacts
         uses: actions/upload-artifact@v4
         with:
           name: Guillotine-macOS
           path: |
-            build/Guillotine_artefacts/Release/VST3/Guillotine.vst3
-            build/Guillotine_artefacts/Release/AU/Guillotine.component
+            build/Guillotine_artefacts/Release/VST3/Guillotine Clip.vst3
+            build/Guillotine_artefacts/Release/AU/Guillotine Clip.component
           retention-days: 30
 
   build-linux:
@@ -154,7 +154,7 @@ jobs:
       - name: Verify Linux plugin bundles
         run: |
           echo "=== Checking VST3 bundle ==="
-          VST3_PATH="build/Guillotine_artefacts/Release/VST3/Guillotine.vst3"
+          VST3_PATH="build/Guillotine_artefacts/Release/VST3/Guillotine Clip.vst3"
           if [ -d "$VST3_PATH" ]; then
             echo "[OK] VST3 bundle exists"
             ls -la "$VST3_PATH/Contents/x86_64-linux/"
@@ -163,7 +163,7 @@ jobs:
           fi
 
           echo "=== Checking LV2 bundle ==="
-          LV2_PATH="build/Guillotine_artefacts/Release/LV2/Guillotine.lv2"
+          LV2_PATH="build/Guillotine_artefacts/Release/LV2/Guillotine Clip.lv2"
           if [ -d "$LV2_PATH" ]; then
             echo "[OK] LV2 bundle exists"
             ls -la "$LV2_PATH/"
@@ -172,7 +172,7 @@ jobs:
           fi
 
           echo "=== Checking CLAP bundle ==="
-          CLAP_PATH="build/Guillotine_artefacts/Release/CLAP/Guillotine.clap"
+          CLAP_PATH="build/Guillotine_artefacts/Release/CLAP/Guillotine Clip.clap"
           if [ -f "$CLAP_PATH" ]; then
             echo "[OK] CLAP plugin exists"
             ls -la "$CLAP_PATH"
@@ -192,9 +192,9 @@ jobs:
         with:
           name: Guillotine-Linux-x64
           path: |
-            build/Guillotine_artefacts/Release/VST3/Guillotine.vst3
-            build/Guillotine_artefacts/Release/LV2/Guillotine.lv2
-            build/Guillotine_artefacts/Release/CLAP/Guillotine.clap
+            build/Guillotine_artefacts/Release/VST3/Guillotine Clip.vst3
+            build/Guillotine_artefacts/Release/LV2/Guillotine Clip.lv2
+            build/Guillotine_artefacts/Release/CLAP/Guillotine Clip.clap
             installer/linux/README.txt
           retention-days: 30
 
@@ -217,7 +217,7 @@ jobs:
       - name: Install plugin to expected location
         run: |
           mkdir -p ~/Library/Audio/Plug-Ins/VST3
-          cp -R ./plugin/VST3/Guillotine.vst3 ~/Library/Audio/Plug-Ins/VST3/
+          cp -R ./plugin/VST3/Guillotine Clip.vst3 ~/Library/Audio/Plug-Ins/VST3/
 
       - name: Setup Python
         uses: actions/setup-python@v5
@@ -266,18 +266,18 @@ jobs:
           Write-Host "=== Downloaded artifact structure ==="
           Get-ChildItem "./plugin" -Recurse | Select-Object FullName
 
-          # Artifact downloads as Guillotine.vst3/Contents/... - copy the whole bundle
-          if (Test-Path "./plugin/Guillotine.vst3") {
-            Write-Host "Found Guillotine.vst3 folder in artifact"
-            Copy-Item -Recurse -Force "./plugin/Guillotine.vst3" "$destDir/"
+          # Artifact downloads as Guillotine Clip.vst3/Contents/... - copy the whole bundle
+          if (Test-Path "./plugin/Guillotine Clip.vst3") {
+            Write-Host "Found Guillotine Clip.vst3 folder in artifact"
+            Copy-Item -Recurse -Force "./plugin/Guillotine Clip.vst3" "$destDir/"
           } else {
             Write-Host "Artifact contains raw Contents - wrapping in bundle folder"
-            New-Item -ItemType Directory -Path "$destDir/Guillotine.vst3" -Force
-            Copy-Item -Recurse -Force "./plugin/*" "$destDir/Guillotine.vst3/"
+            New-Item -ItemType Directory -Path "$destDir/Guillotine Clip.vst3" -Force
+            Copy-Item -Recurse -Force "./plugin/*" "$destDir/Guillotine Clip.vst3/"
           }
 
           Write-Host "=== Installed plugin structure ==="
-          Get-ChildItem "$destDir/Guillotine.vst3" -Recurse | Select-Object FullName
+          Get-ChildItem "$destDir/Guillotine Clip.vst3" -Recurse | Select-Object FullName
 
       - name: Setup Python
         uses: actions/setup-python@v5
@@ -297,8 +297,8 @@ jobs:
       - name: Verify plugin binary
         shell: pwsh
         run: |
-          $bundlePath = "C:\Program Files\Common Files\VST3\Guillotine.vst3"
-          $binaryPath = "$bundlePath\Contents\x86_64-win\Guillotine.vst3"
+          $bundlePath = "C:\Program Files\Common Files\VST3\Guillotine Clip.vst3"
+          $binaryPath = "$bundlePath\Contents\x86_64-win\Guillotine Clip.vst3"
 
           Write-Host "=== Bundle structure ==="
           Get-ChildItem $bundlePath -Recurse | ForEach-Object {
@@ -321,7 +321,7 @@ jobs:
         shell: pwsh
         run: |
           $pluginval = Get-ChildItem C:\pluginval -Filter "pluginval.exe" -Recurse | Select-Object -First 1
-          $vst3 = "C:\Program Files\Common Files\VST3\Guillotine.vst3"
+          $vst3 = "C:\Program Files\Common Files\VST3\Guillotine Clip.vst3"
           Write-Host "Running pluginval on: $vst3"
           & $pluginval.FullName --validate "$vst3" --strictness-level 5 --verbose
 
@@ -356,16 +356,16 @@ jobs:
           mkdir -p build/Guillotine_artefacts/Release/AU
 
           # Handle different artifact structures
-          if [ -d "./artifacts/VST3/Guillotine.vst3" ]; then
-            cp -R ./artifacts/VST3/Guillotine.vst3 build/Guillotine_artefacts/Release/VST3/
-          elif [ -d "./artifacts/Guillotine.vst3" ]; then
-            cp -R ./artifacts/Guillotine.vst3 build/Guillotine_artefacts/Release/VST3/
+          if [ -d "./artifacts/VST3/Guillotine Clip.vst3" ]; then
+            cp -R ./artifacts/VST3/Guillotine Clip.vst3 build/Guillotine_artefacts/Release/VST3/
+          elif [ -d "./artifacts/Guillotine Clip.vst3" ]; then
+            cp -R ./artifacts/Guillotine Clip.vst3 build/Guillotine_artefacts/Release/VST3/
           fi
 
-          if [ -d "./artifacts/AU/Guillotine.component" ]; then
-            cp -R ./artifacts/AU/Guillotine.component build/Guillotine_artefacts/Release/AU/
-          elif [ -d "./artifacts/Guillotine.component" ]; then
-            cp -R ./artifacts/Guillotine.component build/Guillotine_artefacts/Release/AU/
+          if [ -d "./artifacts/AU/Guillotine Clip.component" ]; then
+            cp -R ./artifacts/AU/Guillotine Clip.component build/Guillotine_artefacts/Release/AU/
+          elif [ -d "./artifacts/Guillotine Clip.component" ]; then
+            cp -R ./artifacts/Guillotine Clip.component build/Guillotine_artefacts/Release/AU/
           fi
 
           echo "=== Build structure ==="
@@ -439,23 +439,23 @@ jobs:
           mkdir -p "$PKG_OUT"
 
           # Copy plugins
-          cp -R build/Guillotine_artefacts/Release/VST3/Guillotine.vst3 "$PKG_ROOT/Library/Audio/Plug-Ins/VST3/"
-          cp -R build/Guillotine_artefacts/Release/AU/Guillotine.component "$PKG_ROOT/Library/Audio/Plug-Ins/Components/"
+          cp -R build/Guillotine_artefacts/Release/VST3/Guillotine Clip.vst3 "$PKG_ROOT/Library/Audio/Plug-Ins/VST3/"
+          cp -R build/Guillotine_artefacts/Release/AU/Guillotine Clip.component "$PKG_ROOT/Library/Audio/Plug-Ins/Components/"
 
           # Sign plugins
           echo "=== Signing VST3 ==="
           codesign --force --deep --sign "$APP_IDENTITY" \
             --options runtime --timestamp \
-            "$PKG_ROOT/Library/Audio/Plug-Ins/VST3/Guillotine.vst3"
+            "$PKG_ROOT/Library/Audio/Plug-Ins/VST3/Guillotine Clip.vst3"
 
           echo "=== Signing AU ==="
           codesign --force --deep --sign "$APP_IDENTITY" \
             --options runtime --timestamp \
-            "$PKG_ROOT/Library/Audio/Plug-Ins/Components/Guillotine.component"
+            "$PKG_ROOT/Library/Audio/Plug-Ins/Components/Guillotine Clip.component"
 
           # Verify signatures
-          codesign --verify --deep --strict "$PKG_ROOT/Library/Audio/Plug-Ins/VST3/Guillotine.vst3"
-          codesign --verify --deep --strict "$PKG_ROOT/Library/Audio/Plug-Ins/Components/Guillotine.component"
+          codesign --verify --deep --strict "$PKG_ROOT/Library/Audio/Plug-Ins/VST3/Guillotine Clip.vst3"
+          codesign --verify --deep --strict "$PKG_ROOT/Library/Audio/Plug-Ins/Components/Guillotine Clip.component"
 
           # Build package
           echo "=== Building package ==="
@@ -521,13 +521,13 @@ jobs:
           # Create expected directory structure for Inno Setup
           New-Item -ItemType Directory -Path "build/Guillotine_artefacts/Release/VST3" -Force
 
-          # Artifact downloads as Guillotine.vst3/ folder
-          if (Test-Path "./artifacts/Guillotine.vst3") {
-            Copy-Item -Recurse "./artifacts/Guillotine.vst3" "build/Guillotine_artefacts/Release/VST3/"
+          # Artifact downloads as Guillotine Clip.vst3/ folder
+          if (Test-Path "./artifacts/Guillotine Clip.vst3") {
+            Copy-Item -Recurse "./artifacts/Guillotine Clip.vst3" "build/Guillotine_artefacts/Release/VST3/"
           } else {
             # Or it might be the contents directly
-            New-Item -ItemType Directory -Path "build/Guillotine_artefacts/Release/VST3/Guillotine.vst3" -Force
-            Copy-Item -Recurse "./artifacts/*" "build/Guillotine_artefacts/Release/VST3/Guillotine.vst3/"
+            New-Item -ItemType Directory -Path "build/Guillotine_artefacts/Release/VST3/Guillotine Clip.vst3" -Force
+            Copy-Item -Recurse "./artifacts/*" "build/Guillotine_artefacts/Release/VST3/Guillotine Clip.vst3/"
           }
 
           Write-Host "=== Build structure ==="

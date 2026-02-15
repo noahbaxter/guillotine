@@ -39,11 +39,11 @@ DisableDirPage=yes
 
 [InstallDelete]
 ; Remove old installation (whether folder or file)
-Type: filesandordirs; Name: "{app}\Guillotine.vst3"
+Type: filesandordirs; Name: "{app}\Guillotine Clip.vst3"
 
 [Files]
 ; Install just the VST3 DLL (single file, not bundle)
-Source: "{#SOURCE_DIR}\VST3\Guillotine.vst3\Contents\x86_64-win\Guillotine.vst3"; DestDir: "{app}"
+Source: "{#SOURCE_DIR}\VST3\Guillotine Clip.vst3\Contents\x86_64-win\Guillotine Clip.vst3"; DestDir: "{app}"
 
 
 [Messages]

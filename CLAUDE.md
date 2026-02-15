@@ -20,7 +20,7 @@ Guillotine is a JUCE-based audio plugin implementing a clipping effect with anim
 
 **Build system:** CMake with Xcode generator. First build runs `cmake -B build -G Xcode` automatically.
 
-Build outputs: `build/Guillotine_artefacts/Release/VST3/Guillotine.vst3` and `AU/Guillotine.component`
+Build outputs: `build/Guillotine_artefacts/Release/VST3/Guillotine Clip.vst3` and `AU/Guillotine Clip.component`
 
 ## Testing
 
