@@ -57,16 +57,20 @@ void ClipperEngine::reset()
 
 void ClipperEngine::setInputGain(float dB)
 {
+    cachedInputGainDb = dB;
     inputGain.setGainDecibels(dB);
 }
 
 void ClipperEngine::setOutputGain(float dB)
 {
-    outputGain.setGainDecibels(dB);
+    // Only apply user's output gain in manual mode
+    if (gainMode == 0)
+        outputGain.setGainDecibels(dB);
 }
 
 void ClipperEngine::setCeiling(float dB)
 {
+    cachedCeilingDb = dB;
     float linear = juce::Decibels::decibelsToGain(dB);
     smoothedCeilingLinear.setTargetValue(linear);
     clipper.setCeiling(linear);
@@ -74,11 +78,13 @@ void ClipperEngine::setCeiling(float dB)
 
 void ClipperEngine::setCurve(int curveIndex)
 {
-    clipper.setCurve(static_cast<CurveType>(curveIndex));
+    cachedCurveType = static_cast<CurveType>(curveIndex);
+    clipper.setCurve(cachedCurveType);
 }
 
 void ClipperEngine::setCurveExponent(float exponent)
 {
+    cachedExponent = exponent;
     clipper.setCurveExponent(exponent);
 }
 
@@ -125,6 +131,78 @@ void ClipperEngine::setBypass(bool enabled)
 void ClipperEngine::setDryWetMix(float mix)
 {
     smoothedMix.setTargetValue(mix);
+}
+
+void ClipperEngine::setGainMode(int mode)
+{
+    gainMode = mode;
+}
+
+float ClipperEngine::computeAutoGain() const
+{
+    if (gainMode == 2)
+        return -cachedCeilingDb;
+
+    // Match mode: run two reference signals through the curve, blend based on ceiling depth.
+    // Transient ref (exp decay, CF~12dB) for drum-like content.
+    // Tonal ref (Gaussian, CF~6dB) for sustained content.
+    // Shallow ceiling → transient-weighted, deep ceiling → tonal-weighted.
+    constexpr int N = 32;
+    constexpr float decayRate = 8.0f;   // exp(-8t), CF ≈ 12dB
+    constexpr float gaussAlpha = 25.5f; // exp(-25.5*(t-0.5)²), CF ≈ 6dB
+
+    float ceilLin = juce::Decibels::decibelsToGain(cachedCeilingDb);
+    float inputLin = juce::Decibels::decibelsToGain(cachedInputGainDb);
+
+    float transientSumSqOrig = 0.0f, transientSumSqClip = 0.0f;
+    float tonalSumSqOrig = 0.0f, tonalSumSqClip = 0.0f;
+
+    for (int i = 0; i < N; ++i)
+    {
+        float t = (static_cast<float>(i) + 0.5f) / static_cast<float>(N);
+
+        // Transient: exponential decay
+        float transient = std::exp(-decayRate * t);
+        float transDriven = transient * inputLin;
+        float transClipped = curves::applyWithCeiling(cachedCurveType, transDriven, ceilLin, cachedExponent);
+        transientSumSqOrig += transient * transient;
+        transientSumSqClip += transClipped * transClipped;
+
+        // Tonal: Gaussian bell curve
+        float dt = t - 0.5f;
+        float tonal = std::exp(-gaussAlpha * dt * dt);
+        float tonalDriven = tonal * inputLin;
+        float tonalClipped = curves::applyWithCeiling(cachedCurveType, tonalDriven, ceilLin, cachedExponent);
+        tonalSumSqOrig += tonal * tonal;
+        tonalSumSqClip += tonalClipped * tonalClipped;
+    }
+
+    auto computeComp = [N](float sumSqOrig, float sumSqClip) -> float {
+        float rmsOrig = std::sqrt(sumSqOrig / static_cast<float>(N));
+        float rmsClip = std::sqrt(sumSqClip / static_cast<float>(N));
+        if (rmsClip <= 0.0f || rmsOrig <= 0.0f)
+            return 0.0f;
+        return 20.0f * std::log10(rmsOrig / rmsClip);
+    };
+
+    float transientComp = computeComp(transientSumSqOrig, transientSumSqClip);
+    float tonalComp = computeComp(tonalSumSqOrig, tonalSumSqClip);
+
+    // Blend: 0.0 = pure transient, 1.0 = pure tonal
+    // Linear map from -6dB ceiling (transient) to -18dB ceiling (tonal), clamped
+    float blend = (cachedCeilingDb - (-6.0f)) / (-18.0f - (-6.0f));
+    blend = std::clamp(blend, 0.0f, 1.0f);
+
+    float compensation = transientComp + blend * (tonalComp - transientComp);
+
+    // Progressive reduction: pull back slightly at deep ceilings where match still feels hot.
+    // Linear ramp: 0dB extra at 0dB ceiling, -matchReductionDb at -60dB ceiling.
+    constexpr float matchReductionDb = 2.0f;
+    float reductionBlend = std::clamp(cachedCeilingDb / -60.0f, 0.0f, 1.0f);
+    compensation -= matchReductionDb * reductionBlend;
+
+    // Clamp: match should never exceed maximize (handles Arctan/Tanh at shallow ceilings)
+    return std::min(std::max(compensation, 0.0f), -cachedCeilingDb);
 }
 
 int ClipperEngine::getLatencyInSamples() const
@@ -282,7 +360,13 @@ void ClipperEngine::process(juce::AudioBuffer<float>& buffer)
         }
     }
 
-    // 12. Output gain
+    // 12. Output gain (auto modes override the user's manual value)
+    // Skip auto gain in delta mode — compensation is meaningless on the difference signal
+    if (gainMode != 0 && !deltaMonitorEnabled)
+        outputGain.setGainDecibels(computeAutoGain());
+    else if (gainMode != 0 && deltaMonitorEnabled)
+        outputGain.setGainDecibels(0.0f);
+
     juce::dsp::AudioBlock<float> outputBlock(buffer);
     outputGain.process(juce::dsp::ProcessContextReplacing<float>(outputBlock));
 

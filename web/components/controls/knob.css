@@ -206,8 +206,8 @@
   filter: grayscale(100%);
 }
 
-.knob-wrapper--disabled .knob__dial {
-  cursor: grab;
+.knob-wrapper--disabled * {
+  pointer-events: none !important;
 }
 
 /* Tiny exponent knob (for T² curve) */

@@ -394,6 +394,11 @@ export class Knob {
     }
   }
 
+  setVisible(visible) {
+    if (!this.element) return;
+    this.element.style.display = visible ? '' : 'none';
+  }
+
   destroy() {
     if (this.cleanup) this.cleanup();
     if (this.digits) this.digits.destroy();

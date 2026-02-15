@@ -36,6 +36,7 @@ import {
   onGainModeChange,
   getNativeFunction
 } from './lib/juce-bridge.js';
+import { applyWithCeiling } from './lib/saturation-curves.js';
 import { setDeltaMode, toggleReadableMode } from './lib/theme.js';
 import { setGlowSource, setSharpness } from './lib/blade-state.js';
 import { initUpdateChecker } from './lib/update-checker.js';
@@ -119,6 +120,7 @@ class GuillotineApp {
     this.currentMinDb = DEFAULT_MIN_DB;  // Current microscope scale (matches default preset)
     this.currentCurve = 0;      // Current curve type (0=Hard, 1=Quintic, etc.)
     this.currentExponent = 2.0; // Curve exponent (for Knee and T2)
+    this.gainMode = 0;          // 0=Manual, 1=Match, 2=Maximize
 
     // Track if we're currently dragging to avoid feedback loops
     this.draggingParam = null;
@@ -310,7 +312,7 @@ class GuillotineApp {
       }
     });
 
-    // Output Gain knob
+    // Output Gain knob (manual mode)
     this.outputGainKnob = new Knob(this.outputKnobContainer, createSpriteKnob({
       label: TEXT.labels.output,
       min: -24, max: 24, value: 0,
@@ -321,6 +323,19 @@ class GuillotineApp {
       snap: (v) => Math.round(v * 10) / 10,  // 0.1dB steps
       wrapperClass: 'knob-wrapper--side'
     }));
+
+    // Auto Output Gain knob (match/maximize modes — read-only display)
+    this.autoOutputGainKnob = new Knob(this.outputKnobContainer, createSpriteKnob({
+      label: TEXT.labels.output,
+      min: -60, max: 60, value: 0,
+      size: KNOB_SIZE.SMALL,
+      spriteScale: 0.25,
+      suffix: TEXT.suffixes.dB,
+      formatter: (v) => v.toFixed(1),
+      snap: (v) => Math.round(v * 10) / 10,
+      wrapperClass: 'knob-wrapper--side'
+    }));
+    this.autoOutputGainKnob.setVisible(false);
 
     // Wait for all components to initialize
     await Promise.all([
@@ -334,6 +349,7 @@ class GuillotineApp {
       this.oversamplingKnob.ready,
       this.inputGainKnob.ready,
       this.outputGainKnob.ready,
+      this.autoOutputGainKnob.ready,
       this.filterTypeToggle.ready,
       this.stereoModeToggle.ready,
       this.trueclipToggle.ready,
@@ -411,6 +427,7 @@ class GuillotineApp {
     this.gainModeToggle.onChange = (v) => {
       const mode = v === true ? 0 : v === null ? 1 : 2;
       setGainMode(mode);
+      this.setGainMode(mode);
     };
 
     // Wire up threshold changes from microscope drag
@@ -448,6 +465,7 @@ class GuillotineApp {
         const normalized = getParameterNormalized('inputGain');
         const db = this.normalizedToDb(normalized);
         this.inputGainKnob.setValue(db);
+        this.updateAutoGain();
       }
     });
 
@@ -469,6 +487,7 @@ class GuillotineApp {
         // Enable exponent knob for Knee (5) and T2 (6)
         this.curveExponentKnob.setDisabled(curveIndex < 5);
         this.updateSharpnessFromCurve();
+        this.updateAutoGain();
       }
     });
 
@@ -480,6 +499,7 @@ class GuillotineApp {
         this.curveExponentKnob.setValue(exponent);
         this.microscope.setCurveExponent(exponent);
         this.updateSharpnessFromCurve();
+        this.updateAutoGain();
       }
     });
 
@@ -522,6 +542,7 @@ class GuillotineApp {
     onGainModeChange((mode) => {
       const toggleValue = mode === 0 ? true : mode === 1 ? null : false;
       this.gainModeToggle.setValue(toggleValue);
+      this.setGainMode(mode);
     });
 
     // Listen for bypass changes from C++ (DAW automation)
@@ -620,6 +641,7 @@ class GuillotineApp {
     this.trueclipToggle.setValue(get('truePeak', getEnforceCeiling));
     const gainMode = get('gainMode', getGainMode);
     this.gainModeToggle.setValue(gainMode === 0 ? true : gainMode === 1 ? null : false);
+    this.setGainMode(gainMode);
 
     // Microscope zoom
     if (d?.zoom !== undefined) this.microscope.setScale(d.zoom);
@@ -737,6 +759,8 @@ class GuillotineApp {
     if (source !== 'juce' && source !== 'init') {
       setParameterNormalized('ceiling', 1 - clampedValue);
     }
+
+    this.updateAutoGain();
   }
 
   setCurve(value) {
@@ -749,6 +773,7 @@ class GuillotineApp {
     // Enable exponent knob for Knee (5) and T2 (6)
     this.curveExponentKnob.setDisabled(index < 5);
     this.updateSharpnessFromCurve();
+    this.updateAutoGain();
   }
 
   setCurveExponent(value) {
@@ -758,6 +783,7 @@ class GuillotineApp {
     setParameterNormalized('curveExponent', normalized);
     this.microscope.setCurveExponent(value);
     this.updateSharpnessFromCurve();
+    this.updateAutoGain();
   }
 
   updateSharpnessFromCurve() {
@@ -785,11 +811,114 @@ class GuillotineApp {
   setInputGain(dbValue) {
     const normalized = this.dbToNormalized(dbValue);
     setParameterNormalized('inputGain', normalized);
+    this.updateAutoGain();
   }
 
   setOutputGain(dbValue) {
     const normalized = this.dbToNormalized(dbValue);
     setParameterNormalized('outputGain', normalized);
+  }
+
+  setGainMode(mode) {
+    this.gainMode = mode;
+    const isAuto = mode !== 0;
+
+    // Swap knob visibility
+    this.outputGainKnob.setVisible(!isAuto);
+    this.autoOutputGainKnob.setVisible(isAuto);
+
+    this.updateOutputKnobState();
+
+    if (isAuto)
+      this.updateAutoGain();
+  }
+
+  updateOutputKnobState() {
+    if (this.bypass) {
+      // Blade up: everything disabled
+      this.outputGainKnob.setDisabled(true);
+      this.autoOutputGainKnob.setDisabled(true);
+    } else if (this.gainMode === 0) {
+      // Blade down + manual: fully interactive
+      this.outputGainKnob.setDisabled(false);
+      this.autoOutputGainKnob.setDisabled(true);
+    } else {
+      // Blade down + match/maximize: faded, no interaction
+      this.outputGainKnob.setDisabled(true);
+      this.autoOutputGainKnob.setDisabled(true);
+    }
+  }
+
+  computeAutoGain() {
+    const ceilingDb = this.thresholdToDb(this.threshold);
+
+    // Maximize: bring ceiling back to 0dBFS
+    if (this.gainMode === 2)
+      return -ceilingDb;
+
+    // Match: run two reference signals, blend based on ceiling depth.
+    // Transient ref (exp decay, CF~12dB) for drum-like content.
+    // Tonal ref (Gaussian, CF~6dB) for sustained content.
+    // Shallow ceiling → transient-weighted, deep ceiling → tonal-weighted.
+    const N = 32;
+    const decayRate = 8.0;   // exp(-8t), CF ≈ 12dB
+    const gaussAlpha = 25.5; // exp(-25.5*(t-0.5)²), CF ≈ 6dB
+
+    const inputLin = Math.pow(10, this.inputGainKnob.getValue() / 20);
+    const ceilLin = Math.pow(10, ceilingDb / 20);
+
+    let transSumSqOrig = 0, transSumSqClip = 0;
+    let tonalSumSqOrig = 0, tonalSumSqClip = 0;
+
+    for (let i = 0; i < N; i++) {
+      const t = (i + 0.5) / N;
+
+      // Transient: exponential decay
+      const transient = Math.exp(-decayRate * t);
+      const transDriven = transient * inputLin;
+      const transClipped = applyWithCeiling(this.currentCurve, transDriven, ceilLin, this.currentExponent);
+      transSumSqOrig += transient * transient;
+      transSumSqClip += transClipped * transClipped;
+
+      // Tonal: Gaussian bell curve
+      const dt = t - 0.5;
+      const tonal = Math.exp(-gaussAlpha * dt * dt);
+      const tonalDriven = tonal * inputLin;
+      const tonalClipped = applyWithCeiling(this.currentCurve, tonalDriven, ceilLin, this.currentExponent);
+      tonalSumSqOrig += tonal * tonal;
+      tonalSumSqClip += tonalClipped * tonalClipped;
+    }
+
+    const computeComp = (sumSqOrig, sumSqClip) => {
+      const rmsOrig = Math.sqrt(sumSqOrig / N);
+      const rmsClip = Math.sqrt(sumSqClip / N);
+      if (rmsClip <= 0 || rmsOrig <= 0) return 0;
+      return 20 * Math.log10(rmsOrig / rmsClip);
+    };
+
+    const transientComp = computeComp(transSumSqOrig, transSumSqClip);
+    const tonalComp = computeComp(tonalSumSqOrig, tonalSumSqClip);
+
+    // Blend: 0.0 = pure transient, 1.0 = pure tonal
+    // Linear map from -6dB ceiling (transient) to -18dB ceiling (tonal), clamped
+    const blend = Math.max(0, Math.min(1, (ceilingDb - (-6)) / (-18 - (-6))));
+
+    let compensation = transientComp + blend * (tonalComp - transientComp);
+
+    // Progressive reduction: pull back slightly at deep ceilings where match still feels hot.
+    // Linear ramp: 0dB extra at 0dB ceiling, -matchReductionDb at -60dB ceiling.
+    const matchReductionDb = 2.0;
+    const reductionBlend = Math.max(0, Math.min(1, ceilingDb / -60));
+    compensation -= matchReductionDb * reductionBlend;
+
+    // Clamp: match should never exceed maximize (handles Arctan/Tanh at shallow ceilings)
+    return Math.min(Math.max(compensation, 0), -ceilingDb);
+  }
+
+  updateAutoGain() {
+    if (this.gainMode === 0) return;
+    const autoDb = this.computeAutoGain();
+    this.autoOutputGainKnob.setValue(autoDb);
   }
 
   toggleBypass() {
@@ -852,8 +981,8 @@ class GuillotineApp {
     this.lever.setActive(active);
     this.bloodPool.setActive(active);
 
-    // Grey out output gain when bypassed (still functional)
-    this.outputGainKnob.setDisabled(this.bypass);
+    // Output knob state depends on bypass + gain mode
+    this.updateOutputKnobState();
     this.microscope.setActive(active);
 
     // Update hover affordance for delta mode triggers

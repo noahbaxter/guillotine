@@ -254,11 +254,14 @@ void GuillotineProcessor::processBlock(juce::AudioBuffer<float>& buffer, juce::M
     bool bypassClipper = apvts.getRawParameterValue("bypassClipper")->load() > 0.5f;
     bool enforceCeiling = apvts.getRawParameterValue("enforceCeiling")->load() > 0.5f;
     float dryWet = apvts.getRawParameterValue("dryWet")->load();
+    int gainMode = static_cast<int>(apvts.getRawParameterValue("gainMode")->load());
 
     // Choice index now directly maps to factor index: 0=1x, 1=2x, ... 5=32x
     int oversamplingFactor = oversamplingChoice;
 
-    // Update clipper engine parameters
+    // Update clipper engine parameters (gainMode before outputGain so the
+    // mode gate in setOutputGain() uses the current mode, not the previous one)
+    clipperEngine.setGainMode(gainMode);
     clipperEngine.setInputGain(inputGainDb);
     clipperEngine.setOutputGain(outputGainDb);
     clipperEngine.setCurve(curveType);
