@@ -80,7 +80,10 @@ private:
     float cachedCeilingDb = 0.0f;
     CurveType cachedCurveType = CurveType::Hard;
     float cachedExponent = 2.0f;
+
+public:
     float computeAutoGain() const;
+private:
 
     // Envelope follower for smooth waveform display
     float envFollowerState_ = 0.0f;

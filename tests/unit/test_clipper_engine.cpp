@@ -483,3 +483,129 @@ TEST_CASE("Engine reset: consistent behavior across multiple resets", "[engine][
         REQUIRE(peak < 0.001f);
     }
 }
+
+// =============================================================================
+// Auto Gain Compensation Tests [engine][autogain]
+// =============================================================================
+
+namespace {
+
+std::unique_ptr<ClipperEngine> makeAutoGainEngine(int gainMode, float ceilingDb, int curveIndex,
+                                                   float exponent = 2.0f, float inputGainDb = 0.0f)
+{
+    auto engine = std::make_unique<ClipperEngine>();
+    engine->prepare(kSampleRate, kBlockSize, kNumChannels);
+    engine->setGainMode(gainMode);
+    engine->setCeiling(ceilingDb);
+    engine->setCurve(curveIndex);
+    engine->setCurveExponent(exponent);
+    engine->setInputGain(inputGainDb);
+    return engine;
+}
+
+} // namespace
+
+TEST_CASE("Auto gain: maximize returns negative ceiling", "[engine][autogain]")
+{
+    auto ceilingDb = GENERATE(-3.0f, -6.0f, -12.0f, -18.0f, -24.0f);
+    auto engine = makeAutoGainEngine(2, ceilingDb, static_cast<int>(CurveType::Hard));
+
+    REQUIRE(engine->computeAutoGain() == Approx(-ceilingDb));
+}
+
+TEST_CASE("Auto gain: match is positive when clipping", "[engine][autogain]")
+{
+    auto curveIndex = GENERATE(0, 1, 2, 3, 4, 5, 6);
+    auto ceilingDb = GENERATE(-6.0f, -12.0f, -18.0f);
+    CAPTURE(curveIndex, ceilingDb);
+
+    auto engine = makeAutoGainEngine(1, ceilingDb, curveIndex);
+    float comp = engine->computeAutoGain();
+
+    REQUIRE(comp > 0.0f);
+}
+
+TEST_CASE("Auto gain: match never exceeds maximize", "[engine][autogain]")
+{
+    auto curveIndex = GENERATE(0, 1, 2, 3, 4, 5, 6);
+    auto ceilingDb = GENERATE(-3.0f, -6.0f, -12.0f, -24.0f);
+    CAPTURE(curveIndex, ceilingDb);
+
+    auto engine = makeAutoGainEngine(1, ceilingDb, curveIndex);
+    float matchComp = engine->computeAutoGain();
+    float maximizeComp = -ceilingDb;
+
+    REQUIRE(matchComp <= maximizeComp + 0.01f);
+}
+
+TEST_CASE("Auto gain: match increases with ceiling depth", "[engine][autogain]")
+{
+    auto curveIndex = GENERATE(0, 3, 5); // Hard, Tanh, Knee
+    CAPTURE(curveIndex);
+
+    float ceilings[] = { -3.0f, -6.0f, -12.0f, -18.0f, -24.0f };
+    float prevComp = -1.0f;
+
+    for (float ceilingDb : ceilings)
+    {
+        auto engine = makeAutoGainEngine(1, ceilingDb, curveIndex);
+        float comp = engine->computeAutoGain();
+        CAPTURE(ceilingDb, comp, prevComp);
+
+        REQUIRE(comp > prevComp);
+        prevComp = comp;
+    }
+}
+
+TEST_CASE("Auto gain: no clipping gives near-zero compensation", "[engine][autogain]")
+{
+    // 0dB ceiling + no input gain + hard clip = signal passes through untouched
+    auto engine = makeAutoGainEngine(1, 0.0f, static_cast<int>(CurveType::Hard));
+    float comp = engine->computeAutoGain();
+
+    REQUIRE(comp == Approx(0.0f).margin(0.1f));
+}
+
+TEST_CASE("Auto gain: blend favors transient at shallow ceiling, tonal at deep", "[engine][autogain]")
+{
+    // At -6dB (pure transient blend) vs -18dB (pure tonal blend),
+    // tonal gives more compensation because Gaussian has more energy near ceiling.
+    // We can't test the blend directly, but we can verify the direction:
+    // deeper ceiling = more tonal weight = higher ratio of match-to-maximize.
+    int curve = static_cast<int>(CurveType::Hard);
+
+    auto shallowEngine = makeAutoGainEngine(1, -6.0f, curve);
+    auto deepEngine = makeAutoGainEngine(1, -18.0f, curve);
+
+    float shallowComp = shallowEngine->computeAutoGain();
+    float deepComp = deepEngine->computeAutoGain();
+
+    // Normalize to % of maximize to compare blend behavior
+    float shallowRatio = shallowComp / 6.0f;
+    float deepRatio = deepComp / 18.0f;
+
+    // Deep ceiling should have higher ratio (more tonal = more compensation per dB of ceiling)
+    REQUIRE(deepRatio > shallowRatio);
+}
+
+TEST_CASE("Auto gain: exponent variation stays bounded", "[engine][autogain]")
+{
+    // Knee and T2 with different exponents shouldn't swing wildly
+    auto curveIndex = GENERATE(5, 6); // Knee, T2
+    CAPTURE(curveIndex);
+
+    float comps[5];
+    float exponents[] = { 1.0f, 1.75f, 2.5f, 3.25f, 4.0f };
+
+    for (int i = 0; i < 5; ++i)
+    {
+        auto engine = makeAutoGainEngine(1, -12.0f, curveIndex, exponents[i]);
+        comps[i] = engine->computeAutoGain();
+    }
+
+    float minComp = *std::min_element(comps, comps + 5);
+    float maxComp = *std::max_element(comps, comps + 5);
+
+    // Spread across full exponent range should be < 3dB at -12dB ceiling
+    REQUIRE((maxComp - minComp) < 3.0f);
+}
