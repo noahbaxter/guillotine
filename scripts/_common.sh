@@ -10,7 +10,7 @@ NC='\033[0m'
 
 # Project paths (set PROJECT_ROOT before sourcing)
 : "${PROJECT_ROOT:="$( cd "$( dirname "${BASH_SOURCE[0]}" )/.." && pwd )"}"
-PLUGIN_NAME="Guillotine"
+PLUGIN_NAME="Guillotine Clip"
 
 # Fix ownership if running as root via sudo
 # Call this after creating build directories

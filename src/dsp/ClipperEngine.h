@@ -32,6 +32,7 @@ public:
     void setEnforceCeiling(bool enabled);
     void setBypass(bool enabled);
     void setDryWetMix(float mix);  // 0.0 = dry, 1.0 = wet
+    void setGainMode(int mode);   // 0=Manual, 1=Match, 2=Maximize
 
     int getLatencyInSamples() const;
     void applyPendingChanges();  // Force oversampler rebuild if pending (call from message thread)
@@ -72,6 +73,17 @@ private:
 
     // Bypass clipper (still applies input/output gain)
     bool bypassed = false;
+
+    // Gain mode: 0=Manual, 1=Match (auto-compensate), 2=Maximize (-ceiling)
+    int gainMode = 0;
+    float cachedInputGainDb = 0.0f;
+    float cachedCeilingDb = 0.0f;
+    CurveType cachedCurveType = CurveType::Hard;
+    float cachedExponent = 2.0f;
+
+public:
+    float computeAutoGain() const;
+private:
 
     // Envelope follower for smooth waveform display
     float envFollowerState_ = 0.0f;

@@ -12,7 +12,7 @@ export const TEXT = {
     oversample: { text: 'Oversample', src: 'assets/labels/oversample.png' },
     input: { text: 'Input', src: 'assets/labels/input.png' },
     output: { text: 'Output', src: 'assets/labels/output.png' },
-    mix: { text: 'Mix', src: 'assets/labels/mix.png' }
+    mix: { text: '', src: null }
   },
   suffixes: {
     dB: { text: ' dB', src: 'assets/labels/dB.png' },

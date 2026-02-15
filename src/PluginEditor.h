@@ -16,9 +16,14 @@ private:
     void timerCallback() override;
     std::optional<juce::WebBrowserComponent::Resource> getResource(const juce::String& url);
     void pushVersionOnce();
+    void checkForUpdate();
+    void setViewMode(bool advanced);
 
     GuillotineProcessor& audioProcessor;
     bool versionPushed = false;
+    bool updateCheckDone = false;
+    bool advancedMode = true;
+    int timerTicks = 0;
 
     // WebView relay objects (bridge between WebView and parameters)
     juce::WebSliderRelay inputGainRelay;
@@ -33,6 +38,7 @@ private:
     juce::WebSliderRelay bypassClipperRelay;
     juce::WebSliderRelay enforceCeilingRelay;
     juce::WebSliderRelay dryWetRelay;
+    juce::WebSliderRelay gainModeRelay;
 
     // WebView component (must be declared after relays)
     juce::WebBrowserComponent webView;
@@ -50,6 +56,7 @@ private:
     juce::WebSliderParameterAttachment bypassClipperAttachment;
     juce::WebSliderParameterAttachment enforceCeilingAttachment;
     juce::WebSliderParameterAttachment dryWetAttachment;
+    juce::WebSliderParameterAttachment gainModeAttachment;
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(GuillotineEditor)
 };

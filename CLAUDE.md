@@ -78,7 +78,7 @@ Input → InputGain → M/S Encode → Upsample → Clipper → Downsample → M
 | Parameter | Range | Notes |
 |-----------|-------|-------|
 | curve | 0-6 | Hard, Tanh, Atan, Quint, Cubic, Knee, T2 |
-| curveExponent | 0.1-10 | Smoothed (2ms ramp) |
+| curveExponent | 1.0-4.0 | Smoothed (2ms ramp) |
 | oversampling | 0-5 | 1x/2x/4x/8x/16x/32x |
 | inputGain | -24 to +24 dB | |
 | outputGain | -24 to +24 dB | |
@@ -88,7 +88,29 @@ Input → InputGain → M/S Encode → Upsample → Clipper → Downsample → M
 | enforceCeiling | bool | Hard limit on output |
 | deltaMonitor | bool | Output clipped signal only |
 | dryWet | 0-100% | Phase-coherent mixing |
+| gainMode | 0-2 | Manual / Match / Maximize (default: Match) |
 | bypass | bool | Blade up/down |
+
+**Gain Compensation (Match Mode):**
+
+Match mode auto-compensates output gain so clipped audio stays at roughly the same perceived loudness. It runs two reference signals through the current curve/ceiling/exponent and measures RMS loss:
+
+- **Transient reference:** `exp(-8t)` — exponential decay, CF ≈ 12dB. Models drum/percussion content where only the peak tip gets clipped.
+- **Tonal reference:** `exp(-25.5*(t-0.5)²)` — Gaussian bell, CF ≈ 6dB. Models sustained content (guitars, synths, vocals) where more energy sits near the ceiling.
+
+The two compensation values are blended based on ceiling depth:
+- At -6dB ceiling → pure transient (less compensation, because transient content loses less from clipping)
+- At -18dB ceiling → pure tonal (more compensation, because deep clipping removes more sustained energy)
+- Between -6 and -18 → linear interpolation
+
+Additional adjustments:
+- **Progressive reduction:** -2dB linear ramp from 0dB ceiling to -60dB ceiling (prevents over-compensation at extreme settings)
+- **Maximize clamp:** compensation never exceeds `-ceilingDb` (prevents Arctan/Tanh from exceeding maximize mode at shallow ceilings)
+- **Delta monitor bypass:** auto gain is zeroed in delta mode (compensation is meaningless on the difference signal)
+
+Design rationale: signal **shape** matters ~2dB more than crest factor for compensation accuracy. CF converges above ~6dB for any given shape, so the exact CF doesn't matter — but Gaussian vs exponential decay diverge by up to 2dB at the same CF. Two references blended by ceiling depth handles both content types without requiring user input. Analysis script: `scripts/analyze_gain_compensation.py`.
+
+`computeAutoGain()` runs on the message thread (called when parameters change), not the audio thread. 32 samples per reference signal is sufficient.
 
 **Known Limitations:**
 - Min-phase group delay: IIR filters have frequency-dependent delay not reflected in reported latency. Use linear phase when timing precision matters.

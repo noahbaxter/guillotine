@@ -37,7 +37,7 @@ done
 pkill -f "Guillotine.app" 2>/dev/null || true
 sleep 0.5
 
-# Configure CMake if needed (or reconfigure if paths changed)
+# Configure CMake if needed (or reconfigure if paths/version changed)
 need_configure=false
 if [ ! -f "$CMAKE_BUILD_DIR/CMakeCache.txt" ]; then
     need_configure=true
@@ -45,6 +45,17 @@ elif ! grep -q "CMAKE_HOME_DIRECTORY:INTERNAL=$PROJECT_ROOT" "$CMAKE_BUILD_DIR/C
     echo -e "${YELLOW}Project path changed, reconfiguring...${NC}"
     rm -rf "$CMAKE_BUILD_DIR"
     need_configure=true
+elif [ "$PROJECT_ROOT/CMakeLists.txt" -nt "$CMAKE_BUILD_DIR/CMakeCache.txt" ]; then
+    echo -e "${YELLOW}CMakeLists.txt changed, reconfiguring...${NC}"
+    need_configure=true
+elif [ -f "$PROJECT_ROOT/VERSION" ]; then
+    CURRENT_VERSION=$(cat "$PROJECT_ROOT/VERSION" | tr -d '[:space:]')
+    CACHED_VERSION=$(grep "^CMAKE_PROJECT_VERSION:STATIC=" "$CMAKE_BUILD_DIR/CMakeCache.txt" 2>/dev/null | cut -d= -f2)
+    if [ "$CURRENT_VERSION" != "$CACHED_VERSION" ]; then
+        echo -e "${YELLOW}VERSION changed ($CACHED_VERSION → $CURRENT_VERSION), reconfiguring...${NC}"
+        rm -rf "$CMAKE_BUILD_DIR"
+        need_configure=true
+    fi
 fi
 
 if [ "$need_configure" = true ]; then

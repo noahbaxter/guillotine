@@ -122,7 +122,7 @@ body::before {
   content: '';
   position: absolute;
   inset: 0;
-  background: url('assets/textures/grunge.jpg') center/cover;
+  background: url('assets/textures/grunge.jpg') center / cover;
   opacity: 0.25;
   pointer-events: none;
 }
@@ -140,6 +140,7 @@ body::before {
 /* Left column: Title + Guillotine + Bucket Text */
 #left-panel {
   position: relative;
+  z-index: 1;
   display: flex;
   flex-direction: column;
   width: 55%;
@@ -248,8 +249,56 @@ body::before {
   background-color: var(--color-text-tertiary);
 }
 
+/* ==========================================================================
+   Basic Mode - Right panel clipped off-screen by narrower editor window.
+   WebView stays at advanced width so layout never changes.
+   ========================================================================== */
+.basic-mode #right-panel {
+  opacity: 0;
+  pointer-events: none;
+}
+
+/* View toggle — aligned with logo, right side of left panel */
+.view-toggle {
+  position: absolute;
+  top: 6.0em;
+  right: 1em;
+  z-index: 20;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 4.5em;
+  height: 4.5em;
+  background: none;
+  border: none;
+  cursor: pointer;
+  opacity: 0.6;
+  padding: 0;
+}
+
+.view-toggle:hover {
+  opacity: 1;
+}
+
+/* Blade tip — filled triangle, like a blade edge indicating direction */
+.view-toggle__chevron {
+  width: 0;
+  height: 0;
+  border-top: 1.1em solid transparent;
+  border-bottom: 1.1em solid transparent;
+  border-right: 1.4em solid var(--color-text-tertiary, #aaa);
+  pointer-events: none;
+}
+
+.basic-mode .view-toggle__chevron {
+  border-right: none;
+  border-left: 1.4em solid var(--color-text-tertiary, #aaa);
+}
+
 /* Right column: Microscope + Knobs */
 #right-panel {
+  position: relative;
+  z-index: 2;
   display: flex;
   flex-direction: column;
   width: 45%;
@@ -343,7 +392,14 @@ body::before {
 #ceiling-container {
   position: absolute;
   right: 0.25em;
-  top: 8em;
+  top: 6em;
+  z-index: 10;
+}
+
+#gain-mode-container {
+  position: absolute;
+  right: -0.25em;
+  top: 6em;
   z-index: 10;
 }
 
@@ -615,10 +671,127 @@ body::before {
   pointer-events: none;
 }
 
+/* Update indicator — orange circle with white ! */
+#update-indicator {
+  display: none;
+  align-items: center;
+  justify-content: center;
+  width: 1.2em;
+  height: 1.2em;
+  margin-right: 0.5em;
+  border-radius: 50%;
+  background: #f90;
+  color: #fff;
+  font-weight: 900;
+  font-size: 1.05em;
+  line-height: 1;
+  cursor: pointer;
+  pointer-events: auto;
+  box-shadow: 0 0 0.4em rgba(255, 153, 0, 0.6);
+  animation: update-pulse 2s ease-in-out infinite;
+  vertical-align: middle;
+}
+
+@keyframes update-pulse {
+  0%, 100% { box-shadow: 0 0 0.4em rgba(255, 153, 0, 0.4); }
+  50% { box-shadow: 0 0 0.6em rgba(255, 153, 0, 0.8); }
+}
+
+/* Update prompt overlay */
+#update-prompt-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.7);
+  z-index: 1000;
+  align-items: center;
+  justify-content: center;
+}
+
+#app.basic-mode ~ #update-prompt-overlay {
+  right: 45%;
+}
+
+.update-prompt {
+  position: relative;
+  background: var(--color-surface-panel);
+  border: 1px solid var(--color-white-15);
+  border-radius: 0.25em;
+  padding: 1.2em 1.8em;
+  max-width: 16em;
+  text-align: center;
+  color: var(--color-text-primary);
+  overflow: hidden;
+}
+
+.update-prompt::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: url('assets/textures/grunge.jpg') center / cover;
+  opacity: 0.3;
+  pointer-events: none;
+}
+
+.update-prompt__title {
+  position: relative;
+  font-family: var(--readable-font);
+  font-size: 0.85em;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  margin-bottom: 0.4em;
+  color: #f90;
+}
+
+.update-prompt__message {
+  position: relative;
+  font-family: var(--readable-font);
+  font-size: 0.7em;
+  line-height: 1.3;
+  margin-bottom: 1em;
+  color: var(--color-text-tertiary);
+}
+
+.update-prompt__buttons {
+  position: relative;
+  display: flex;
+  gap: 0.5em;
+  justify-content: center;
+}
+
+.update-prompt__buttons button {
+  padding: 0.3em 1em;
+  border-radius: 0.15em;
+  border: 1px solid var(--color-white-15);
+  background: var(--color-surface-control);
+  color: var(--color-text-secondary);
+  font-family: var(--readable-font);
+  font-size: 0.65em;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  cursor: pointer;
+  pointer-events: auto;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+
+.update-prompt__buttons button:hover {
+  background: var(--color-surface-control-hover);
+  color: var(--color-text-primary);
+}
+
+.update-prompt__yes {
+  border-color: rgba(255, 153, 0, 0.25) !important;
+  color: #f90 !important;
+}
+
+.update-prompt__yes:hover {
+  background: rgba(255, 153, 0, 0.15) !important;
+}
+
 #andy-sig {
   position: fixed;
   bottom: 0em;
-  left: 2.5em;
+  left: 3.5em;
   height: 1.25em;
   width: 4em;
   opacity: 0.7;
