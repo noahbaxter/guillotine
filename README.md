@@ -130,6 +130,16 @@ A small progressive reduction (-2 dB across the full 0 to -60 dB range) pulls th
 
 This approach was validated against all 7 curves across the full ceiling and exponent range. The exact crest factor values don't matter much — compensation converges above ~6 dB CF for any given shape. What matters is the shape difference between transient and tonal content, which is consistent across curves.
 
+| Ceiling | Hard | Quintic | Cubic | Tanh | Arctan | Knee | T² | Maximize |
+|---------|------|---------|-------|------|--------|------|----|----------|
+| **-3 dB** | +0.6 | +0.8 | +1.2 | +2.0 | +3.0 | +0.7 | +2.1 | +3 |
+| **-6 dB** | +2.0 | +2.1 | +2.4 | +3.1 | +6.0 | +2.1 | +3.0 | +6 |
+| **-12 dB** | +7.0 | +7.1 | +7.2 | +7.6 | +10.2 | +7.0 | +7.4 | +12 |
+| **-18 dB** | +13.4 | +13.4 | +13.4 | +13.6 | +15.2 | +13.4 | +13.6 | +18 |
+| **-24 dB** | +18.6 | +18.6 | +18.7 | +18.8 | +20.0 | +18.6 | +18.7 | +24 |
+
+_Values in dB. Softer curves (Arctan, Tanh) lose more energy and get more compensation. At deep ceilings all curves converge toward maximize._
+
 The compensation recalculates whenever you change the ceiling, curve, exponent, or input gain. It's not perfect for every source — it's meant to get you in the ballpark. Use Manual mode when you need precise control.
 
 ### Quick Decision Guide
