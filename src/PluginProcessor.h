@@ -58,6 +58,10 @@ public:
     const std::array<float, envelopeBufferSize>& getEnvelopeClipThresholds() const { return envelopeBuffer.getThresholdBuffer(); }
     int getEnvelopeWritePosition() const { return envelopeBuffer.getWritePosition(); }
 
+    // Peak levels (linear amplitude)
+    float getInputPeak() const { return clipperEngine.getLastInputPeak(); }
+    float getOutputPeak() const { return clipperEngine.getLastOutputPeak(); }
+
     // Test oscillator for UI development (1Hz ramp)
     void setTestOscEnabled(bool enabled) { testOscEnabled = enabled; }
     bool isTestOscEnabled() const { return testOscEnabled; }

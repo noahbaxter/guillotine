@@ -44,6 +44,10 @@ public:
     // Post-clip peak (single value per block, used by EnvelopeBuffer for postClip)
     float getLastPostClipPeak() const { return lastPostClipPeak.load(std::memory_order_relaxed); }
 
+    // Peak levels (linear amplitude, max across channels per block)
+    float getLastInputPeak() const { return lastInputPeak.load(std::memory_order_relaxed); }
+    float getLastOutputPeak() const { return lastOutputPeak.load(std::memory_order_relaxed); }
+
 private:
     // DSP blocks
     juce::dsp::Gain<float> inputGain;
@@ -65,6 +69,10 @@ private:
 
     // Post-clip peak (single value per block)
     std::atomic<float> lastPostClipPeak{0.0f};
+
+    // Peak levels
+    std::atomic<float> lastInputPeak{0.0f};
+    std::atomic<float> lastOutputPeak{0.0f};
 
     // Enforce ceiling (final hard limiter after downsampling)
     bool enforceCeilingEnabled = true;
