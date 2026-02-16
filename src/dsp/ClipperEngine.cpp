@@ -225,6 +225,22 @@ void ClipperEngine::process(juce::AudioBuffer<float>& buffer)
     juce::dsp::AudioBlock<float> block(buffer);
     inputGain.process(juce::dsp::ProcessContextReplacing<float>(block));
 
+    // Capture input peak (after input gain, before clipping)
+    {
+        float inputPeak = 0.0f;
+        for (int ch = 0; ch < numChannels; ++ch)
+        {
+            const float* data = buffer.getReadPointer(ch);
+            for (int i = 0; i < numSamples; ++i)
+            {
+                float absVal = std::abs(data[i]);
+                if (absVal > inputPeak)
+                    inputPeak = absVal;
+            }
+        }
+        lastInputPeak.store(inputPeak, std::memory_order_relaxed);
+    }
+
     // Capture pre-clip envelope per sample (after input gain, before clipping)
     // Envelope follower: instant attack, exponential release
     envSampleCount_ = numSamples;
@@ -250,6 +266,7 @@ void ClipperEngine::process(juce::AudioBuffer<float>& buffer)
     if (bypassed)
     {
         lastPostClipPeak.store(envFollowerState_, std::memory_order_relaxed);
+        lastOutputPeak.store(lastInputPeak.load(std::memory_order_relaxed), std::memory_order_relaxed);
         for (int ch = 0; ch < numChannels; ++ch)
         {
             float* data = buffer.getWritePointer(ch);
@@ -362,8 +379,9 @@ void ClipperEngine::process(juce::AudioBuffer<float>& buffer)
 
     // 12. Output gain (auto modes override the user's manual value)
     // Skip auto gain in delta mode — compensation is meaningless on the difference signal
+    // Scale by dry/wet mix — dry signal doesn't need compensation
     if (gainMode != 0 && !deltaMonitorEnabled)
-        outputGain.setGainDecibels(computeAutoGain());
+        outputGain.setGainDecibels(computeAutoGain() * smoothedMix.getCurrentValue());
     else if (gainMode != 0 && deltaMonitorEnabled)
         outputGain.setGainDecibels(0.0f);
 
@@ -379,6 +397,22 @@ void ClipperEngine::process(juce::AudioBuffer<float>& buffer)
             if (!std::isfinite(data[i]))
                 data[i] = 0.0f;
         }
+    }
+
+    // 14. Capture output peak (after output gain + sanitize)
+    {
+        float outputPeak = 0.0f;
+        for (int ch = 0; ch < numChannels; ++ch)
+        {
+            const float* data = buffer.getReadPointer(ch);
+            for (int i = 0; i < numSamples; ++i)
+            {
+                float absVal = std::abs(data[i]);
+                if (absVal > outputPeak)
+                    outputPeak = absVal;
+            }
+        }
+        lastOutputPeak.store(outputPeak, std::memory_order_relaxed);
     }
 }
 

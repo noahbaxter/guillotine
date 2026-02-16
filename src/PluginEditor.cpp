@@ -147,6 +147,22 @@ void GuillotineEditor::timerCallback()
     // Trigger update check ~2s after construction (page will be loaded by then)
     if (!updateCheckDone && timerTicks >= 120)
         checkForUpdate();
+
+    // Clip light: check output peak, hold for ~300ms (18 ticks at 60Hz)
+    if (audioProcessor.getOutputPeak() > 1.0f)
+        clipHoldTicks = 18;
+    else if (clipHoldTicks > 0)
+        --clipHoldTicks;
+
+    bool shouldBeOn = clipHoldTicks > 0;
+    if (shouldBeOn != clipLightOn)
+    {
+        clipLightOn = shouldBeOn;
+        juce::String js = shouldBeOn
+            ? "document.getElementById('clip-light')?.classList.add('clip-light--on')"
+            : "document.getElementById('clip-light')?.classList.remove('clip-light--on')";
+        webView.evaluateJavascript(js, nullptr);
+    }
 }
 
 void GuillotineEditor::pushVersionOnce()
