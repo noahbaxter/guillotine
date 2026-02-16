@@ -379,8 +379,9 @@ void ClipperEngine::process(juce::AudioBuffer<float>& buffer)
 
     // 12. Output gain (auto modes override the user's manual value)
     // Skip auto gain in delta mode — compensation is meaningless on the difference signal
+    // Scale by dry/wet mix — dry signal doesn't need compensation
     if (gainMode != 0 && !deltaMonitorEnabled)
-        outputGain.setGainDecibels(computeAutoGain());
+        outputGain.setGainDecibels(computeAutoGain() * smoothedMix.getCurrentValue());
     else if (gainMode != 0 && deltaMonitorEnabled)
         outputGain.setGainDecibels(0.0f);
 
