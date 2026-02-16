@@ -409,6 +409,31 @@ body::before {
   flex-shrink: 0;
 }
 
+#output-knob-container {
+  position: relative;
+}
+
+.clip-light {
+  position: absolute;
+  top: 45%;
+  right: 1em;
+  transform: translateY(-50%);
+  width: 0.4em;
+  height: 0.4em;
+  border-radius: 50%;
+  background: #400;
+  box-shadow: none;
+  transition: background 0.15s ease, box-shadow 0.15s ease;
+  pointer-events: none;
+  z-index: 10;
+}
+
+.clip-light--on {
+  background: #f33;
+  box-shadow: 0 0 0.3em 0.15em rgba(255, 50, 50, 0.6),
+              0 0 0.6em 0.3em rgba(255, 50, 50, 0.3);
+}
+
 #input-knob-container .knob-wrapper--side,
 #output-knob-container .knob-wrapper--side {
   margin: 0;

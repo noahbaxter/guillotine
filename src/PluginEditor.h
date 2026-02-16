@@ -24,6 +24,8 @@ private:
     bool updateCheckDone = false;
     bool advancedMode = true;
     int timerTicks = 0;
+    bool clipLightOn = false;
+    int clipHoldTicks = 0;
 
     // WebView relay objects (bridge between WebView and parameters)
     juce::WebSliderRelay inputGainRelay;
