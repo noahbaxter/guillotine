@@ -1,6 +1,11 @@
 #include "PluginProcessor.h"
 #include "PluginEditor.h"
 
+// ============================================================
+// DEBUG: Set to true to enable the 1Hz test ramp oscillator
+constexpr bool DEBUG_TEST_OSCILLATOR = false;
+// ============================================================
+
 GuillotineProcessor::GuillotineProcessor()
 #ifndef JucePlugin_PreferredChannelConfigurations
     : AudioProcessor(BusesProperties()
@@ -182,6 +187,7 @@ void GuillotineProcessor::changeProgramName(int index, const juce::String& newNa
 void GuillotineProcessor::prepareToPlay(double newSampleRate, int samplesPerBlock)
 {
     sampleRate = newSampleRate;
+    testOscEnabled = DEBUG_TEST_OSCILLATOR;
     testOscPhase = 0.0;
 
     clipperEngine.prepare(newSampleRate, samplesPerBlock, getTotalNumInputChannels());
