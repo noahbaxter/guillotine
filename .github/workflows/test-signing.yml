@@ -1,0 +1,94 @@
+name: Test Signing
+
+on:
+  workflow_dispatch:
+
+jobs:
+  test-signing:
+    runs-on: macos-14
+
+    steps:
+      - name: Check secrets available
+        id: signing
+        env:
+          APPLE_CERTIFICATE: ${{ secrets.APPLE_CERTIFICATE_APPLICATION }}
+        run: |
+          if [ -n "$APPLE_CERTIFICATE" ]; then
+            echo "available=true" >> $GITHUB_OUTPUT
+            echo "Signing secrets found"
+          else
+            echo "available=false" >> $GITHUB_OUTPUT
+            echo "::error::No signing secrets found"
+            exit 1
+          fi
+
+      - name: Import certificate
+        env:
+          APPLE_CERTIFICATE: ${{ secrets.APPLE_CERTIFICATE_APPLICATION }}
+          APPLE_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
+          APPLE_ID: ${{ secrets.APPLE_ID }}
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+          APPLE_APP_PASSWORD: ${{ secrets.APPLE_APP_PASSWORD }}
+        run: |
+          KEYCHAIN_PATH=$RUNNER_TEMP/test-signing.keychain-db
+          KEYCHAIN_PASSWORD=$(openssl rand -base64 32)
+
+          security create-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
+          security set-keychain-settings -lut 21600 "$KEYCHAIN_PATH"
+          security unlock-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
+
+          echo "$APPLE_CERTIFICATE" | base64 --decode > $RUNNER_TEMP/certificate.p12
+          security import $RUNNER_TEMP/certificate.p12 -P "$APPLE_CERTIFICATE_PASSWORD" \
+            -A -t cert -f pkcs12 -k "$KEYCHAIN_PATH"
+
+          curl -sO https://www.apple.com/certificateauthority/DeveloperIDG2CA.cer
+          security import DeveloperIDG2CA.cer -k "$KEYCHAIN_PATH"
+
+          security list-keychain -d user -s "$KEYCHAIN_PATH" login.keychain
+          security set-key-partition-list -S apple-tool:,apple:,codesign: -s -k "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
+
+          echo "--- Identities ---"
+          security find-identity -v -p codesigning "$KEYCHAIN_PATH"
+
+          xcrun notarytool store-credentials "notarytool-profile" \
+            --apple-id "$APPLE_ID" \
+            --team-id "$APPLE_TEAM_ID" \
+            --password "$APPLE_APP_PASSWORD"
+
+          echo "KEYCHAIN_PATH=$KEYCHAIN_PATH" >> $GITHUB_ENV
+          echo "APP_IDENTITY=Developer ID Application: Noah Baxter ($APPLE_TEAM_ID)" >> $GITHUB_ENV
+
+      - name: Build and sign test binary
+        run: |
+          echo 'int main() { return 0; }' | cc -x c -o /tmp/test_binary -
+          codesign --force --options runtime \
+            --sign "$APP_IDENTITY" \
+            --timestamp \
+            /tmp/test_binary
+          echo "--- Sign OK ---"
+          codesign --verify --deep --strict /tmp/test_binary
+          echo "--- Verify OK ---"
+          codesign -dvv /tmp/test_binary 2>&1
+
+      - name: Test notarization (submit + staple)
+        run: |
+          # Notarytool needs a zip/dmg/pkg — can't submit a raw binary
+          cd /tmp
+          zip test_binary.zip test_binary
+          xcrun notarytool submit test_binary.zip \
+            --keychain-profile "notarytool-profile" \
+            --wait
+          echo "--- Notarization OK ---"
+
+      - name: Clean up
+        if: always()
+        run: |
+          security delete-keychain "$KEYCHAIN_PATH" 2>/dev/null || true
+          rm -f /tmp/test_binary /tmp/test_binary.zip
+
+      - name: Summary
+        run: |
+          echo "### Signing Test Results" >> $GITHUB_STEP_SUMMARY
+          echo "- Certificate import: OK" >> $GITHUB_STEP_SUMMARY
+          echo "- Codesign: OK" >> $GITHUB_STEP_SUMMARY
+          echo "- Notarization: OK" >> $GITHUB_STEP_SUMMARY
