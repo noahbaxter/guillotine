@@ -31,6 +31,7 @@ add_executable(unit_tests
     test_clipper_engine.cpp
     test_transient.cpp
     test_envelope_buffer.cpp
+    test_dynamic_buffer.cpp
     ${PROJECT_SRC_DIR}/dsp/Oversampler.cpp
     ${PROJECT_SRC_DIR}/dsp/Clipper.cpp
     ${PROJECT_SRC_DIR}/dsp/StereoProcessor.cpp

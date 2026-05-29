@@ -100,6 +100,7 @@ private:
     // State
     double currentSampleRate = 44100.0;
     int currentNumChannels = 2;
+    int preparedMaxBlock_ = 1;  // largest block internal buffers are sized for; oversized blocks are re-blocked
 };
 
 } // namespace dsp

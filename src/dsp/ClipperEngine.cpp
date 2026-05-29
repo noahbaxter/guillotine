@@ -13,6 +13,7 @@ void ClipperEngine::prepare(double sampleRate, int maxBlockSize, int numChannels
 {
     currentSampleRate = sampleRate;
     currentNumChannels = numChannels;
+    preparedMaxBlock_ = std::max(1, maxBlockSize);
 
     juce::dsp::ProcessSpec spec;
     spec.sampleRate = sampleRate;
@@ -220,6 +221,23 @@ void ClipperEngine::process(juce::AudioBuffer<float>& buffer)
 {
     int numSamples = buffer.getNumSamples();
     int numChannels = buffer.getNumChannels();
+
+    // Re-block oversized buffers: prepareToPlay's block size is only an estimate
+    // and some hosts (notably FL Studio) send more samples than that. Internal
+    // buffers (dryBuffer, envSampleData_, oversampler storage) are sized to the
+    // estimate, so processing an oversized block would overrun them. Split into
+    // chunks of <= preparedMaxBlock_; filter state flows continuously, so this
+    // matches a single call for well-behaved hosts and adds no latency.
+    if (numSamples > preparedMaxBlock_)
+    {
+        for (int offset = 0; offset < numSamples; offset += preparedMaxBlock_)
+        {
+            int chunk = std::min(preparedMaxBlock_, numSamples - offset);
+            juce::AudioBuffer<float> sub(buffer.getArrayOfWritePointers(), numChannels, offset, chunk);
+            process(sub);  // each chunk <= preparedMaxBlock_, so no further recursion
+        }
+        return;
+    }
 
     // 1. Input gain (always applied, even when bypassed)
     juce::dsp::AudioBlock<float> block(buffer);
