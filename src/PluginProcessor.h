@@ -80,6 +80,7 @@ private:
     // DSP engine
     dsp::ClipperEngine clipperEngine;
     int lastReportedLatency = 0;
+    int preparedBlockSize = 1;  // prepareToPlay's estimate; larger host blocks are chunked to this
 
     static juce::AudioProcessorValueTreeState::ParameterLayout createParameterLayout();
 

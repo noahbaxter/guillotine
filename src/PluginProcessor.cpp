@@ -187,6 +187,7 @@ void GuillotineProcessor::changeProgramName(int index, const juce::String& newNa
 void GuillotineProcessor::prepareToPlay(double newSampleRate, int samplesPerBlock)
 {
     sampleRate = newSampleRate;
+    preparedBlockSize = std::max(1, samplesPerBlock);
     testOscEnabled = DEBUG_TEST_OSCILLATOR;
     testOscPhase = 0.0;
 
@@ -316,14 +317,25 @@ void GuillotineProcessor::processBlock(juce::AudioBuffer<float>& buffer, juce::M
     // - preClipPeak: after input gain, before clipping (RED - what gets clipped off)
     // - postClipPeak: after clipping, before output gain (WHITE - what you hear)
     clipperEngine.setBypass(bypassClipper);
-    clipperEngine.process(buffer);
 
-    // Feed per-sample envelope data into buffer (true sample-level resolution)
-    float postClipPeak = clipperEngine.getLastPostClipPeak();
+    // Chunk to the prepared block size: some hosts (FL Studio) send larger blocks
+    // than prepareToPlay's estimate (issue #1). The engine re-blocks internally for
+    // audio safety, but its envelope data only covers the last chunk of a call, so
+    // feed the display per chunk to keep the waveform continuous.
     float threshold = -ceilingDb / displayDbRange;
-    envelopeBuffer.processSamples(clipperEngine.getEnvelopeData().data(),
-                                  clipperEngine.getEnvelopeSampleCount(),
-                                  postClipPeak, threshold);
+    int numSamples = buffer.getNumSamples();
+    for (int offset = 0; offset < numSamples; offset += preparedBlockSize)
+    {
+        int chunkSize = std::min(preparedBlockSize, numSamples - offset);
+        juce::AudioBuffer<float> chunk(buffer.getArrayOfWritePointers(),
+                                       buffer.getNumChannels(), offset, chunkSize);
+        clipperEngine.process(chunk);
+
+        // Feed per-sample envelope data into buffer (true sample-level resolution)
+        envelopeBuffer.processSamples(clipperEngine.getEnvelopeData().data(),
+                                      clipperEngine.getEnvelopeSampleCount(),
+                                      clipperEngine.getLastPostClipPeak(), threshold);
+    }
 }
 
 bool GuillotineProcessor::hasEditor() const
