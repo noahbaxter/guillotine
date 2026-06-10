@@ -13,11 +13,14 @@ void ClipperEngine::prepare(double sampleRate, int maxBlockSize, int numChannels
 {
     currentSampleRate = sampleRate;
     currentNumChannels = numChannels;
+    // Clamp once and size ALL internal buffers from the clamped value, so the
+    // re-block path in process() can rely on them holding >= preparedMaxBlock_
+    // samples even if a host prepares with 0.
     preparedMaxBlock_ = std::max(1, maxBlockSize);
 
     juce::dsp::ProcessSpec spec;
     spec.sampleRate = sampleRate;
-    spec.maximumBlockSize = static_cast<juce::uint32>(maxBlockSize);
+    spec.maximumBlockSize = static_cast<juce::uint32>(preparedMaxBlock_);
     spec.numChannels = static_cast<juce::uint32>(numChannels);
 
     inputGain.prepare(spec);
@@ -25,7 +28,7 @@ void ClipperEngine::prepare(double sampleRate, int maxBlockSize, int numChannels
     outputGain.prepare(spec);
     outputGain.setRampDurationSeconds(0.002);  // 2ms smoothing
     clipper.prepare(sampleRate, numChannels);
-    oversampler.prepare(sampleRate, maxBlockSize, numChannels);
+    oversampler.prepare(sampleRate, preparedMaxBlock_, numChannels);
 
     // Set up ceiling smoothing (only when sample rate changes to avoid interrupting ramp)
     if (sampleRate != lastSampleRate)
@@ -35,8 +38,8 @@ void ClipperEngine::prepare(double sampleRate, int maxBlockSize, int numChannels
     }
 
     // Prepare dry buffer and oversampler for phase-coherent dry/wet mixing
-    dryBuffer.setSize(numChannels, maxBlockSize);
-    dryOversampler.prepare(sampleRate, maxBlockSize, numChannels);
+    dryBuffer.setSize(numChannels, preparedMaxBlock_);
+    dryOversampler.prepare(sampleRate, preparedMaxBlock_, numChannels);
 
     // Smooth mix parameter (5ms ramp to avoid zipper noise)
     smoothedMix.reset(sampleRate, 0.005);
@@ -44,7 +47,7 @@ void ClipperEngine::prepare(double sampleRate, int maxBlockSize, int numChannels
     // Envelope follower: instant attack, 100ms release
     envReleaseCoeff_ = std::exp(-1.0f / static_cast<float>(sampleRate * 0.100));
     envFollowerState_ = 0.0f;
-    envSampleData_.resize(static_cast<size_t>(maxBlockSize), 0.0f);
+    envSampleData_.resize(static_cast<size_t>(preparedMaxBlock_), 0.0f);
     envSampleCount_ = 0;
 }
 
