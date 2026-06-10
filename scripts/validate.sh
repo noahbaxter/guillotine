@@ -9,7 +9,7 @@ PROJECT_ROOT="$(dirname "$SCRIPT_DIR")"
 # Default strictness level
 STRICTNESS="${1:-10}"
 
-VST3_PATH="$PROJECT_ROOT/build/Guillotine_artefacts/Release/VST3/Guillotine.vst3"
+VST3_PATH="$PROJECT_ROOT/build/Guillotine_artefacts/Release/VST3/Guillotine Clip.vst3"
 
 if [[ ! -d "$VST3_PATH" ]]; then
     echo "Error: VST3 not found at $VST3_PATH"
