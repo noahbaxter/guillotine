@@ -306,16 +306,22 @@ void ClipperEngine::process(juce::AudioBuffer<float>& buffer)
     bool needsDryPath = deltaMonitorEnabled || currentMix < 0.999f || targetMix < 0.999f;
 
     // 3. Copy dry signal (after input gain, before processing)
+    // dryView trims the persistent dryBuffer to this block's length. The dry
+    // oversampler must consume exactly numSamples per call: feeding it the
+    // full-size dryBuffer would run its filter state ahead through stale tail
+    // samples whenever the host block is shorter than the prepared size, and
+    // the dry path drifts out of alignment with the wet path (issue #1).
+    juce::AudioBuffer<float> dryView(dryBuffer.getArrayOfWritePointers(), numChannels, 0, numSamples);
     if (needsDryPath)
     {
         for (int ch = 0; ch < numChannels; ++ch)
-            dryBuffer.copyFrom(ch, 0, buffer, ch, 0, numSamples);
+            dryView.copyFrom(ch, 0, buffer, ch, 0, numSamples);
     }
 
     // 4. M/S encode both paths
     stereoProcessor.encodeToMidSide(buffer);
     if (needsDryPath)
-        stereoProcessor.encodeToMidSide(dryBuffer);
+        stereoProcessor.encodeToMidSide(dryView);
 
     // 5. Upsample both (matched filters = phase aligned)
     int numOversampledSamples = 0;
@@ -323,7 +329,7 @@ void ClipperEngine::process(juce::AudioBuffer<float>& buffer)
 
     int dryOversampledSamples = 0;
     if (needsDryPath)
-        dryOversampler.processSamplesUp(dryBuffer, dryOversampledSamples);
+        dryOversampler.processSamplesUp(dryView, dryOversampledSamples);
 
     // 6. Clip wet signal only (dry passes through unclipped)
     if (oversampledData != nullptr)
@@ -334,12 +340,12 @@ void ClipperEngine::process(juce::AudioBuffer<float>& buffer)
     // 7. Downsample both
     oversampler.processSamplesDown(buffer, numSamples);
     if (needsDryPath)
-        dryOversampler.processSamplesDown(dryBuffer, numSamples);
+        dryOversampler.processSamplesDown(dryView, numSamples);
 
     // 8. M/S decode both
     stereoProcessor.decodeFromMidSide(buffer);
     if (needsDryPath)
-        stereoProcessor.decodeFromMidSide(dryBuffer);
+        stereoProcessor.decodeFromMidSide(dryView);
 
     // 9. Enforce ceiling on WET only (before mixing, so dry stays truly dry)
     if (enforceCeilingEnabled)
@@ -376,7 +382,7 @@ void ClipperEngine::process(juce::AudioBuffer<float>& buffer)
         for (int ch = 0; ch < numChannels; ++ch)
         {
             float* wet = buffer.getWritePointer(ch);
-            const float* dry = dryBuffer.getReadPointer(ch);
+            const float* dry = dryView.getReadPointer(ch);
             for (int i = 0; i < numSamples; ++i)
                 wet[i] = dry[i] - wet[i];
         }
@@ -392,7 +398,7 @@ void ClipperEngine::process(juce::AudioBuffer<float>& buffer)
             for (int ch = 0; ch < numChannels; ++ch)
             {
                 float* wet = buffer.getWritePointer(ch);
-                const float* dry = dryBuffer.getReadPointer(ch);
+                const float* dry = dryView.getReadPointer(ch);
                 wet[i] = dry[i] * dryGain + wet[i] * m;
             }
         }

@@ -1,4 +1,5 @@
 #include <catch2/catch_test_macros.hpp>
+#include <catch2/generators/catch_generators.hpp>
 #include "dsp/ClipperEngine.h"
 #include "test_utils.h"
 #include <cmath>
@@ -120,6 +121,89 @@ TEST_CASE("Dynamic buffers: oversized and variable blocks stay clean", "[engine]
         engine.process(buf);
         REQUIRE(isCleanOutput(buf));
     }
+}
+
+// -----------------------------------------------------------------------------
+// CORRECTNESS: FL-style call pattern must be transparent at EVERY oversampling
+// factor and filter type, with the DEFAULT gain-match mode. Two engines stream
+// the identical settled sine; the reference is fed fixed full blocks, the other
+// FL-like variable sizes (tiny, normal, and above the prepared max, which
+// triggers the re-block path). State carries across calls, so once both streams
+// settle the outputs must be sample-identical -- any divergence is a chunk-
+// boundary discontinuity (the 1.2.2 "buzz with oversampling" report).
+// -----------------------------------------------------------------------------
+TEST_CASE("Dynamic buffers: variable FL-style blocks are transparent at all OS factors", "[engine][buffersize]")
+{
+    const int osIndex = GENERATE(1, 2, 3, 5);       // 2x, 4x, 8x, 32x
+    const bool linearPhase = GENERATE(false, true);
+    const bool deltaMonitor = GENERATE(false, true);
+    constexpr int preparedMax = 128;
+    constexpr int totalSamples = 44100;             // 1s stream
+
+    CAPTURE(osIndex, linearPhase, deltaMonitor);
+
+    auto configure = [&](ClipperEngine& e) {
+        e.prepare(kSampleRate, preparedMax, kNumChannels);
+        e.setFilterType(linearPhase);
+        e.setOversamplingFactor(osIndex);
+        e.applyPendingChanges();
+        e.setCurve(static_cast<int>(CurveType::Hard));
+        e.setCeiling(-6.0f);
+        e.setInputGain(6.0f);        // drive into the clipper
+        e.setOutputGain(0.0f);
+        e.setGainMode(1);            // Match (the default) -- exercised per chunk
+        e.setEnforceCeiling(true);
+        e.setDeltaMonitor(deltaMonitor);
+        e.setDryWetMix(0.5f);        // dry path engaged (the FL trigger)
+        e.setBypass(false);
+        e.reset();
+    };
+
+    ClipperEngine fixed, variable;
+    configure(fixed);
+    configure(variable);
+
+    auto stream = generateSine(440.0f, totalSamples, 0.8f);
+
+    // Reference: fixed full blocks
+    juce::AudioBuffer<float> outFixed(kNumChannels, totalSamples);
+    for (int ch = 0; ch < kNumChannels; ++ch)
+        outFixed.copyFrom(ch, 0, stream, ch, 0, totalSamples);
+    for (int offset = 0; offset < totalSamples; offset += preparedMax)
+    {
+        int n = std::min(preparedMax, totalSamples - offset);
+        juce::AudioBuffer<float> blk(outFixed.getArrayOfWritePointers(), kNumChannels, offset, n);
+        fixed.process(blk);
+    }
+
+    // FL-like variable sizes in [1, 4*preparedMax]
+    juce::AudioBuffer<float> outVar(kNumChannels, totalSamples);
+    for (int ch = 0; ch < kNumChannels; ++ch)
+        outVar.copyFrom(ch, 0, stream, ch, 0, totalSamples);
+    uint32_t state = 0xCAFEBABEu;
+    for (int offset = 0; offset < totalSamples;)
+    {
+        state = state * 1664525u + 1013904223u;
+        int n = 1 + static_cast<int>((state >> 8) % (4u * static_cast<unsigned>(preparedMax)));
+        n = std::min(n, totalSamples - offset);
+        juce::AudioBuffer<float> blk(outVar.getArrayOfWritePointers(), kNumChannels, offset, n);
+        variable.process(blk);
+        offset += n;
+    }
+
+    // Skip the settling head (smoothers + filter warm-up), then compare.
+    const int settle = 8192;
+    float maxDiff = 0.0f;
+    int worstIndex = -1;
+    for (int ch = 0; ch < kNumChannels; ++ch)
+        for (int i = settle; i < totalSamples; ++i)
+        {
+            float d = std::abs(outFixed.getReadPointer(ch)[i] - outVar.getReadPointer(ch)[i]);
+            if (d > maxDiff) { maxDiff = d; worstIndex = i; }
+        }
+
+    INFO("max sample diff = " << maxDiff << " at sample " << worstIndex);
+    REQUIRE(maxDiff < 1.0e-4f);
 }
 
 // -----------------------------------------------------------------------------
