@@ -69,6 +69,14 @@ All knobs work the same way:
 | **Filter Type** | Min Phase (low latency) or Linear Phase (no phase distortion) |
 | **Stereo Mode** | Stereo Link / Dual Mono / M/S |
 
+### Clip Light
+
+The red LED next to the output knob lights up when the output signal exceeds 0 dBFS. This can happen when:
+- **True Peak is off** and intersample peaks overshoot
+- **Dry/Wet is between 0–100%** — the dry signal retains its original peaks, so mixing it with the clipped signal can push the sum above 0 dBFS, even with gain compensation active
+
+If the clip light is triggering during parallel mixing, lower the ceiling instead of driving input gain into it. A lower ceiling gives the dry signal headroom to live in during the mix.
+
 ### Microscope View
 
 The waveform display on the right shows your signal in detail:
